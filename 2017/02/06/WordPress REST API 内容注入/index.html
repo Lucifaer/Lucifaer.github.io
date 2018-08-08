@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html>
+    <!-- title -->
+
+
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" >
+    <meta name="author" content="Lucifaer">
+    <meta name="renderer" content="webkit">
+    <meta name="copyright" content="Lucifaer">
+    <meta name="keywords" content="Lucifaer's blog | Lucifaer">
+    <meta name="description" content="Some Lucifaer's security researchers and security analysis">
+    <meta name="Cache-Control" content="no-cache">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <title>WordPress REST API 内容注入 · Lucifaer&#39;s Blog</title>
+    <style type="text/css">
+    @font-face {
+        font-family: 'Oswald-Regular';
+        src: url("/font/Oswald-Regular.ttf");
+    }
+
+    body {
+        margin: 0;
+    }
+
+    header,
+    footer,
+    .back-top,
+    .sidebar,
+    .container,
+    .site-intro-meta,
+    .toc-wrapper {
+        display: none;
+    }
+
+    .site-intro {
+        position: relative;
+        z-index: 3;
+        width: 100%;
+        /* height: 50vh; */
+        overflow: hidden;
+    }
+
+    .site-intro-placeholder {
+        position: absolute;
+        z-index: -2;
+        top: 0;
+        left: 0;
+        width: calc(100% + 300px);
+        height: 100%;
+        background: repeating-linear-gradient(-45deg, #444 0, #444 80px, #333 80px, #333 160px);
+        background-position: center center;
+        transform: translate3d(-226px, 0, 0);
+        animation: gradient-move 2.5s ease-out 0s 1;
+    }
+
+    @keyframes gradient-move {
+        0% {
+            transform: translate3d(-226px, 0, 0);
+        }
+        100% {
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+</style>
+
+    <link rel="preload" href= /css/style.css?v=20180721 as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="stylesheet" href= /css/mobile.css?v=20180721 media="(max-width: 980px)">
+    
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    
+    <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
+/* This file is meant as a standalone workflow for
+- testing support for link[rel=preload]
+- enabling async CSS loading in browsers that do not support rel=preload
+- applying rel preload css once loaded, whether supported or not.
+*/ -->
+<script>
+(function( w ){
+	"use strict";
+	// rel=preload support test
+	if( !w.loadCSS ){
+		w.loadCSS = function(){};
+	}
+	// define on the loadCSS obj
+	var rp = loadCSS.relpreload = {};
+	// rel=preload feature support test
+	// runs once and returns a function for compat purposes
+	rp.support = (function(){
+		var ret;
+		try {
+			ret = w.document.createElement( "link" ).relList.supports( "preload" );
+		} catch (e) {
+			ret = false;
+		}
+		return function(){
+			return ret;
+		};
+	})();
+
+	// if preload isn't supported, get an asynchronous load by using a non-matching media attribute
+	// then change that media back to its intended value on load
+	rp.bindMediaToggle = function( link ){
+		// remember existing media attr for ultimate state, or default to 'all'
+		var finalMedia = link.media || "all";
+
+		function enableStylesheet(){
+			link.media = finalMedia;
+		}
+
+		// bind load handlers to enable media
+		if( link.addEventListener ){
+			link.addEventListener( "load", enableStylesheet );
+		} else if( link.attachEvent ){
+			link.attachEvent( "onload", enableStylesheet );
+		}
+
+		// Set rel and non-applicable media type to start an async request
+		// note: timeout allows this to happen async to let rendering continue in IE
+		setTimeout(function(){
+			link.rel = "stylesheet";
+			link.media = "only x";
+		});
+		// also enable media after 3 seconds,
+		// which will catch very old browsers (android 2.x, old firefox) that don't support onload on link
+		setTimeout( enableStylesheet, 3000 );
+	};
+
+	// loop through link elements in DOM
+	rp.poly = function(){
+		// double check this to prevent external calls from running
+		if( rp.support() ){
+			return;
+		}
+		var links = w.document.getElementsByTagName( "link" );
+		for( var i = 0; i < links.length; i++ ){
+			var link = links[ i ];
+			// qualify links to those with rel=preload and as=style attrs
+			if( link.rel === "preload" && link.getAttribute( "as" ) === "style" && !link.getAttribute( "data-loadcss" ) ){
+				// prevent rerunning on link
+				link.setAttribute( "data-loadcss", true );
+				// bind listeners to toggle media back
+				rp.bindMediaToggle( link );
+			}
+		}
+	};
+
+	// if unsupported, run the polyfill
+	if( !rp.support() ){
+		// run once at least
+		rp.poly();
+
+		// rerun poly on an interval until onload
+		var run = w.setInterval( rp.poly, 500 );
+		if( w.addEventListener ){
+			w.addEventListener( "load", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		} else if( w.attachEvent ){
+			w.attachEvent( "onload", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		}
+	}
+
+
+	// commonjs
+	if( typeof exports !== "undefined" ){
+		exports.loadCSS = loadCSS;
+	}
+	else {
+		w.loadCSS = loadCSS;
+	}
+}( typeof global !== "undefined" ? global : this ) );
+</script>
+
+    <link rel="icon" href= "/assets/favicon.ico" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js" as="script" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" as="script" />
+    <link rel="preload" href="/scripts/main.js" as="script" />
+    <link rel="preload" as="font" href="/font/Oswald-Regular.ttf" crossorigin>
+    <link rel="preload" as="font" href="https://at.alicdn.com/t/font_327081_1dta1rlogw17zaor.woff" crossorigin>
+    
+        <!-- algolia -->
+        <script>
+            
+            var hits = JSON.parse('{"per_page":10}')
+            var labels = JSON.parse('{"input_placeholder":"Search for Posts","hits_empty":"We did not find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}')
+
+            var algolia = {
+                applicationID: 'K0XKT0INON',
+                apiKey: 'cc8e96eb9aa249bbd7662f7f8f7d70ca',
+                indexName: 'blog',
+                hits: hits,
+                labels: labels
+            }
+        </script>
+    
+    <!-- fancybox -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.js" defer></script>
+    <!-- 百度统计  -->
+    
+    <!-- 谷歌统计  -->
+    
+</head>
+
+    
+        <body class="post-body">
+    
+    
+<header class="header">
+
+    <div class="read-progress"></div>
+    <div class="header-sidebar-menu">&#xe775;</div>
+    <!-- post页的toggle banner  -->
+    
+    <div class="banner">
+            <div class="blog-title">
+                <a href="/" >Lucifaer&#39;s Blog.</a>
+            </div>
+            <div class="post-title">
+                <a href="#" class="post-name">WordPress REST API 内容注入</a>
+            </div>
+    </div>
+    
+    <a class="home-link" href=/>Lucifaer's Blog.</a>
+</header>
+    <div class="wrapper">
+        <div class="site-intro" style=
+
+
+
+
+
+
+
+
+height:50vh;
+
+>
+    
+    <!-- 主页  -->
+    
+    
+    <!-- 404页  -->
+            
+    <div class="site-intro-placeholder"></div>
+    <div class="site-intro-img" style="background-image: url(/intro/post-bg.jpg)"></div>
+    <div class="site-intro-meta">
+        <!-- 标题  -->
+        <h1 class="intro-title">
+            <!-- 主页  -->
+            
+            WordPress REST API 内容注入
+            <!-- 404 -->
+            
+        </h1>
+        <!-- 副标题 -->
+        <p class="intro-subtitle">
+            <!-- 主页副标题  -->
+            
+            
+            <!-- 404 -->
+            
+        </p>
+        <!-- 文章页meta -->
+        
+            <div class="post-intros">
+                <!-- 文章页标签  -->
+                
+                    <div class= post-intro-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "漏洞分析">漏洞分析</a>
+    
+</div>
+                
+                
+                    <div class="post-intro-read">
+                        <span>Word count: <span class="post-count">1,870</span> / Reading time: <span class="post-count">8 min</span></span>
+                    </div>
+                
+                <div class="post-intro-meta">
+                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
+                    <span class="post-intro-time">2017/02/06</span>
+                    
+                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
+                        <span class="iconfont-archer">&#xe602;</span>
+                        <span id="busuanzi_value_page_pv"></span>
+                    </span>
+                    
+                    <span class="shareWrapper">
+                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
+                        <span class="shareText">Share</span>
+                        <ul class="shareList">
+                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
+                                <div class="share-qrcode"></div>
+                            </li>
+                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
+                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
+                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
+                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
+                        </ul>
+                    </span>
+                </div>
+            </div>
+        
+    </div>
+</div>
+        <script>
+ 
+  // get user agent
+  var browser = {
+    versions: function () {
+      var u = window.navigator.userAgent;
+      return {
+        userAgent: u,
+        trident: u.indexOf('Trident') > -1, //IE内核
+        presto: u.indexOf('Presto') > -1, //opera内核
+        webKit: u.indexOf('AppleWebKit') > -1, //苹果、谷歌内核
+        gecko: u.indexOf('Gecko') > -1 && u.indexOf('KHTML') == -1, //火狐内核
+        mobile: !!u.match(/AppleWebKit.*Mobile.*/), //是否为移动终端
+        ios: !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/), //ios终端
+        android: u.indexOf('Android') > -1 || u.indexOf('Linux') > -1, //android终端或者uc浏览器
+        iPhone: u.indexOf('iPhone') > -1 || u.indexOf('Mac') > -1, //是否为iPhone或者安卓QQ浏览器
+        iPad: u.indexOf('iPad') > -1, //是否为iPad
+        webApp: u.indexOf('Safari') == -1, //是否为web应用程序，没有头部与底部
+        weixin: u.indexOf('MicroMessenger') == -1, //是否为微信浏览器
+        uc: u.indexOf('UCBrowser') > -1 //是否为android下的UC浏览器
+      };
+    }()
+  }
+  console.log("userAgent:" + browser.versions.userAgent);
+
+  // callback
+  function fontLoaded() {
+    console.log('font loaded');
+    if (document.getElementsByClassName('site-intro-meta')) {
+      document.getElementsByClassName('intro-title')[0].classList.add('intro-fade-in');
+      document.getElementsByClassName('intro-subtitle')[0].classList.add('intro-fade-in');
+      var postIntros = document.getElementsByClassName('post-intros')[0]
+      if (postIntros) {
+        postIntros.classList.add('post-fade-in');
+      }
+    }
+  }
+
+  // UC不支持跨域，所以直接显示
+  function asyncCb(){
+    if (browser.versions.uc) {
+      console.log("UCBrowser");
+      fontLoaded();
+    } else {
+      WebFont.load({
+        custom: {
+          families: ['Oswald-Regular']
+        },
+        loading: function () {  //所有字体开始加载
+          // console.log('loading');
+        },
+        active: function () {  //所有字体已渲染
+          fontLoaded();
+        },
+        inactive: function () { //字体预加载失败，无效字体或浏览器不支持加载
+          console.log('inactive: timeout');
+          fontLoaded();
+        },
+        timeout: 5000 // Set the timeout to two seconds
+      });
+    }
+  }
+
+  function asyncErr(){
+    console.warn('script load from CDN failed, will load local script')
+  }
+
+  // load webfont-loader async, and add callback function
+  function async(u, cb, err) {
+    var d = document, t = 'script',
+      o = d.createElement(t),
+      s = d.getElementsByTagName(t)[0];
+    o.src = u;
+    if (cb) { o.addEventListener('load', function (e) { cb(null, e); }, false); }
+    if (err) { o.addEventListener('error', function (e) { err(null, e); }, false); }
+    s.parentNode.insertBefore(o, s);
+  }
+
+  var asyncLoadWithFallBack = function(arr, success, reject) {
+      var currReject = function(){
+        reject()
+        arr.shift()
+        if(arr.length)
+          async(arr[0], success, currReject)
+        }
+
+      async(arr[0], success, currReject)
+  }
+
+  asyncLoadWithFallBack([
+    "https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js", 
+    "https://cdn.bootcss.com/webfont/1.6.28/webfontloader.js",
+    "/lib/webfontloader.min.js"
+  ], asyncCb, asyncErr)
+</script>        
+        <img class="loading" src="/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
+        <div class="container container-unloaded">
+            <main class="main post-page">
+    <article class="article-entry">
+        <h1 id="0x00-漏洞简述"><a href="#0x00-漏洞简述" class="headerlink" title="0x00 漏洞简述"></a>0x00 漏洞简述</h1><h2 id="1-漏洞简介"><a href="#1-漏洞简介" class="headerlink" title="1. 漏洞简介"></a>1. 漏洞简介</h2><p>在<code>REST API</code>自动包含在<code>Wordpress4.7</code>以上的版本，<code>WordPress REST API</code>提供了一组易于使用的HTTP端点，可以使用户以简单的JSON格式访问网站的数据，包括用户，帖子，分类等。检索或更新数据与发送HTTP请求一样简单。上周，一个由<code>REST API</code>引起的影响<code>WorePress4.7.0</code>和<code>4.7.1</code>版本的漏洞被披露，该漏洞可以导致WordPress所有文章内容可以未经验证被查看，修改，删除，甚至创建新的文章，危害巨大。</p>
+<h2 id="2-漏洞影响版本"><a href="#2-漏洞影响版本" class="headerlink" title="2. 漏洞影响版本"></a>2. 漏洞影响版本</h2><ul>
+<li>WordPress4.7.0</li>
+<li>WordPress4.7.1</li>
+</ul>
+<a id="more"></a>
+<h1 id="0x01-漏洞复现"><a href="#0x01-漏洞复现" class="headerlink" title="0x01 漏洞复现"></a>0x01 漏洞复现</h1><p><a href="https://www.seebug.org/vuldb/ssvid-92637" target="_blank" rel="noopener">Seebug</a>上已经给出详细的复现过程，在复现过程中可以使用<a href="https://www.exploit-db.com/exploits/41223/" target="_blank" rel="noopener">已经放出的POC</a>来进行测试。</p>
+<h1 id="0x02-漏洞分析"><a href="#0x02-漏洞分析" class="headerlink" title="0x02 漏洞分析"></a>0x02 漏洞分析</h1><p>其实漏洞发现者已经给出了较为详细的<a href="https://blog.sucuri.net/2017/02/content-injection-vulnerability-wordpress-rest-api.html" target="_blank" rel="noopener">分析过程</a>，接下来说说自己在参考了上面的分析后的一点想法。</p>
+<h2 id="WP-REST-API"><a href="#WP-REST-API" class="headerlink" title="WP REST API"></a>WP REST API</h2><p>首先来说一下<code>REST API</code>。</p>
+<h3 id="控制器"><a href="#控制器" class="headerlink" title="控制器"></a>控制器</h3><p><code>WP-API</code>中采用了控制器概念，为表示自愿端点的类提供了标准模式，所有资源端点都扩展<code>WP_REST_Controller</code>来保证其实现通用方法。</p>
+<h3 id="五种请求"><a href="#五种请求" class="headerlink" title="五种请求"></a>五种请求</h3><p>之后，<code>WP-API</code>还有这么几种请求（也可以想成是功能吧）：</p>
+<ul>
+<li>HEAD</li>
+<li>GET</li>
+<li>POST</li>
+<li>PUT</li>
+<li>DELETE</li>
+</ul>
+<p>以上表示HTTP客户端可能对资源执行的操作类型。</p>
+<h3 id="HTTP客户端"><a href="#HTTP客户端" class="headerlink" title="HTTP客户端"></a>HTTP客户端</h3><p>WordPress本身在<code>WP_HTTP</code>类和相关函数中提供了一个HTTP客户端。用于从另一个访问一个WordPress站点。</p>
+<h3 id="资源"><a href="#资源" class="headerlink" title="资源"></a>资源</h3><p>简单来说，就是文章，页面，评论等。</p>
+<p><code>WP-API</code>允许HTTP客户端对资源执行CRUD操作（创建，读取，更新，删除，这边只展示和漏洞相关的部分）：</p>
+<ul>
+<li><p><code>GET /wp-json/wp/v2/posts</code>获取帖子的集合：</p>
+<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045885475349.jpg" alt=""></p>
+</li>
+<li><p><code>GET /wp-json/wp/v2/posts/1</code>获取一个ID为1的单独的Post：</p>
+<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045885751013.jpg" alt=""></p>
+</li>
+</ul>
+<p>可以看到ID为1的文章标题为Hello World，包括文章的路由也有。</p>
+<h3 id="路由"><a href="#路由" class="headerlink" title="路由"></a>路由</h3><p>路由是用于访问端点的“名称”，在URL中使用（在非法情况下可控，就像这个漏洞一样）。</p>
+<p>例如，使用URL<code>http://example.com/wp-json/wp/v2/posts/123</code>:</p>
+<ul>
+<li>路由（route）是<code>wp/v2/posts/123</code>，不包括<code>wp-json</code>，因为<code>wp-json</code>是API本身的基本路径。</li>
+<li>这个路由有三个端点：<ul>
+<li>GET触发一个<code>get_item</code>方法，将post数据返回给客户端。</li>
+<li>PUT触发一个<code>update_item</code>方法，使数据更新，并返回更新的发布数据。</li>
+<li>DELETE触发<code>delete_item</code>方法，将现在删除的发布数据返回给客户端。</li>
+</ul>
+</li>
+</ul>
+<h2 id="静态追踪"><a href="#静态追踪" class="headerlink" title="静态追踪"></a>静态追踪</h2><p>知道了<code>WP-API</code>的路由信息以及其操作方式，可以根据其运行的思路来看一下具体实现的代码。</p>
+<p>我们看一下<code>/wp-includes/rest-api/endpoints/class-wp-rest-post-controller.php</code>：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045885995846.jpg" alt=""></p>
+<p>根据上面的信息，我们可以知道这是注册controller对象的路由，实现路由中端点方法。</p>
+<p>在这里，如果我们向<code>/wp-json/wp/v2/posts/1</code>发送请求，则ID参数将被设置为1：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045886320123.jpg" alt=""></p>
+<p>同时，注意一下这里：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">register_rest_route( <span class="keyword">$this</span>-&gt;namespace, <span class="string">'/'</span> . <span class="keyword">$this</span>-&gt;rest_base . <span class="string">'/(?P&lt;id&gt;[\d]+)'</span>, <span class="keyword">array</span>(</span><br><span class="line">			<span class="keyword">array</span>(</span><br><span class="line">				<span class="string">'methods'</span>             =&gt; WP_REST_Server::READABLE,</span><br><span class="line">				<span class="string">'callback'</span>            =&gt; <span class="keyword">array</span>( <span class="keyword">$this</span>, <span class="string">'get_item'</span> ),</span><br><span class="line">				<span class="string">'permission_callback'</span> =&gt; <span class="keyword">array</span>( <span class="keyword">$this</span>, <span class="string">'get_item_permissions_check'</span> ),</span><br><span class="line">				<span class="string">'args'</span>                =&gt; $get_item_args,</span><br><span class="line">			),</span><br><span class="line">			<span class="keyword">array</span>(</span><br><span class="line">				<span class="string">'methods'</span>             =&gt; WP_REST_Server::EDITABLE,</span><br><span class="line">				<span class="string">'callback'</span>            =&gt; <span class="keyword">array</span>( <span class="keyword">$this</span>, <span class="string">'update_item'</span> ),</span><br><span class="line">				<span class="string">'permission_callback'</span> =&gt; <span class="keyword">array</span>( <span class="keyword">$this</span>, <span class="string">'update_item_permissions_check'</span> ),</span><br><span class="line">				<span class="string">'args'</span>                =&gt; <span class="keyword">$this</span>-&gt;get_endpoint_args_for_item_schema( WP_REST_Server::EDITABLE ),</span><br><span class="line">			),</span><br><span class="line">			<span class="keyword">array</span>(</span><br><span class="line">				<span class="string">'methods'</span>             =&gt; WP_REST_Server::DELETABLE,</span><br><span class="line">				<span class="string">'callback'</span>            =&gt; <span class="keyword">array</span>( <span class="keyword">$this</span>, <span class="string">'delete_item'</span> ),</span><br><span class="line">				<span class="string">'permission_callback'</span> =&gt; <span class="keyword">array</span>( <span class="keyword">$this</span>, <span class="string">'delete_item_permissions_check'</span> ),</span><br><span class="line">				<span class="string">'args'</span>                =&gt; <span class="keyword">array</span>(</span><br><span class="line">					<span class="string">'force'</span> =&gt; <span class="keyword">array</span>(</span><br><span class="line">						<span class="string">'type'</span>        =&gt; <span class="string">'boolean'</span>,</span><br><span class="line">						<span class="string">'default'</span>     =&gt; <span class="keyword">false</span>,</span><br><span class="line">						<span class="string">'description'</span> =&gt; __( <span class="string">'Whether to bypass trash and force deletion.'</span> ),</span><br><span class="line">					),</span><br><span class="line">				),</span><br><span class="line">			),</span><br><span class="line">			<span class="string">'schema'</span> =&gt; <span class="keyword">array</span>( <span class="keyword">$this</span>, <span class="string">'get_public_item_schema'</span> ),</span><br><span class="line">		) );</span><br></pre></td></tr></table></figure>
+<p>可以看到在<code>register_rest_route</code>中对路由进行了正则限制：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045886830428.jpg" alt=""></p>
+<p>也就是防止攻击者恶意构造ID值，但是我们可以发现<code>$_GET</code>和<code>$_POST</code>值优先于路由正则表达式生成的值：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045887045836.jpg" alt=""></p>
+<p>这边没有找到ID为<code>123hh</code>的项目，所以返回<code>rest_invalid</code>。</p>
+<p>现在我们可以忽略路由正则的限制，来传入我们自定义的ID。</p>
+<p>接下来在审查各个端点方法中，找到了<code>update_item</code>这个方法，及其权限检查方法<code>update_item_permissions_check</code>：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">update_item_permissions_check</span><span class="params">( $request )</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">		$post = get_post( $request[<span class="string">'id'</span>] );</span><br><span class="line">		$post_type = get_post_type_object( <span class="keyword">$this</span>-&gt;post_type );</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> ( $post &amp;&amp; ! <span class="keyword">$this</span>-&gt;check_update_permission( $post ) ) &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">new</span> WP_Error( <span class="string">'rest_cannot_edit'</span>, __( <span class="string">'Sorry, you are not allowed to edit this post.'</span> ), <span class="keyword">array</span>( <span class="string">'status'</span> =&gt; rest_authorization_required_code() ) );</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> ( ! <span class="keyword">empty</span>( $request[<span class="string">'author'</span>] ) &amp;&amp; get_current_user_id() !== $request[<span class="string">'author'</span>] &amp;&amp; ! current_user_can( $post_type-&gt;cap-&gt;edit_others_posts ) ) &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">new</span> WP_Error( <span class="string">'rest_cannot_edit_others'</span>, __( <span class="string">'Sorry, you are not allowed to update posts as this user.'</span> ), <span class="keyword">array</span>( <span class="string">'status'</span> =&gt; rest_authorization_required_code() ) );</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> ( ! <span class="keyword">empty</span>( $request[<span class="string">'sticky'</span>] ) &amp;&amp; ! current_user_can( $post_type-&gt;cap-&gt;edit_others_posts ) ) &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">new</span> WP_Error( <span class="string">'rest_cannot_assign_sticky'</span>, __( <span class="string">'Sorry, you are not allowed to make posts sticky.'</span> ), <span class="keyword">array</span>( <span class="string">'status'</span> =&gt; rest_authorization_required_code() ) );</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> ( ! <span class="keyword">$this</span>-&gt;check_assign_terms_permission( $request ) ) &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">new</span> WP_Error( <span class="string">'rest_cannot_assign_term'</span>, __( <span class="string">'Sorry, you are not allowed to assign the provided terms.'</span> ), <span class="keyword">array</span>( <span class="string">'status'</span> =&gt; rest_authorization_required_code() ) );</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，此函数通过检查文章是否实际存在，以及我们的用户是否有权限编辑这边文章来验证请求。但是当我们发送一个没有响应文章的ID时，就可以通过权限检查，并允许继续执行对<code>update_item</code>方法的请求。</p>
+<p>具体到代码，就是让<code>$post</code>为空，就可以通过权限检查，接下来跟进<code>get_post</code>方法中看一下：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">get_post</span><span class="params">( $post = null, $output = OBJECT, $filter = <span class="string">'raw'</span> )</span> </span>&#123;</span><br><span class="line">	<span class="keyword">if</span> ( <span class="keyword">empty</span>( $post ) &amp;&amp; <span class="keyword">isset</span>( $GLOBALS[<span class="string">'post'</span>] ) )</span><br><span class="line">		$post = $GLOBALS[<span class="string">'post'</span>];</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ( $post <span class="keyword">instanceof</span> WP_Post ) &#123;</span><br><span class="line">		$_post = $post;</span><br><span class="line">	&#125; <span class="keyword">elseif</span> ( is_object( $post ) ) &#123;</span><br><span class="line">		<span class="keyword">if</span> ( <span class="keyword">empty</span>( $post-&gt;filter ) ) &#123;</span><br><span class="line">			$_post = sanitize_post( $post, <span class="string">'raw'</span> );</span><br><span class="line">			$_post = <span class="keyword">new</span> WP_Post( $_post );</span><br><span class="line">		&#125; <span class="keyword">elseif</span> ( <span class="string">'raw'</span> == $post-&gt;filter ) &#123;</span><br><span class="line">			$_post = <span class="keyword">new</span> WP_Post( $post );</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			$_post = WP_Post::get_instance( $post-&gt;ID );</span><br><span class="line">		&#125;</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		$_post = WP_Post::get_instance( $post );</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ( ! $_post )</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">null</span>;</span><br></pre></td></tr></table></figure>
+<p>从代码中可以看出，它是用<code>wp_posts</code>中的<code>get_instance</code>静态方法来获取文章的，跟进<code>wp_posts</code>类，位于<code>/wp-includes/class-wp-post.php</code>中：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="function"><span class="keyword">function</span> <span class="title">get_instance</span><span class="params">( $post_id )</span> </span>&#123;</span><br><span class="line">		<span class="keyword">global</span> $wpdb;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> ( ! is_numeric( $post_id ) || $post_id != floor( $post_id ) || ! $post_id ) &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">		&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，当我们传入的ID不是全由数字字符组成的时候，就会返回false，也就是返回一个不存在的文章。从而<code>get_post</code>方法返回null，从而绕过<code>update_item_permissions_check</code>的权限检测。</p>
+<p>回头再看一下可执行方法<code>upload_item</code>：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">update_item</span><span class="params">( $request )</span> </span>&#123;</span><br><span class="line">		$id   = (int) $request[<span class="string">'id'</span>];</span><br><span class="line">		$post = get_post( $id );</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> ( <span class="keyword">empty</span>( $id ) || <span class="keyword">empty</span>( $post-&gt;ID ) || <span class="keyword">$this</span>-&gt;post_type !== $post-&gt;post_type ) &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">new</span> WP_Error( <span class="string">'rest_post_invalid_id'</span>, __( <span class="string">'Invalid post ID.'</span> ), <span class="keyword">array</span>( <span class="string">'status'</span> =&gt; <span class="number">404</span> ) );</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		$post = <span class="keyword">$this</span>-&gt;prepare_item_for_database( $request );</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> ( is_wp_error( $post ) ) &#123;</span><br><span class="line">			<span class="keyword">return</span> $post;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">// convert the post object to an array, otherwise wp_update_post will expect non-escaped input.</span></span><br><span class="line">		$post_id = wp_update_post( wp_slash( (<span class="keyword">array</span>) $post ), <span class="keyword">true</span> );</span><br></pre></td></tr></table></figure>
+<p>在这边将ID参数装换为一个整数，然后传递给<code>get_post</code>。而PHP类型转换的时候回出现这样的情况：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045887374640.jpg" alt=""></p>
+<p>所以，也就是说，当攻击者发起<code>/wp-json/wp/v2/posts/1?id=1hhh</code>请求时，便是发起了对ID为1的文章的请求。下面为利用<a href="https://www.exploit-db.com/exploits/41223/" target="_blank" rel="noopener">exploit-db</a>上的POC来进行测试：</p>
+<ul>
+<li><p>新建文章：</p>
+<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045887686508.jpg" alt=""></p>
+</li>
+<li><p>测试：</p>
+<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045887924832.jpg" alt=""></p>
+</li>
+<li><p>测试结果：</p>
+<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045888358058.jpg" alt=""></p>
+</li>
+</ul>
+<h2 id="多想了一下"><a href="#多想了一下" class="headerlink" title="多想了一下"></a>多想了一下</h2><p>乍一看，感觉这个洞并没有什么太大的影响，但是仔细想了一下，危害还是很大的。先不说WordPress页面执行php代码的各种插件，还有相当一部分的WordPress文章可以调用短代码的方式来输出特定的内容，以及向日志中添加内容，这是一个思路。</p>
+<p>另一个思路就是可以进行对原来文章中的指定超链接进行修改，从而进行钓鱼。</p>
+<p>还有一个思路，就是利用WordPress文章中解析html以及JavaScript文件包含的做法，辅助其他方法，进行攻击。</p>
+<h1 id="0x03-diff比较"><a href="#0x03-diff比较" class="headerlink" title="0x03 diff比较"></a>0x03 diff比较</h1><p>对于该漏洞，关键的修改在<code>/wp-includes/class-wp-post.php</code>中：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045888551118.jpg" alt=""></p>
+<p>更改了对于<code>$post_id</code>的参数的传入顺序和判断条件，防止了我们传入数字+字母这样的格式进行绕过。</p>
+<h1 id="0x04-修补方案"><a href="#0x04-修补方案" class="headerlink" title="0x04 修补方案"></a>0x04 修补方案</h1><p>将WordPress更新到最新版本。</p>
+
+    </article>
+    <!-- license  -->
+    
+        <div class="license-wrapper">
+            <p>原文作者: <a href="https://lucifaer.com">Lucifaer</a>
+            <p>原文链接: <a href="https://lucifaer.com/2017/02/06/WordPress REST API 内容注入/">https://lucifaer.com/2017/02/06/WordPress REST API 内容注入/</a>
+            <p>发表日期: <a href="https://lucifaer.com/2017/02/06/WordPress REST API 内容注入/">February 6th 2017, 6:44:09 pm</a>
+            <p>版权声明: 本文采用<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可</p>
+        </div>
+    
+    <!-- paginator  -->
+    <ul class="post-paginator">
+        <li class="next">
+            
+        </li>
+        <li class="previous">
+            
+                <div class="prevSlogan">Previous Post</div>
+                <a href= "/2017/01/18/SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析/" title= SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析 >
+                    <div class="prevTitle">SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析</div>
+                </a>
+            
+        </li>
+    </ul>
+    <!-- 评论插件 -->
+    <!-- 来必力City版安装代码 -->
+
+    <div id="lv-container" data-id="city" data-uid= MTAyMC8zODcyOC8xNTI1Ng==>
+        <script type="text/javascript">
+            (function(d, s) {
+                var j, e = d.getElementsByTagName(s)[0];
+         
+                if (typeof LivereTower === 'function') { return; }
+         
+                j = d.createElement(s);
+                j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+                j.async = true;
+         
+                e.parentNode.insertBefore(j, e);
+            })(document, 'script');
+             </script>
+         <noscript> 为正常使用来必力评论功能请激活JavaScript</noscript>
+    </div>
+
+<!-- City版安装代码已完成 -->
+    
+    
+    <!--PC和WAP自适应版-->
+
+    <!--PC版-->
+
+
+    
+    
+
+    <!-- 评论 -->
+</main>
+            <!-- profile -->
+            
+        </div>
+        <footer class="footer footer-unloaded">
+    <!-- social  -->
+    
+    <div class="social">
+        
+    
+        
+            
+                <a href="mailto:l.lucifaer@gmail.com" class="iconfont-archer email" title=email ></a>
+            
+        
+    
+        
+            
+                <a href="//github.com/Lucifaer" class="iconfont-archer github" target="_blank" title=github></a>
+            
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="//weibo.com/5838222069" class="iconfont-archer weibo" target="_blank" title=weibo></a>
+            
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="/atom.xml" class="iconfont-archer rss" target="_blank" title=rss></a>
+            
+        
+    
+
+    </div>
+    
+    <!-- powered by Hexo  -->
+    <div class="copyright">
+        <span id="hexo-power">Powered by <a href="https://hexo.io/" target="_blank">Hexo</a></span><span class="iconfont-archer power">&#xe635;</span><span id="theme-info">theme <a href="https://github.com/fi3ework/hexo-theme-archer" target="_blank">Archer</a></span>
+    </div>
+    <!-- 不蒜子  -->
+    
+    <div class="busuanzi-container">
+    
+     
+    <span id="busuanzi_container_site_pv">PV: <span id="busuanzi_value_site_pv"></span> :)</span>
+    
+    </div>
+    
+</footer>
+    </div>
+    <!-- toc -->
+    
+    <div class="toc-wrapper" style=
+    
+
+
+
+
+
+
+
+top:50vh;
+
+    >
+        <div class="toc-catalog">
+            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
+        </div>
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#0x00-漏洞简述"><span class="toc-number">1.</span> <span class="toc-text">0x00 漏洞简述</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-漏洞简介"><span class="toc-number">1.1.</span> <span class="toc-text">1. 漏洞简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-漏洞影响版本"><span class="toc-number">1.2.</span> <span class="toc-text">2. 漏洞影响版本</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-漏洞复现"><span class="toc-number">2.</span> <span class="toc-text">0x01 漏洞复现</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-漏洞分析"><span class="toc-number">3.</span> <span class="toc-text">0x02 漏洞分析</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#WP-REST-API"><span class="toc-number">3.1.</span> <span class="toc-text">WP REST API</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#控制器"><span class="toc-number">3.1.1.</span> <span class="toc-text">控制器</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#五种请求"><span class="toc-number">3.1.2.</span> <span class="toc-text">五种请求</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#HTTP客户端"><span class="toc-number">3.1.3.</span> <span class="toc-text">HTTP客户端</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#资源"><span class="toc-number">3.1.4.</span> <span class="toc-text">资源</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#路由"><span class="toc-number">3.1.5.</span> <span class="toc-text">路由</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#静态追踪"><span class="toc-number">3.2.</span> <span class="toc-text">静态追踪</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#多想了一下"><span class="toc-number">3.3.</span> <span class="toc-text">多想了一下</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-diff比较"><span class="toc-number">4.</span> <span class="toc-text">0x03 diff比较</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x04-修补方案"><span class="toc-number">5.</span> <span class="toc-text">0x04 修补方案</span></a></li></ol>
+    </div>
+    
+    <div class="back-top iconfont-archer">&#xe639;</div>
+    <div class="sidebar sidebar-hide">
+    <ul class="sidebar-tabs sidebar-tabs-active-0">
+        <li class="sidebar-tab-archives"><span class="iconfont-archer">&#xe67d;</span><span class="tab-name">Archive</span></li>
+        <li class="sidebar-tab-tags"><span class="iconfont-archer">&#xe61b;</span><span class="tab-name">Tag</span></li>
+        <li class="sidebar-tab-categories"><span class="iconfont-archer">&#xe666;</span><span class="tab-name">Cate</span></li>
+    </ul>
+    <div class="sidebar-content sidebar-content-show-archive">
+          <div class="sidebar-panel-archives">
+    <!-- 在ejs中将archive按照时间排序 -->
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <div class="total-and-search">
+        <div class="total-archive">
+        Total : 2
+        </div>
+        <!-- search  -->
+        
+            <div class="site-search popup-trigger">
+                <span class="iconfont-archer search-icon">&#xe627;</span>
+            </div>
+        
+    </div>
+    
+    <div class="post-archive">
+    
+    
+    
+    
+    <div class="archive-year"> 2017 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/06</span><a class="archive-post-title" href= "/2017/02/06/WordPress REST API 内容注入/" >WordPress REST API 内容注入</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/18</span><a class="archive-post-title" href= "/2017/01/18/SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析/" >SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析</a>
+        </li>
+    
+    </div>
+  </div>
+        <div class="sidebar-panel-tags">
+    <div class="sidebar-tags-name">
+    
+        <span class="sidebar-tag-name" data-tags="漏洞分析"><span class="iconfont-archer">&#xe606;</span>漏洞分析</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
+    <div class="tag-load-fail" style="display: none; color: #ccc; font-size: 0.6rem;">
+    缺失模块。<br/>
+    1、请确保node版本大于6.2<br/>
+    2、在博客根目录（注意不是archer根目录）执行以下命令：<br/>
+    <span style="color: #f75357; font-size: 1rem; line-height: 2rem;">npm i hexo-generator-json-content --save</span><br/>
+    3、在根目录_config.yml里添加配置：
+    <pre style="color: #787878; font-size: 0.6rem;">
+jsonContent:
+  meta: false
+  pages: false
+  posts:
+    title: true
+    date: true
+    path: true
+    text: false
+    raw: false
+    content: false
+    slug: false
+    updated: false
+    comments: false
+    link: false
+    permalink: false
+    excerpt: false
+    categories: true
+    tags: true</pre>
+    </div> 
+    <div class="sidebar-tags-list"></div>
+</div>
+        <div class="sidebar-panel-categories">
+    <div class="sidebar-categories-name">
+    
+        <span class="sidebar-category-name" data-categories="漏洞分析"><span class="iconfont-archer">&#xe60a;</span>漏洞分析</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>
+    <div class="sidebar-categories-list"></div>
+</div>
+    </div>
+</div> 
+    <script>
+    var siteMeta = {
+        root: "/",
+        author: "Lucifaer"
+    }
+</script>
+    <!-- CDN failover -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+    <script type="text/javascript">
+        if (typeof window.$ === 'undefined')
+        {
+            console.warn('jquery load from jsdelivr failed, will load local script')
+            document.write('<script src="/lib/jquery.min.js">\x3C/script>')
+        }
+    </script>
+    <script src="/scripts/main.js"></script>
+    <!-- algolia -->
+    
+        <div class="site-search">
+  <div class="algolia-popup popup">
+    <div class="algolia-search">
+      <div class="algolia-search-input-icon">
+        <i class="fa fa-search"></i>
+      </div>
+      <div class="algolia-search-input" id="algolia-search-input"></div>
+    </div>
+
+    <div class="algolia-results">
+      <div id="algolia-stats"></div>
+      <div id="algolia-hits"></div>
+      <div id="algolia-pagination" class="algolia-pagination"></div>
+    </div>
+
+    <span class="popup-btn-close">
+      <i class="iconfont-archer">&#xe609;</i>
+    </span>
+  </div>
+</div>
+        <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@2.8.0/dist/instantsearch.min.js" defer></script>
+        <script src="/scripts/search.js" defer></script>
+    
+    <!-- busuanzi  -->
+    
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+    <!-- CNZZ  -->
+    
+    </div>
+    <!-- async load share.js -->
+    
+        <script src="/scripts/share.js" async></script>    
+     
+    </body>
+</html>
+
+
