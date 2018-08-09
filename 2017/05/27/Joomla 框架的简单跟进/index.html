@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html>
+    <!-- title -->
+
+
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" >
+    <meta name="author" content="Lucifaer">
+    <meta name="renderer" content="webkit">
+    <meta name="copyright" content="Lucifaer">
+    <meta name="keywords" content="Lucifaer's blog | Lucifaer">
+    <meta name="description" content="Some Lucifaer's security researchers and security analysis">
+    <meta name="Cache-Control" content="no-cache">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <title>Joomla 框架的简单跟进 · Lucifaer&#39;s Blog</title>
+    <style type="text/css">
+    @font-face {
+        font-family: 'Oswald-Regular';
+        src: url("/font/Oswald-Regular.ttf");
+    }
+
+    body {
+        margin: 0;
+    }
+
+    header,
+    footer,
+    .back-top,
+    .sidebar,
+    .container,
+    .site-intro-meta,
+    .toc-wrapper {
+        display: none;
+    }
+
+    .site-intro {
+        position: relative;
+        z-index: 3;
+        width: 100%;
+        /* height: 50vh; */
+        overflow: hidden;
+    }
+
+    .site-intro-placeholder {
+        position: absolute;
+        z-index: -2;
+        top: 0;
+        left: 0;
+        width: calc(100% + 300px);
+        height: 100%;
+        background: repeating-linear-gradient(-45deg, #444 0, #444 80px, #333 80px, #333 160px);
+        background-position: center center;
+        transform: translate3d(-226px, 0, 0);
+        animation: gradient-move 2.5s ease-out 0s 1;
+    }
+
+    @keyframes gradient-move {
+        0% {
+            transform: translate3d(-226px, 0, 0);
+        }
+        100% {
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+</style>
+
+    <link rel="preload" href= /css/style.css?v=20180721 as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="stylesheet" href= /css/mobile.css?v=20180721 media="(max-width: 980px)">
+    
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    
+    <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
+/* This file is meant as a standalone workflow for
+- testing support for link[rel=preload]
+- enabling async CSS loading in browsers that do not support rel=preload
+- applying rel preload css once loaded, whether supported or not.
+*/ -->
+<script>
+(function( w ){
+	"use strict";
+	// rel=preload support test
+	if( !w.loadCSS ){
+		w.loadCSS = function(){};
+	}
+	// define on the loadCSS obj
+	var rp = loadCSS.relpreload = {};
+	// rel=preload feature support test
+	// runs once and returns a function for compat purposes
+	rp.support = (function(){
+		var ret;
+		try {
+			ret = w.document.createElement( "link" ).relList.supports( "preload" );
+		} catch (e) {
+			ret = false;
+		}
+		return function(){
+			return ret;
+		};
+	})();
+
+	// if preload isn't supported, get an asynchronous load by using a non-matching media attribute
+	// then change that media back to its intended value on load
+	rp.bindMediaToggle = function( link ){
+		// remember existing media attr for ultimate state, or default to 'all'
+		var finalMedia = link.media || "all";
+
+		function enableStylesheet(){
+			link.media = finalMedia;
+		}
+
+		// bind load handlers to enable media
+		if( link.addEventListener ){
+			link.addEventListener( "load", enableStylesheet );
+		} else if( link.attachEvent ){
+			link.attachEvent( "onload", enableStylesheet );
+		}
+
+		// Set rel and non-applicable media type to start an async request
+		// note: timeout allows this to happen async to let rendering continue in IE
+		setTimeout(function(){
+			link.rel = "stylesheet";
+			link.media = "only x";
+		});
+		// also enable media after 3 seconds,
+		// which will catch very old browsers (android 2.x, old firefox) that don't support onload on link
+		setTimeout( enableStylesheet, 3000 );
+	};
+
+	// loop through link elements in DOM
+	rp.poly = function(){
+		// double check this to prevent external calls from running
+		if( rp.support() ){
+			return;
+		}
+		var links = w.document.getElementsByTagName( "link" );
+		for( var i = 0; i < links.length; i++ ){
+			var link = links[ i ];
+			// qualify links to those with rel=preload and as=style attrs
+			if( link.rel === "preload" && link.getAttribute( "as" ) === "style" && !link.getAttribute( "data-loadcss" ) ){
+				// prevent rerunning on link
+				link.setAttribute( "data-loadcss", true );
+				// bind listeners to toggle media back
+				rp.bindMediaToggle( link );
+			}
+		}
+	};
+
+	// if unsupported, run the polyfill
+	if( !rp.support() ){
+		// run once at least
+		rp.poly();
+
+		// rerun poly on an interval until onload
+		var run = w.setInterval( rp.poly, 500 );
+		if( w.addEventListener ){
+			w.addEventListener( "load", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		} else if( w.attachEvent ){
+			w.attachEvent( "onload", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		}
+	}
+
+
+	// commonjs
+	if( typeof exports !== "undefined" ){
+		exports.loadCSS = loadCSS;
+	}
+	else {
+		w.loadCSS = loadCSS;
+	}
+}( typeof global !== "undefined" ? global : this ) );
+</script>
+
+    <link rel="icon" href= "/assets/favicon.ico" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js" as="script" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" as="script" />
+    <link rel="preload" href="/scripts/main.js" as="script" />
+    <link rel="preload" as="font" href="/font/Oswald-Regular.ttf" crossorigin>
+    <link rel="preload" as="font" href="https://at.alicdn.com/t/font_327081_1dta1rlogw17zaor.woff" crossorigin>
+    
+        <!-- algolia -->
+        <script>
+            
+            var hits = JSON.parse('{"per_page":10}')
+            var labels = JSON.parse('{"input_placeholder":"Search for Posts","hits_empty":"We did not find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}')
+
+            var algolia = {
+                applicationID: 'K0XKT0INON',
+                apiKey: 'cc8e96eb9aa249bbd7662f7f8f7d70ca',
+                indexName: 'blog',
+                hits: hits,
+                labels: labels
+            }
+        </script>
+    
+    <!-- fancybox -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.js" defer></script>
+    <!-- 百度统计  -->
+    
+    <!-- 谷歌统计  -->
+    
+</head>
+
+    
+        <body class="post-body">
+    
+    
+<header class="header">
+
+    <div class="read-progress"></div>
+    <div class="header-sidebar-menu">&#xe775;</div>
+    <!-- post页的toggle banner  -->
+    
+    <div class="banner">
+            <div class="blog-title">
+                <a href="/" >Lucifaer&#39;s Blog.</a>
+            </div>
+            <div class="post-title">
+                <a href="#" class="post-name">Joomla 框架的简单跟进</a>
+            </div>
+    </div>
+    
+    <a class="home-link" href=/>Lucifaer's Blog.</a>
+</header>
+    <div class="wrapper">
+        <div class="site-intro" style=
+
+
+
+
+
+
+
+
+height:50vh;
+
+>
+    
+    <!-- 主页  -->
+    
+    
+    <!-- 404页  -->
+            
+    <div class="site-intro-placeholder"></div>
+    <div class="site-intro-img" style="background-image: url(/intro/post-bg.jpg)"></div>
+    <div class="site-intro-meta">
+        <!-- 标题  -->
+        <h1 class="intro-title">
+            <!-- 主页  -->
+            
+            Joomla 框架的简单跟进
+            <!-- 404 -->
+            
+        </h1>
+        <!-- 副标题 -->
+        <p class="intro-subtitle">
+            <!-- 主页副标题  -->
+            
+            
+            <!-- 404 -->
+            
+        </p>
+        <!-- 文章页meta -->
+        
+            <div class="post-intros">
+                <!-- 文章页标签  -->
+                
+                    <div class= post-intro-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "安全研究">安全研究</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "Joomla">Joomla</a>
+    
+</div>
+                
+                
+                    <div class="post-intro-read">
+                        <span>Word count: <span class="post-count">3,655</span> / Reading time: <span class="post-count">14 min</span></span>
+                    </div>
+                
+                <div class="post-intro-meta">
+                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
+                    <span class="post-intro-time">2017/05/27</span>
+                    
+                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
+                        <span class="iconfont-archer">&#xe602;</span>
+                        <span id="busuanzi_value_page_pv"></span>
+                    </span>
+                    
+                    <span class="shareWrapper">
+                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
+                        <span class="shareText">Share</span>
+                        <ul class="shareList">
+                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
+                                <div class="share-qrcode"></div>
+                            </li>
+                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
+                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
+                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
+                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
+                        </ul>
+                    </span>
+                </div>
+            </div>
+        
+    </div>
+</div>
+        <script>
+ 
+  // get user agent
+  var browser = {
+    versions: function () {
+      var u = window.navigator.userAgent;
+      return {
+        userAgent: u,
+        trident: u.indexOf('Trident') > -1, //IE内核
+        presto: u.indexOf('Presto') > -1, //opera内核
+        webKit: u.indexOf('AppleWebKit') > -1, //苹果、谷歌内核
+        gecko: u.indexOf('Gecko') > -1 && u.indexOf('KHTML') == -1, //火狐内核
+        mobile: !!u.match(/AppleWebKit.*Mobile.*/), //是否为移动终端
+        ios: !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/), //ios终端
+        android: u.indexOf('Android') > -1 || u.indexOf('Linux') > -1, //android终端或者uc浏览器
+        iPhone: u.indexOf('iPhone') > -1 || u.indexOf('Mac') > -1, //是否为iPhone或者安卓QQ浏览器
+        iPad: u.indexOf('iPad') > -1, //是否为iPad
+        webApp: u.indexOf('Safari') == -1, //是否为web应用程序，没有头部与底部
+        weixin: u.indexOf('MicroMessenger') == -1, //是否为微信浏览器
+        uc: u.indexOf('UCBrowser') > -1 //是否为android下的UC浏览器
+      };
+    }()
+  }
+  console.log("userAgent:" + browser.versions.userAgent);
+
+  // callback
+  function fontLoaded() {
+    console.log('font loaded');
+    if (document.getElementsByClassName('site-intro-meta')) {
+      document.getElementsByClassName('intro-title')[0].classList.add('intro-fade-in');
+      document.getElementsByClassName('intro-subtitle')[0].classList.add('intro-fade-in');
+      var postIntros = document.getElementsByClassName('post-intros')[0]
+      if (postIntros) {
+        postIntros.classList.add('post-fade-in');
+      }
+    }
+  }
+
+  // UC不支持跨域，所以直接显示
+  function asyncCb(){
+    if (browser.versions.uc) {
+      console.log("UCBrowser");
+      fontLoaded();
+    } else {
+      WebFont.load({
+        custom: {
+          families: ['Oswald-Regular']
+        },
+        loading: function () {  //所有字体开始加载
+          // console.log('loading');
+        },
+        active: function () {  //所有字体已渲染
+          fontLoaded();
+        },
+        inactive: function () { //字体预加载失败，无效字体或浏览器不支持加载
+          console.log('inactive: timeout');
+          fontLoaded();
+        },
+        timeout: 5000 // Set the timeout to two seconds
+      });
+    }
+  }
+
+  function asyncErr(){
+    console.warn('script load from CDN failed, will load local script')
+  }
+
+  // load webfont-loader async, and add callback function
+  function async(u, cb, err) {
+    var d = document, t = 'script',
+      o = d.createElement(t),
+      s = d.getElementsByTagName(t)[0];
+    o.src = u;
+    if (cb) { o.addEventListener('load', function (e) { cb(null, e); }, false); }
+    if (err) { o.addEventListener('error', function (e) { err(null, e); }, false); }
+    s.parentNode.insertBefore(o, s);
+  }
+
+  var asyncLoadWithFallBack = function(arr, success, reject) {
+      var currReject = function(){
+        reject()
+        arr.shift()
+        if(arr.length)
+          async(arr[0], success, currReject)
+        }
+
+      async(arr[0], success, currReject)
+  }
+
+  asyncLoadWithFallBack([
+    "https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js", 
+    "https://cdn.bootcss.com/webfont/1.6.28/webfontloader.js",
+    "/lib/webfontloader.min.js"
+  ], asyncCb, asyncErr)
+</script>        
+        <img class="loading" src="/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
+        <div class="container container-unloaded">
+            <main class="main post-page">
+    <article class="article-entry">
+        <p>最近爆出的Joomla!3.7.0 Core SQL注入漏洞，在分析的时候难免会接触到一些框架本身调用的问题。本着知根知底的想法，我开始了对Joomla框架的简单跟进。</p>
+<p>PS：本人小菜一个，本篇很大程度上是基于本人对代码的跟踪、总结而写的，可能有很多地方不是很准确，希望大牛们勿喷，多给予一些分享。</p>
+<a id="more"></a>
+<h1 id="0x00-文件目录介绍"><a href="#0x00-文件目录介绍" class="headerlink" title="0x00 文件目录介绍"></a>0x00 文件目录介绍</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"># 目录</span><br><span class="line">administrator/   # 管理后台目录</span><br><span class="line">bin/             # 该文件夹存放一些基于Joomla框架开发的一些实用的脚本</span><br><span class="line">cache/           # 文件缓存目录</span><br><span class="line">cli/             # 该文件夹存放一些终端使用的命令，用于操作当前的站点</span><br><span class="line">components/      # Joomla组件目录</span><br><span class="line">images/          # 网站内容使用的媒体文件目录，后台有对此文件夹进行管理的功能</span><br><span class="line">includes/        # 运行Joomla需要包含的基础文件</span><br><span class="line">language/        # 语言目录，多语言的翻译都存放在这里</span><br><span class="line">layouts/         # 应该是控制布局的，没有注意过是哪个版本加上的，也没研究过，等有时间了研究一下再写</span><br><span class="line">libraries/       # Joomla使用的库文件</span><br><span class="line">logs/            # 日志目录，一些异常处理都会存放在这个文件夹里，例如后台登录时输入错误的用户名和密码</span><br><span class="line">media/           # Joomla使用到的媒体文件，主要是页面渲染会用到的，存放的内容跟images目录有区别，而且后台是没有对其进行管理的功能的</span><br><span class="line">modules/         # Joomla模块目录</span><br><span class="line">plugins/         # Joomla插件目录</span><br><span class="line">templates/       # Joomla站点模板目录</span><br><span class="line">tmp/             # 临时目录，如安装组件或模块时残留的解压文件等</span><br><span class="line"> </span><br><span class="line"># 文件</span><br><span class="line">configuration.php   # Joomla配置文件</span><br><span class="line">htaccess.txt        # 帮助我们生成.htaccess</span><br><span class="line">index.php           # Joomla单入口文件</span><br><span class="line">LICENSE.txt         # 不多叙述</span><br><span class="line">README.txt          # 不多叙述</span><br><span class="line">robots.txt          # 搜索引擎爬行使用的文件</span><br><span class="line">web.config.txt      # 据说是IIS使用的文件</span><br></pre></td></tr></table></figure>
+<h1 id="0x01-Joomla的MVC"><a href="#0x01-Joomla的MVC" class="headerlink" title="0x01 Joomla的MVC"></a>0x01 Joomla的MVC</h1><p>在Joomla中并不像国内的一些cms一样，主要功能的实现放在组件中，下面就说一说Joomla中的四个非常重要的东西：组件、模块、控制器、视图。</p>
+<h2 id="1-组件"><a href="#1-组件" class="headerlink" title="1. 组件"></a>1. 组件</h2><p>在Joomla中，组件可以说是最大的功能模块。一个组件分为两部分：前台和后台。后台主要用于对对应内容的管理，前台主要用于前台页面的呈现和响应各种操作。其文件目录分别对应于<code>joomla/administrator/components</code>和<code>joomla/components</code>。组件有自己的命名规则，文件夹名须命名为<code>com_组件名</code>，组件的访问也是单文件入口，入口文件为<code>com_组件名/组件名.php</code>。如<code>components/com_content/content.php</code>。</p>
+<p>以<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">其中`option=com_content&amp;view=article&amp;id=7`，它会先调用`content.php`，再由`router.php`路由到`article`视图，再调用相应的Model层取出ID=7的分类信息，渲染之后呈现在模板中的`jdoc:include type=”component`位置上。</span><br><span class="line"></span><br><span class="line">## 2. 模块</span><br><span class="line"></span><br><span class="line">与组件（Component）不同的是，模块（Module）是不能通过URL直接访问的，而是通过后台对模块的设置，根据菜单ID（URL中的Itemid）来判断当前页面应该加载哪些模块。所以它主要用于显示内容，而一些表单提交后的处理动作一般是放在组件中去处理的。因此，模块通常都是比较简单的程序，文件结构也很清晰易懂，如modules/mod_login模块中的文件结构如下：</span><br></pre></td></tr></table></figure></p>
+<p>mod_login.xml            # 模块配置及安装使用的文件<br>mod_login.php            # 模块入口文件，以mod_模块名.php命名，可以看作Controller层<br>helper.php               # 辅助文件，通常数据操作会放在这里，可以看作Model层<br>tmpl/                    # 模p板文件夹，View层<br>|_ default.php           # 默认模板<br>|_ default_logout.php    # 退出登录模板<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">### 2.1 模块调用的另外一个参数</span><br><span class="line"></span><br><span class="line">在模板的首页文件中，我们会看到调用模块时有如下代码</span><br><span class="line"></span><br><span class="line">```php</span><br><span class="line">jdoc:include type=&quot;modules&quot; name=&quot;position-7&quot; style=&quot;well&quot;</span><br></pre></td></tr></table></figure></p>
+<p>这里多了一个style参数，这个其实是一个显示前的预处理动作，在当前模板文件夹中的html/modules.php中定义，打开这个文件我们就能看到有一个modChrome_well的函数，程序不是很复杂，只是在显示前对html做了下预处理。</p>
+<h3 id="2-2-模块的另外一种调用方法"><a href="#2-2-模块的另外一种调用方法" class="headerlink" title="2.2 模块的另外一种调用方法"></a>2.2 模块的另外一种调用方法</h3><p>有时候会需要在程序里调用一个模块来显示，可以用以下程序来调用</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 该程序会显示所有设置在position位置上的模块，当然也会根据菜单ID来判断是否加载</span></span><br><span class="line">$modules = &amp;amp; JModuleHelper::getModules(<span class="string">'position'</span>);</span><br><span class="line"><span class="keyword">foreach</span>($modules <span class="keyword">as</span> $module)&#123;</span><br><span class="line">	<span class="keyword">echo</span> JModuleHelper::renderModule($module, <span class="keyword">array</span>(<span class="string">'style'</span> = <span class="string">'well'</span>))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="3-模板"><a href="#3-模板" class="headerlink" title="3.模板"></a>3.模板</h2><p> 个人理解，模板就相当于输出的一种格式。也就是在后端已经调用了相关的数据，准备在前端以什么样的格式输出。</p>
+<p> 在Joomla中，一个页面只能有一个主要内容（组件：component），其他均属于模块。如图：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045892298827.jpg" alt=""></p>
+<p>如果从代码来分析的话，打开index.php（组件下的index.php），除了简单的HTML和php外，还可以看到以下几类语句：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">jdoc:<span class="keyword">include</span> type=<span class="string">"head"</span></span><br><span class="line">jdoc:<span class="keyword">include</span> type=<span class="string">"modules"</span> name=<span class="string">"position-1"</span> style=<span class="string">"none"</span></span><br><span class="line">jdoc:<span class="keyword">include</span> type=<span class="string">"message"</span></span><br><span class="line">jdoc:<span class="keyword">include</span> type=<span class="string">"component"</span></span><br></pre></td></tr></table></figure>
+<p>这些是Joomla引入内容的方式，Joomla模板引擎会解析这些语句，抓取对应的内容渲染到模板中，组成一个页面。type指明要包含的内容的类型：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">head        <span class="comment"># 页面头文件（包括css/javascript/meta标签），注意这里不是指网站内容的头部</span></span><br><span class="line">modules     <span class="comment"># 模块</span></span><br><span class="line">message     <span class="comment"># 提示消息</span></span><br><span class="line">component   <span class="comment"># 组件</span></span><br></pre></td></tr></table></figure>
+<p>从代码中也可以看出，页面里只有一个component，同时有许多个modules。事实上message也是一个module，只是是一个比较特殊的module。</p>
+<p>以<code>http://127.0.0.1:9999/index.php?option=com_content&amp;view=article&amp;id=7:article-en-gb&amp;catid=10&amp;lang=en&amp;Itemid=116</code>为例从URL来分析模板内容的话，可以清晰的看出：在Joomla的URL中，重要的信息通常包含两部分：组件信息、菜单ID：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">option=com_content  # 该页面内要使用的组件，后台对应到Components中，文件使用JOOMLAROOT components中的文件</span><br><span class="line">view=article       # 组件内要使用的view</span><br><span class="line">id=7               # view对应的ID</span><br><span class="line">Itemid=116          # 该页面对应的菜单ID</span><br></pre></td></tr></table></figure>
+<p>所以上面URL的意思就是告诉Joomla：当前页面是要显示一个文章分类页面，分类ID是7，对应的菜单ID是116。</p>
+<p>最后附一张图，帮助理解：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045892469548.jpg" alt=""></p>
+<h1 id="0x02-整体大致运行流程"><a href="#0x02-整体大致运行流程" class="headerlink" title="0x02 整体大致运行流程"></a>0x02 整体大致运行流程</h1><h2 id="1-框架核心代码的初始化"><a href="#1-框架核心代码的初始化" class="headerlink" title="1. 框架核心代码的初始化"></a>1. 框架核心代码的初始化</h2><ul>
+<li><code>/includes/defines.php</code>定义各个功能模块的目录</li>
+<li><p><code>/includes/framework.php</code>整个框架调度的核心代码与cms运行的核心代码，框架初始化的入口。</p>
+<ul>
+<li><p><code>/libraries/import.legacy.php</code>开启自动加载类，并向注册队列注册cms核心类。</p>
+<p>  调用了<code>JLoader</code>中的setup方法；<code>spl_autoload_register</code>使其进行类的初始定义。</p>
+<blockquote>
+<p><code>spl_autoload_register()</code>是PHP自带的系统函数，其主要完成的功能就是注册给定的函数作为<code>__autoload</code>的实现。即将函数注册到<code>SPL__autoload</code>函数队列中。如果该队列尚未激活，则激活它们。</p>
+</blockquote>
+<ul>
+<li><code>/libraries/loader.php</code>定义了<code>JLoader</code>实现类的注册，加载，相关文件的包含等操作。</li>
+<li>其中<code>load</code>方法从注册队列中寻找需要被自动加载的类，并包含该注册队列的值。</li>
+<li><code>_autoload</code>方法从注册队列中的<code>prefixes</code>的<code>J</code>中选取需要加载的类目录的前缀。<code>[0]=&gt;/joomla/libraries/joomla</code>，<code>[1]=&gt;/joomla/libraries/legacy</code></li>
+<li><code>_load</code>方法完成了绝对路径的拼接，及相关文件的包含</li>
+</ul>
+</li>
+<li><p><code>/cms.php</code>将<code>PHP Composer</code>生成的加载器<code>autoload_static.php</code>、<code>/autoload_namespaces.php</code>、<code>/autoload_psr4.php</code>、<code>/autoload_classmap.php</code>中的内容全部导入一个<code>$loader</code>的数组，之后将该数组中的前缀及所有类，注册到注册队列中，以方便使用。而这些类，都是针对于cms本身的操作的。接着开始设置异常处理以及一个消息处理器（日志）。最后，将一些注册类的名字规范为<code>autoloader</code>的规则。</p>
+</li>
+<li><p><code>configuration.php</code>配置项</p>
+</li>
+<li><p>之后设置报错的格式</p>
+<p>  最终的注册队列：</p>
+<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045892657574.png" alt=""></p>
+<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045892765399.png" alt=""></p>
+<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045892951347.png" alt=""></p>
+<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045893053364.png" alt=""></p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="2-设置分析器，记下使用方法并在分析器后加标记对应代码"><a href="#2-设置分析器，记下使用方法并在分析器后加标记对应代码" class="headerlink" title="2. 设置分析器，记下使用方法并在分析器后加标记对应代码"></a>2. 设置分析器，记下使用方法并在分析器后加标记对应代码</h2><p>对应代码：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">JDEBUG ? JProfiler::getInstance(<span class="string">'Application'</span>)-&gt;setStart($startTime, $startMem)-&gt;mark(<span class="string">'afterLoad'</span>) : <span class="keyword">null</span>;</span><br></pre></td></tr></table></figure>
+<h2 id="3-实例化应用程序"><a href="#3-实例化应用程序" class="headerlink" title="3. 实例化应用程序"></a>3. 实例化应用程序</h2><p>对应代码：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$app = JFactory::getApplication(<span class="string">'site'</span>);</span><br></pre></td></tr></table></figure>
+<p>在这边可能会有疑问，为什么会直接实例化一个之前没有引入的类（同样也没有包含相应的文件）。</p>
+<p>还记得我们之前看到过的自动加载类么，在这里，我们首先发现没有在<code>classmap</code>中寻找到，之后在<code>/libraries</code>目录，以<code>/libraries/cms/</code>目录为查找目录，在该目录查找是否存在<code>factory.php</code>文件，若找到，则将该文件包含进来。</p>
+<p>在<code>factory.php</code>中，会首先检查我们是否已经创建了一个<code>JApplicationCms</code>对象，如果未创建该对象，则创建该对象。最后创建为<code>JApplicationSite</code>，并将这个对象实例化（对象位于<code>/libraries/cms/application/site.php</code>）。</p>
+<p>在该文件中，首先注册了<code>application</code>（这边是site）的名称与ID，之后执行父构造函数和“祖父“构造函数。</p>
+<p>为了清晰的说明Joomla web应用的实例化过程，我们列一个树状图来看</p>
+<p>|-web.php   “祖父”<br>|–cms.php  父<br>|—site.php    子 </p>
+<blockquote>
+<p>web.php<br>完成了应用的最基础功能，包括：</p>
+<ol>
+<li>返回对全局JApplicationWeb对象的引用，仅在不存在的情况下创建它</li>
+<li>初始化应用程序</li>
+<li>运行应用程序</li>
+<li>对模板的渲染（文档缓冲区推入模板的过程占位符，从文档中检索数据并将其推入应用程序响应缓冲区。）</li>
+<li>检查浏览器的接受编码，并尽可能的将发送给客户端的数据进行压缩。</li>
+<li>将应用程序响应发送给客户端</li>
+<li>URL的重定向</li>
+<li>应用程序配置对象的加载</li>
+<li>设置/获取响应的可缓存状态</li>
+<li>设置响应头的获取、发送与设置等基本功能</li>
+</ol>
+</blockquote>
+<p>首先在<code>web.php</code>中实例化了<code>JInput</code>对象。并将config指向<code>Joomla\Registry\Registry</code>。接着，创建了一个应用程序程序的网络客户端，用于进行网络请求的操作。同时将已经指向的config导入，设置执行时间，初始化请求对象，并配置系统的URIs。</p>
+<p>在<code>cms.php</code>中实例化了调度器，主要完成对于组件及模块的调度。并对session进行设置和初始化。</p>
+<p>完成了以上所有的配置后，将已经配置完毕的应用对象返回到<code>/joomla/libraries/joomla/factory.php</code>中。完成应用对象的初始化。</p>
+<h2 id="4-执行应用"><a href="#4-执行应用" class="headerlink" title="4. 执行应用"></a>4. 执行应用</h2><p>调用web.php中的<code>execute()</code>方法完成应用的执行。</p>
+<h1 id="0x03-说一下我们的关心的路由问题"><a href="#0x03-说一下我们的关心的路由问题" class="headerlink" title="0x03 说一下我们的关心的路由问题"></a>0x03 说一下我们的关心的路由问题</h1><p>那么，我们的路由在框架中到底是怎样解析的呢？</p>
+<p>其实在跟实例化应用的时候，当执行<code>/joomla/libraries/joomla/application/web.php</code>构造函数时，我们就可以看到Joomla对于URI的处理了：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">$this</span>-&gt;loadSystemUris();</span><br></pre></td></tr></table></figure>
+<p>跟进看一下<code>loadSystemUris</code>方法，不难看到这一句：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045893232898.png" alt=""></p>
+<p>跟进<code>detectRequestUri</code>，发现首先判断了URI是否是http还是https，之后看到这句：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (!<span class="keyword">empty</span>($_SERVER[<span class="string">'PHP_SELF'</span>]) &amp;&amp; !<span class="keyword">empty</span>($_SERVER[<span class="string">'REQUEST_URI'</span>]))</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="comment">// The URI is built from the HTTP_HOST and REQUEST_URI environment variables in an Apache environment.</span></span><br><span class="line">			$uri = $scheme . $_SERVER[<span class="string">'HTTP_HOST'</span>] . $_SERVER[<span class="string">'REQUEST_URI'</span>];</span><br><span class="line">		&#125;</span><br></pre></td></tr></table></figure>
+<p>就是在这里将<code>$_SERVER[&#39;REQUEST_URI&#39;]</code>中的相对路径与<code>$scheme . $_SERVER[&#39;HTTP_HOST&#39;]</code>拼接成了完整的URI：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045893426980.png" alt=""><br><img src="http://139.129.31.35/usr/uploads/2017/05/475182260.png" alt="ur"></p>
+<p>完成了完整路径获取后，开始修改对象的属性，将新获得的request.uri添加进入配置列表中：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045893504687.png" alt=""><br><img src="http://139.129.31.35/usr/uploads/2017/05/1509964390.png" alt="ur"></p>
+<p>下一步，就是遍历配置列表，查看是否已经设置了显示URI，在配置列表中键值为<code>site_uri</code>。显然我们现在并没有设置该选项：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045893579514.png" alt=""></p>
+<p>之后完成的操作就是要设置该显示URI。我们继续跟进一下：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045893734916.png" alt=""></p>
+<p>跟进到<code>joomla/libraries/vendor/joomla/uri/src/UriHelper.php</code>的时候，我们稍停一下，看到进入了<code>parse_url</code>方法中。在这个方法中，首先对传入的URL进行了双重过滤，之后利用PHP自带方法<code>parse_url</code>，对URL进行了分割处理并保存到一个数组中，接着返回该数组：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045893830962.png" alt=""></p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045893931299.png" alt=""></p>
+<p>最后的处理结果为：</p>
+<p><code>option=com_content&amp;view=article&amp;id=7:article-en-gb&amp;catid=10&amp;lang=en&amp;Itemid=116</code></p>
+<p>处理完我们的显示URL后，在调用<code>joomla/libraries/cms/application/cms.php</code>中的<code>execute</code>方法时，在调用<code>doExecute</code>方法的时候，会使用<code>joomla/libraries/cms/application/site.php</code>文件中的<code>route</code>方法，这个方法将路由到我们application中。</p>
+<p>在<code>joomla/libraries/cms/application/cms.php</code>中的<code>route</code>方法中，我们首先获取了全部的request URI，之后在<code>getRouter</code>方法中初始化并实例化了<code>joomla/libraries/cms/router/router.php</code>中的<code>JRouter</code>类，该类完成了对我们路由参数的识别与划分：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045894036447.png" alt=""></p>
+<p>最后在<code>joomla/libraries/cms/router/site.php</code>中的<code>parse</code>方法中完成了相关组件的路由：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045894146895.png" alt=""></p>
+<p>可以明显的看到，在</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$component = <span class="keyword">$this</span>-&gt;JComponentHelper::getComponents()</span><br></pre></td></tr></table></figure>
+<p>后，<code>$component</code>的值：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045894256014.jpg" alt=""></p>
+<p>对比<code>components/</code>目录下的组件，发现已经将所有的组件遍历，并保存在数组中。</p>
+<p>接着遍历该数组，对每个组件设置本地路由，并包含响应的文件，从而完成路由控制。</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045894330060.png" alt=""></p>
+<h1 id="0x04-总结一下"><a href="#0x04-总结一下" class="headerlink" title="0x04 总结一下"></a>0x04 总结一下</h1><p>Joomla整体的运行思路可以简单的归结为一下几点：</p>
+<ol>
+<li><p>框架核心代码的初始化：</p>
+<p> 关键是初始化了类自动加载器与消息处理器，并完成了配置文件的配置与导入。<br> 完成了这一步，就可以通过类的自动加载器来实现核心类的查找与调用。自动加载器成为了cms的一个工具。</p>
+</li>
+<li><p>实例化应用程序：</p>
+<p> 这一步可以简单的理解为对Joomla接下来要提供的web服务的预加，与定义。</p>
+</li>
+<li><p>应用的执行：</p>
+<p> 这一步基于上面两步的准备，将执行应用。从代码上来看可以容易的总结出来一个规律：</p>
+<ul>
+<li>预加载“执行之前需要做的事件”</li>
+<li>执行应用</li>
+<li><p>执行“执行之后要做的事件”</p>
+<p>基本上都是以这样的形式来完成调用以及运行的。</p>
+</li>
+</ul>
+</li>
+</ol>
+<p>以上都是小菜个人看法，可能有不准确或者非常模糊的地方，希望大牛们多给建议…<br>QAQ…</p>
+
+    </article>
+    <!-- license  -->
+    
+        <div class="license-wrapper">
+            <p>原文作者: <a href="https://lucifaer.com">Lucifaer</a>
+            <p>原文链接: <a href="https://lucifaer.com/2017/05/27/Joomla 框架的简单跟进/">https://lucifaer.com/2017/05/27/Joomla 框架的简单跟进/</a>
+            <p>发表日期: <a href="https://lucifaer.com/2017/05/27/Joomla 框架的简单跟进/">May 27th 2017, 10:03:00 am</a>
+            <p>版权声明: 本文采用<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可</p>
+        </div>
+    
+    <!-- paginator  -->
+    <ul class="post-paginator">
+        <li class="next">
+            
+                <div class="nextSlogan">Next Post</div>
+                <a href= "/2017/07/19/PHP反序列化漏洞/" title= PHP反序列化漏洞 >
+                    <div class="nextTitle">PHP反序列化漏洞</div>
+                </a>
+            
+        </li>
+        <li class="previous">
+            
+                <div class="prevSlogan">Previous Post</div>
+                <a href= "/2017/05/09/五指CMS任意文件下载漏洞/" title= 五指CMS任意文件下载漏洞 >
+                    <div class="prevTitle">五指CMS任意文件下载漏洞</div>
+                </a>
+            
+        </li>
+    </ul>
+    <!-- 评论插件 -->
+    <!-- 来必力City版安装代码 -->
+
+    <div id="lv-container" data-id="city" data-uid= MTAyMC8zODcyOC8xNTI1Ng==>
+        <script type="text/javascript">
+            (function(d, s) {
+                var j, e = d.getElementsByTagName(s)[0];
+         
+                if (typeof LivereTower === 'function') { return; }
+         
+                j = d.createElement(s);
+                j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+                j.async = true;
+         
+                e.parentNode.insertBefore(j, e);
+            })(document, 'script');
+             </script>
+         <noscript> 为正常使用来必力评论功能请激活JavaScript</noscript>
+    </div>
+
+<!-- City版安装代码已完成 -->
+    
+    
+    <!--PC和WAP自适应版-->
+
+    <!--PC版-->
+
+
+    
+    
+
+    <!-- 评论 -->
+</main>
+            <!-- profile -->
+            
+        </div>
+        <footer class="footer footer-unloaded">
+    <!-- social  -->
+    
+    <div class="social">
+        
+    
+        
+            
+                <a href="mailto:l.lucifaer@gmail.com" class="iconfont-archer email" title=email ></a>
+            
+        
+    
+        
+            
+                <a href="//github.com/Lucifaer" class="iconfont-archer github" target="_blank" title=github></a>
+            
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="//weibo.com/5838222069" class="iconfont-archer weibo" target="_blank" title=weibo></a>
+            
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="/atom.xml" class="iconfont-archer rss" target="_blank" title=rss></a>
+            
+        
+    
+
+    </div>
+    
+    <!-- powered by Hexo  -->
+    <div class="copyright">
+        <span id="hexo-power">Powered by <a href="https://hexo.io/" target="_blank">Hexo</a></span><span class="iconfont-archer power">&#xe635;</span><span id="theme-info">theme <a href="https://github.com/fi3ework/hexo-theme-archer" target="_blank">Archer</a></span>
+    </div>
+    <!-- 不蒜子  -->
+    
+    <div class="busuanzi-container">
+    
+     
+    <span id="busuanzi_container_site_pv">PV: <span id="busuanzi_value_site_pv"></span> :)</span>
+    
+    </div>
+    
+</footer>
+    </div>
+    <!-- toc -->
+    
+    <div class="toc-wrapper" style=
+    
+
+
+
+
+
+
+
+top:50vh;
+
+    >
+        <div class="toc-catalog">
+            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
+        </div>
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#0x00-文件目录介绍"><span class="toc-number">1.</span> <span class="toc-text">0x00 文件目录介绍</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-Joomla的MVC"><span class="toc-number">2.</span> <span class="toc-text">0x01 Joomla的MVC</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-组件"><span class="toc-number">2.1.</span> <span class="toc-text">1. 组件</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-模块的另外一种调用方法"><span class="toc-number">2.1.1.</span> <span class="toc-text">2.2 模块的另外一种调用方法</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-模板"><span class="toc-number">2.2.</span> <span class="toc-text">3.模板</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-整体大致运行流程"><span class="toc-number">3.</span> <span class="toc-text">0x02 整体大致运行流程</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-框架核心代码的初始化"><span class="toc-number">3.1.</span> <span class="toc-text">1. 框架核心代码的初始化</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-设置分析器，记下使用方法并在分析器后加标记对应代码"><span class="toc-number">3.2.</span> <span class="toc-text">2. 设置分析器，记下使用方法并在分析器后加标记对应代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-实例化应用程序"><span class="toc-number">3.3.</span> <span class="toc-text">3. 实例化应用程序</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-执行应用"><span class="toc-number">3.4.</span> <span class="toc-text">4. 执行应用</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-说一下我们的关心的路由问题"><span class="toc-number">4.</span> <span class="toc-text">0x03 说一下我们的关心的路由问题</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x04-总结一下"><span class="toc-number">5.</span> <span class="toc-text">0x04 总结一下</span></a></li></ol>
+    </div>
+    
+    <div class="back-top iconfont-archer">&#xe639;</div>
+    <div class="sidebar sidebar-hide">
+    <ul class="sidebar-tabs sidebar-tabs-active-0">
+        <li class="sidebar-tab-archives"><span class="iconfont-archer">&#xe67d;</span><span class="tab-name">Archive</span></li>
+        <li class="sidebar-tab-tags"><span class="iconfont-archer">&#xe61b;</span><span class="tab-name">Tag</span></li>
+        <li class="sidebar-tab-categories"><span class="iconfont-archer">&#xe666;</span><span class="tab-name">Cate</span></li>
+    </ul>
+    <div class="sidebar-content sidebar-content-show-archive">
+          <div class="sidebar-panel-archives">
+    <!-- 在ejs中将archive按照时间排序 -->
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <div class="total-and-search">
+        <div class="total-archive">
+        Total : 18
+        </div>
+        <!-- search  -->
+        
+            <div class="site-search popup-trigger">
+                <span class="iconfont-archer search-icon">&#xe627;</span>
+            </div>
+        
+    </div>
+    
+    <div class="post-archive">
+    
+    
+    
+    
+    <div class="archive-year"> 2018 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/19</span><a class="archive-post-title" href= "/2018/07/19/薅羊毛产业链分析/" >薅羊毛产业链分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/以太坊简介/" >以太坊简介</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/比特币简介/" >比特币简介</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/区块链补充/" >区块链补充</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/区块链基础概念/" >区块链基础概念</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">03/02</span><a class="archive-post-title" href= "/2018/03/02/部署Django/" >部署Django</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/28</span><a class="archive-post-title" href= "/2018/02/28/Git Hooks实现项目的自动部署/" >Git Hooks实现项目的自动部署</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2017 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/09</span><a class="archive-post-title" href= "/2017/10/09/XDCTF Upload 引发出来的一个新思路/" >XDCTF Upload 引发出来的一个新思路</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/20</span><a class="archive-post-title" href= "/2017/07/20/Blackhat SEO/" >Blackhat SEO</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/19</span><a class="archive-post-title" href= "/2017/07/19/PHP反序列化漏洞/" >PHP反序列化漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/27</span><a class="archive-post-title" href= "/2017/05/27/Joomla 框架的简单跟进/" >Joomla 框架的简单跟进</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/09</span><a class="archive-post-title" href= "/2017/05/09/五指CMS任意文件下载漏洞/" >五指CMS任意文件下载漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">04/13</span><a class="archive-post-title" href= "/2017/04/13/Phpcms V9.6.0任意文件写入getshell/" >Phpcms V9.6.0任意文件写入getshell</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/06</span><a class="archive-post-title" href= "/2017/02/06/WordPress REST API 内容注入/" >WordPress REST API 内容注入</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/18</span><a class="archive-post-title" href= "/2017/01/18/SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析/" >SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2016 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/11</span><a class="archive-post-title" href= "/2016/08/11/CVE-2016-6483 vBulletin 5.2.2 SSRF漏洞/" >CVE-2016-6483 vBulletin 5.2.2 SSRF漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/09</span><a class="archive-post-title" href= "/2016/08/09/IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）/" >IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/01</span><a class="archive-post-title" href= "/2016/07/01/Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）/" >Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）</a>
+        </li>
+    
+    </div>
+  </div>
+        <div class="sidebar-panel-tags">
+    <div class="sidebar-tags-name">
+    
+        <span class="sidebar-tag-name" data-tags="黑产研究"><span class="iconfont-archer">&#xe606;</span>黑产研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
+    
+        <span class="sidebar-tag-name" data-tags="漏洞分析"><span class="iconfont-archer">&#xe606;</span>漏洞分析</span>
+    
+        <span class="sidebar-tag-name" data-tags="PHP"><span class="iconfont-archer">&#xe606;</span>PHP</span>
+    
+        <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
+    
+        <span class="sidebar-tag-name" data-tags="Git"><span class="iconfont-archer">&#xe606;</span>Git</span>
+    
+        <span class="sidebar-tag-name" data-tags="环境部署"><span class="iconfont-archer">&#xe606;</span>环境部署</span>
+    
+        <span class="sidebar-tag-name" data-tags="CTF"><span class="iconfont-archer">&#xe606;</span>CTF</span>
+    
+        <span class="sidebar-tag-name" data-tags="blockchain"><span class="iconfont-archer">&#xe606;</span>blockchain</span>
+    
+        <span class="sidebar-tag-name" data-tags="薅羊毛"><span class="iconfont-archer">&#xe606;</span>薅羊毛</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
+    <div class="tag-load-fail" style="display: none; color: #ccc; font-size: 0.6rem;">
+    缺失模块。<br/>
+    1、请确保node版本大于6.2<br/>
+    2、在博客根目录（注意不是archer根目录）执行以下命令：<br/>
+    <span style="color: #f75357; font-size: 1rem; line-height: 2rem;">npm i hexo-generator-json-content --save</span><br/>
+    3、在根目录_config.yml里添加配置：
+    <pre style="color: #787878; font-size: 0.6rem;">
+jsonContent:
+  meta: false
+  pages: false
+  posts:
+    title: true
+    date: true
+    path: true
+    text: false
+    raw: false
+    content: false
+    slug: false
+    updated: false
+    comments: false
+    link: false
+    permalink: false
+    excerpt: false
+    categories: true
+    tags: true</pre>
+    </div> 
+    <div class="sidebar-tags-list"></div>
+</div>
+        <div class="sidebar-panel-categories">
+    <div class="sidebar-categories-name">
+    
+        <span class="sidebar-category-name" data-categories="黑产研究"><span class="iconfont-archer">&#xe60a;</span>黑产研究</span>
+    
+        <span class="sidebar-category-name" data-categories="漏洞分析"><span class="iconfont-archer">&#xe60a;</span>漏洞分析</span>
+    
+        <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
+    
+        <span class="sidebar-category-name" data-categories="环境部署"><span class="iconfont-archer">&#xe60a;</span>环境部署</span>
+    
+        <span class="sidebar-category-name" data-categories="一些思路"><span class="iconfont-archer">&#xe60a;</span>一些思路</span>
+    
+        <span class="sidebar-category-name" data-categories="blockchain"><span class="iconfont-archer">&#xe60a;</span>blockchain</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>
+    <div class="sidebar-categories-list"></div>
+</div>
+    </div>
+</div> 
+    <script>
+    var siteMeta = {
+        root: "/",
+        author: "Lucifaer"
+    }
+</script>
+    <!-- CDN failover -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+    <script type="text/javascript">
+        if (typeof window.$ === 'undefined')
+        {
+            console.warn('jquery load from jsdelivr failed, will load local script')
+            document.write('<script src="/lib/jquery.min.js">\x3C/script>')
+        }
+    </script>
+    <script src="/scripts/main.js"></script>
+    <!-- algolia -->
+    
+        <div class="site-search">
+  <div class="algolia-popup popup">
+    <div class="algolia-search">
+      <div class="algolia-search-input-icon">
+        <i class="fa fa-search"></i>
+      </div>
+      <div class="algolia-search-input" id="algolia-search-input"></div>
+    </div>
+
+    <div class="algolia-results">
+      <div id="algolia-stats"></div>
+      <div id="algolia-hits"></div>
+      <div id="algolia-pagination" class="algolia-pagination"></div>
+    </div>
+
+    <span class="popup-btn-close">
+      <i class="iconfont-archer">&#xe609;</i>
+    </span>
+  </div>
+</div>
+        <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@2.8.0/dist/instantsearch.min.js" defer></script>
+        <script src="/scripts/search.js" defer></script>
+    
+    <!-- busuanzi  -->
+    
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+    <!-- CNZZ  -->
+    
+    </div>
+    <!-- async load share.js -->
+    
+        <script src="/scripts/share.js" async></script>    
+     
+    </body>
+</html>
+
+

