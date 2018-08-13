@@ -506,12 +506,11 @@ height:50vh;
 <li><p>宽字节注入</p>
 <p>  关于宽字节注入，简单来说就是当单引号（<code>&#39;</code>）被转义为<code>\&#39;</code>时可以利用<code>%df%27</code>进行绕过。宽字节注入产生的原因是因为GBK编码为多字节编码，会认为两个字节代表一个汉字，举个例子，比如我传入的字段是<code>%df%27</code>，正常解码后为：</p>
   <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">�&apos;</span><br></pre></td></tr></table></figure>
-<p>  而有趣的是在代码层（GBK编码）对<code>%df%27</code>的解析实际为<code>%df%5c%27</code>：</p>
+<p>  而有趣的是在代码层（GBK编码）对<code>%df%27</code>的解析实际为<code>%df%5c%27</code>从而吃掉了<code>\</code>绕过了对<code>&#39;</code>的转义。：</p>
   <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">運&apos;</span><br></pre></td></tr></table></figure>
 </li>
 </ul>
-<pre><code>从而吃掉了`\`绕过了对`&apos;`的转义。
-</code></pre><ul>
+<ul>
 <li><p>MySQL字符编码绕过</p>
 <p>  MySQL的字符串编码主要是由于MySQL字段的字符集和PHP mysqli客户端设置的字符集不同而导致的。</p>
 <p>  MySQL字段的默认字符集为<code>latin1</code>，在设置客户端字符集为<code>utf8</code>后，服务端的相关字符集仍为<code>latin1</code>，所以PHP将数据存入数据库实际上完成了如下的字符编码转换：</p>
@@ -893,6 +892,8 @@ top:50vh;
     <div class="sidebar-content sidebar-content-show-archive">
           <div class="sidebar-panel-archives">
     <!-- 在ejs中将archive按照时间排序 -->
+    
+    
     
     
     
