@@ -503,22 +503,24 @@ height:50vh;
 <h3 id="2-3-3-Unicode编码"><a href="#2-3-3-Unicode编码" class="headerlink" title="2.3.3 Unicode编码"></a>2.3.3 Unicode编码</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">单引号：%u0027、%u02b9、%u02bc、%u02c8、%u2032、%uff07、%c0%27、%c0%a7、%e0%80%a7</span><br><span class="line">空格：%u0020、%uff00、%c0%20、%c0%a0、%e0%80%a0</span><br><span class="line">左括号：%u0028、%uff08、%c0%28、%c0%a8、%e0%80%a8</span><br><span class="line">右括号：%u0029、%uff09、%c0%29、%c0%a9、%e0%80%a9</span><br></pre></td></tr></table></figure>
 <p>关于应用的话个人认为有两种：</p>
 <ul>
-<li>宽字节注入</li>
+<li><p>宽字节注入</p>
+<p>  关于宽字节注入，简单来说就是当单引号（<code>&#39;</code>）被转义为<code>\&#39;</code>时可以利用<code>%df%27</code>进行绕过。宽字节注入产生的原因是因为GBK编码为多字节编码，会认为两个字节代表一个汉字，举个例子，比如我传入的字段是<code>%df%27</code>，正常解码后为：</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">�&apos;</span><br></pre></td></tr></table></figure>
+<p>  而有趣的是在代码层（GBK编码）对<code>%df%27</code>的解析实际为<code>%df%5c%27</code>：</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">運&apos;</span><br></pre></td></tr></table></figure>
+</li>
 </ul>
-<p>关于宽字节注入，简单来说就是当单引号（<code>&#39;</code>）被转义为<code>\&#39;</code>时可以利用<code>%df%27</code>进行绕过。宽字节注入产生的原因是因为GBK编码为多字节编码，会认为两个字节代表一个汉字，举个例子，比如我传入的字段是<code>%df%27</code>，正常解码后为：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">�&apos;</span><br></pre></td></tr></table></figure>
-<p>而有趣的是在代码层（GBK编码）对<code>%df%27</code>的解析实际为<code>%df%5c%27</code>：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">運&apos;</span><br></pre></td></tr></table></figure>
-<p>从而吃掉了<code>\</code>绕过了对<code>&#39;</code>的转义</p>
-<ul>
-<li>MySQL字符编码绕过</li>
+<pre><code>从而吃掉了`\`绕过了对`&apos;`的转义
+</code></pre><ul>
+<li><p>MySQL字符编码绕过</p>
+<p>  MySQL的字符串编码主要是由于MySQL字段的字符集和PHP mysqli客户端设置的字符集不同而导致的。</p>
+<p>  MySQL字段的默认字符集为<code>latin1</code>，在设置客户端字符集为<code>utf8</code>后，服务端的相关字符集仍为<code>latin1</code>，所以PHP将数据存入数据库实际上完成了如下的字符编码转换：</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">utf8 --&gt; utf8 --&gt; latin1</span><br></pre></td></tr></table></figure>
+<p>  也就是会出现如下的情况：</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT &apos;Ä&apos;=&apos;A&apos;; # 结果为1</span><br></pre></td></tr></table></figure>
+<p>  详情请看<a href="https://www.leavesongs.com/PENETRATION/mysql-charset-trick.html" target="_blank" rel="noopener">P牛的研究</a></p>
+</li>
 </ul>
-<p>MySQL的字符串编码主要是由于MySQL字段的字符集和PHP mysqli客户端设置的字符集不同而导致的。</p>
-<p>MySQL字段的默认字符集为<code>latin1</code>，在设置客户端字符集为<code>utf8</code>后，服务端的相关字符集仍为<code>latin1</code>，所以PHP将数据存入数据库实际上完成了如下的字符编码转换：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">utf8 --&gt; utf8 --&gt; latin1</span><br></pre></td></tr></table></figure>
-<p>也就是会出现如下的情况：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT &apos;Ä&apos;=&apos;A&apos;; # 结果为1</span><br></pre></td></tr></table></figure>
-<p>详情请看<a href="https://www.leavesongs.com/PENETRATION/mysql-charset-trick.html" target="_blank" rel="noopener">P牛的研究</a></p>
 <h1 id="0x03-Main-Course（主菜）"><a href="#0x03-Main-Course（主菜）" class="headerlink" title="0x03 Main Course（主菜）"></a>0x03 Main Course（主菜）</h1><p>知道了上面的基础绕过姿势，下面进入正餐，测试脚本和0x02相同，只是往上添加规则罢了。</p>
 <p><strong>测试MySQL版本为5.7.23</strong></p>
 <h2 id="3-1-各种关键字的绕过"><a href="#3-1-各种关键字的绕过" class="headerlink" title="3.1 各种关键字的绕过"></a>3.1 各种关键字的绕过</h2><h3 id="3-1-1-绕and-or-union-where-limit-group-by-hex-substr"><a href="#3-1-1-绕and-or-union-where-limit-group-by-hex-substr" class="headerlink" title="3.1.1 绕and,or,union,where,limit,group by,hex,substr"></a>3.1.1 绕<code>and</code>,<code>or</code>,<code>union</code>,<code>where</code>,<code>limit</code>,<code>group by</code>,<code>hex</code>,<code>substr</code></h3><blockquote>
