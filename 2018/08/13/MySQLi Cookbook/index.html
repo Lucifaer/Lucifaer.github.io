@@ -284,7 +284,7 @@ height:50vh;
                 
                 
                     <div class="post-intro-read">
-                        <span>Word count: <span class="post-count">4,836</span> / Reading time: <span class="post-count">22 min</span></span>
+                        <span>Word count: <span class="post-count">4,796</span> / Reading time: <span class="post-count">22 min</span></span>
                     </div>
                 
                 <div class="post-intro-meta">
@@ -460,18 +460,15 @@ height:50vh;
  <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">count</span>(*),<span class="keyword">concat</span>(<span class="number">0x7e</span>,<span class="keyword">database</span>(),<span class="number">0x7e</span>,<span class="keyword">floor</span>(<span class="keyword">rand</span>(<span class="number">0</span>)*<span class="number">2</span>))<span class="keyword">name</span> <span class="keyword">from</span> information_schema.tables <span class="keyword">group</span> <span class="keyword">by</span> <span class="keyword">name</span>;</span><br></pre></td></tr></table></figure>
 </li>
 </ol>
-<pre><code>![](http://oqt4gj54x.bkt.clouddn.com/2018-08-13-15337263294608.jpg)
-
-
-原理：`floor(rand(0)*2)`被计算多次导致。
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-13-15337263294608.jpg" alt=""></p>
+<pre><code>原理：`floor(rand(0)*2)`被计算多次导致。
 </code></pre><ol start="2">
 <li><p><code>updatexml()</code></p>
  <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span> <span class="keyword">and</span> updatexml(<span class="number">1</span>,<span class="keyword">concat</span>(<span class="number">0x7e</span>,<span class="keyword">user</span>(),<span class="number">0x7e</span>),<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
 </li>
 </ol>
-<pre><code>![](http://oqt4gj54x.bkt.clouddn.com/2018-08-13-15337266295216.jpg)
-
-原理：`updatexml()`第二个参数应为xml语句。
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-13-15337266295216.jpg" alt=""></p>
+<pre><code>原理：`updatexml()`第二个参数应为xml语句。
 
 限制：最多32字符
 </code></pre><ol start="3">
@@ -479,9 +476,8 @@ height:50vh;
  <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span> <span class="keyword">and</span> extractvalue(<span class="number">1</span>,<span class="keyword">concat</span>(<span class="number">0x7e</span>,<span class="keyword">user</span>(),<span class="number">0x7e</span>));</span><br></pre></td></tr></table></figure>
 </li>
 </ol>
-<pre><code>![](http://oqt4gj54x.bkt.clouddn.com/2018-08-13-15337271173827.jpg)
-
-原理：`extractvalue()`第二个参数应为xml语句。
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-13-15337271173827.jpg" alt=""></p>
+<pre><code>原理：`extractvalue()`第二个参数应为xml语句。
 
 限制：最多32字符
 </code></pre><p>经过测试，在<code>mysql 5.7</code>的版本下，<code>exp()</code>、<code>geometrycollection()</code>、<code>multipoint()</code>、<code>polygon()</code>、<code>multipolygon()</code>、<code>linestring()</code>、<code>multilinestring()</code>无法使用。</p>
@@ -492,9 +488,8 @@ height:50vh;
  <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> freebuf <span class="keyword">where</span> <span class="keyword">id</span>=<span class="number">1</span> <span class="keyword">and</span> (<span class="keyword">if</span>(<span class="keyword">LEFT</span>(<span class="keyword">VERSION</span>(),<span class="number">1</span>)=<span class="number">5</span>, <span class="keyword">BENCHMARK</span>(<span class="number">5000000</span>,<span class="keyword">SHA1</span>(<span class="string">'1'</span>)),<span class="number">1</span>));</span><br></pre></td></tr></table></figure>
 </li>
 </ol>
-<pre><code>![](http://oqt4gj54x.bkt.clouddn.com/2018-08-13-15337847193285.jpg)
-
-原理：以上面的sql语句为例，`BENCHMARK()`将执行`SHA1(&apos;1&apos;)`这个工作5000000次，并统计其所花费的时间。
+<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-13-15337847193285.jpg" alt=""></p>
+<pre><code>原理：以上面的sql语句为例，`BENCHMARK()`将执行`SHA1(&apos;1&apos;)`这个工作5000000次，并统计其所花费的时间。
 </code></pre><ol start="2">
 <li><p><code>sleep()</code></p>
  <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> freebuf <span class="keyword">where</span> <span class="keyword">id</span>=<span class="number">1</span> <span class="keyword">and</span> <span class="keyword">if</span>(<span class="keyword">substr</span>((<span class="keyword">select</span> table_name <span class="keyword">from</span> information_schema.tables <span class="keyword">where</span> table_schema=<span class="keyword">database</span>()),<span class="number">1</span>,<span class="number">1</span>)=<span class="string">'A'</span>,<span class="number">1</span>,<span class="keyword">sleep</span>(<span class="number">10</span>));</span><br></pre></td></tr></table></figure>
@@ -542,35 +537,35 @@ height:50vh;
 </ol>
 <pre><code>关于应用的话个人认为有两种：
 
-* 宽字节注入
+宽字节注入
 
-    关于宽字节注入，简单来说就是当单引号（`&apos;`）被转义为`\&apos;`时可以利用`%df%27`进行绕过。宽字节注入产生的原因是因为GBK编码为多字节编码，会认为两个字节代表一个汉字，举个例子，比如我传入的字段是`%df%27`，正常解码后为：
+关于宽字节注入，简单来说就是当单引号（`&apos;`）被转义为`\&apos;`时可以利用`%df%27`进行绕过。宽字节注入产生的原因是因为GBK编码为多字节编码，会认为两个字节代表一个汉字，举个例子，比如我传入的字段是`%df%27`，正常解码后为：
 
-    <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">�&apos;</span><br></pre></td></tr></table></figure>
-
-
-    而有趣的是在代码层（GBK编码）对`%df%27`的解析实际为`%df%5c%27`：
-
-    <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">運&apos;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">�&apos;</span><br></pre></td></tr></table></figure>
 
 
-    从而吃掉了`\`绕过了对`&apos;`的转义
+而有趣的是在代码层（GBK编码）对`%df%27`的解析实际为`%df%5c%27`：
 
-* MySQL字符编码绕过
-
-    MySQL的字符串编码主要是由于MySQL字段的字符集和PHP mysqli客户端设置的字符集不同而导致的。
-
-    MySQL字段的默认字符集为`latin1`，在设置客户端字符集为`utf8`后，服务端的相关字符集仍为`latin1`，所以PHP将数据存入数据库实际上完成了如下的字符编码转换：
-
-    <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">utf8 --&gt; utf8 --&gt; latin1</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">運&apos;</span><br></pre></td></tr></table></figure>
 
 
-    也就是会出现如下的情况：
+从而吃掉了`\`绕过了对`&apos;`的转义
 
-    <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT &apos;Ä&apos;=&apos;A&apos;; # 结果为1</span><br></pre></td></tr></table></figure>
+MySQL字符编码绕过
+
+MySQL的字符串编码主要是由于MySQL字段的字符集和PHP mysqli客户端设置的字符集不同而导致的。
+
+MySQL字段的默认字符集为`latin1`，在设置客户端字符集为`utf8`后，服务端的相关字符集仍为`latin1`，所以PHP将数据存入数据库实际上完成了如下的字符编码转换：
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">utf8 --&gt; utf8 --&gt; latin1</span><br></pre></td></tr></table></figure>
 
 
-    详情请看[P牛的研究][1]
+也就是会出现如下的情况：
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SELECT &apos;Ä&apos;=&apos;A&apos;; # 结果为1</span><br></pre></td></tr></table></figure>
+
+
+详情请看[P牛的研究][1]
 </code></pre><h1 id="0x03-Main-Course（主菜）"><a href="#0x03-Main-Course（主菜）" class="headerlink" title="0x03 Main Course（主菜）"></a>0x03 Main Course（主菜）</h1><p>知道了上面的基础绕过姿势，下面进入正餐，测试脚本和0x02相同，只是往上添加规则罢了。</p>
 <p><strong>测试MySQL版本为5.7.23</strong></p>
 <h2 id="1-各种关键字的绕过"><a href="#1-各种关键字的绕过" class="headerlink" title="1. 各种关键字的绕过"></a>1. 各种关键字的绕过</h2><h3 id="1-1-绕and-or-union-where-limit-group-by-hex-substr"><a href="#1-1-绕and-or-union-where-limit-group-by-hex-substr" class="headerlink" title="1.1 绕and,or,union,where,limit,group by,hex,substr"></a>1.1 绕<code>and</code>,<code>or</code>,<code>union</code>,<code>where</code>,<code>limit</code>,<code>group by</code>,<code>hex</code>,<code>substr</code></h3><blockquote>
@@ -940,6 +935,10 @@ top:50vh;
     <div class="sidebar-content sidebar-content-show-archive">
           <div class="sidebar-panel-archives">
     <!-- 在ejs中将archive按照时间排序 -->
+    
+    
+    
+    
     
     
     
