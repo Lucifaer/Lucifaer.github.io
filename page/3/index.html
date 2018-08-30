@@ -15,7 +15,7 @@
     <meta name="description" content="Some Lucifaer's security researchers and security analysis">
     <meta name="Cache-Control" content="no-cache">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
-    <title>Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite） · Lucifaer&#39;s Blog</title>
+    <title>Lucifaer&#39;s Blog</title>
     <style type="text/css">
     @font-face {
         font-family: 'Oswald-Regular';
@@ -70,8 +70,6 @@
 
     <link rel="preload" href= /css/style.css?v=20180721 as="style" onload="this.onload=null;this.rel='stylesheet'" />
     <link rel="stylesheet" href= /css/mobile.css?v=20180721 media="(max-width: 980px)">
-    
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
     
     <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
 /* This file is meant as a standalone workflow for
@@ -211,23 +209,14 @@
 </head>
 
     
-        <body class="post-body">
+        <body class="home-body">
     
     
-<header class="header">
+<header class="header index-header">
 
     <div class="read-progress"></div>
     <div class="header-sidebar-menu">&#xe775;</div>
     <!-- post页的toggle banner  -->
-    
-    <div class="banner">
-            <div class="blog-title">
-                <a href="/" >Lucifaer&#39;s Blog.</a>
-            </div>
-            <div class="post-title">
-                <a href="#" class="post-name">Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）</a>
-            </div>
-    </div>
     
     <a class="home-link" href=/>Lucifaer's Blog.</a>
 </header>
@@ -248,17 +237,17 @@ height:50vh;
     <!-- 主页  -->
     
     
-    <!-- 404页  -->
+    <!-- 文章页  -->
             
     <div class="site-intro-placeholder"></div>
-    <div class="site-intro-img" style="background-image: url(/intro/post-bg.jpg)"></div>
+    <div class="site-intro-img" style="background-image: url(/intro/index-bg.jpg)"></div>
     <div class="site-intro-meta">
         <!-- 标题  -->
         <h1 class="intro-title">
             <!-- 主页  -->
             
-            Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）
-            <!-- 404 -->
+            Lucifaer's Blog.
+            <!-- 文章页  -->
             
         </h1>
         <!-- 副标题 -->
@@ -266,51 +255,12 @@ height:50vh;
             <!-- 主页副标题  -->
             
             
-            <!-- 404 -->
+                Security Reseacher
+            
+            <!-- 文章页  -->
             
         </p>
         <!-- 文章页meta -->
-        
-            <div class="post-intros">
-                <!-- 文章页标签  -->
-                
-                    <div class= post-intro-tags >
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "漏洞分析">漏洞分析</a>
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "PHP">PHP</a>
-    
-</div>
-                
-                
-                    <div class="post-intro-read">
-                        <span>Word count: <span class="post-count">734</span> / Reading time: <span class="post-count">3 min</span></span>
-                    </div>
-                
-                <div class="post-intro-meta">
-                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
-                    <span class="post-intro-time">2016/07/01</span>
-                    
-                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
-                        <span class="iconfont-archer">&#xe602;</span>
-                        <span id="busuanzi_value_page_pv"></span>
-                    </span>
-                    
-                    <span class="shareWrapper">
-                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
-                        <span class="shareText">Share</span>
-                        <ul class="shareList">
-                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
-                                <div class="share-qrcode"></div>
-                            </li>
-                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
-                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
-                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
-                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
-                        </ul>
-                    </span>
-                </div>
-            </div>
         
     </div>
 </div>
@@ -411,88 +361,178 @@ height:50vh;
 </script>        
         <img class="loading" src="/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
         <div class="container container-unloaded">
-            <main class="main post-page">
-    <article class="article-entry">
-        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><hr>
-<p>好久没有更新blog了，一来是考试月的原因，另一来是在尝试通过Discuz 3.2的漏洞利用分析来编写自己的poc(基于pocsuite)——主要目的还是练习自己python的编写能力。<br>不多废话，直接上干货。</p>
-<a id="more"></a>
-<h1 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h1><hr>
-<p>在安全智库上有一片详尽的文章：<a href="http://mp.weixin.qq.com/s?__biz=MzI0NjQxODg0Ng==&amp;mid=2247483798&amp;idx=1&amp;sn=65cdf852dffd63b9d4ec41c31d9a5365&amp;scene=23&amp;srcid=0617Fv53mYLaSNhYGZtceh0w#rd" target="_blank" rel="noopener">Discuz利用ssrf+缓存应用getshell漏洞分析</a>，讲解的很详尽，简单来说，就是通过ssrf来操作redis，更改了全局变量的值，初始化时会把缓存内容加入全局变量，导致任意代码执行。</p>
-<h1 id="关于环境的配置"><a href="#关于环境的配置" class="headerlink" title="关于环境的配置"></a>关于环境的配置</h1><hr>
-<p>我是在kali rolling下搭建的，至于apache+php+mysql的安装就不说了，在这个环境中，我们需要安装redis或者memcache，我选择的是redis。同时我们需要安装phpredis扩展(2.28版本支持性比较好)。</p>
-<h2 id="phpredis的安装"><a href="#phpredis的安装" class="headerlink" title="phpredis的安装"></a>phpredis的安装</h2><p>在安装phpredis的过程中，还是比较麻烦的，下面来说一下(由于kali下默认安装的是php5，所以以下均为phpredis在php5上的安装过程)：<br>方法取自于<a href="https://anton.logvinenko.name/en/blog/how-to-install-redis-and-redis-php-client.html" target="_blank" rel="noopener">国外这哥们的文章</a>，但是其中还是有一些错误的:</p>
-<h3 id="首先安装请求包："><a href="#首先安装请求包：" class="headerlink" title="首先安装请求包："></a>首先安装请求包：</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-get install php5-dev</span><br></pre></td></tr></table></figure>
-<h3 id="下载phpredis："><a href="#下载phpredis：" class="headerlink" title="下载phpredis："></a>下载phpredis：</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd /tmp</span><br><span class="line">wget https://github.com/phpredis/phpredis/archive/master.zip -O phpredis.zip</span><br></pre></td></tr></table></figure>
-<h3 id="解压，编译，安装phpredis："><a href="#解压，编译，安装phpredis：" class="headerlink" title="解压，编译，安装phpredis："></a>解压，编译，安装phpredis：</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">unzip -o /tmp/phpredis.zip &amp;&amp; mv /tmp/phpredis-* /tmp/phpredis &amp;&amp; cd /tmp/phpredis &amp;&amp; phpize &amp;&amp; ./configure &amp;&amp; make &amp;&amp; sudo make install</span><br></pre></td></tr></table></figure>
-<h3 id="在php5中添加phpredis的扩展："><a href="#在php5中添加phpredis的扩展：" class="headerlink" title="在php5中添加phpredis的扩展："></a>在php5中添加phpredis的扩展：</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo touch /etc/php5/mods-available/redis.ini &amp;&amp; echo extension=redis.so &gt; /etc/php5/mods-available/redis.ini</span><br><span class="line">sudo ln -s /etc/php5/mods-available/redis.ini /etc/php5/apache2/conf.d/</span><br><span class="line">sudo ln -s /etc/php/mods-available/redis.ini /etc/php/7.0/fpm/conf.d/redis.ini</span><br><span class="line">sudo ln -s /etc/php5/mods-available/redis.ini /etc/php5/cli/conf.d/</span><br></pre></td></tr></table></figure>
-<p>重启apache就安装好了。</p>
-<h2 id="安装curl扩展包："><a href="#安装curl扩展包：" class="headerlink" title="安装curl扩展包："></a>安装curl扩展包：</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-get install php5.0-curl</span><br></pre></td></tr></table></figure>
-<h2 id="对于Discuz的配置："><a href="#对于Discuz的配置：" class="headerlink" title="对于Discuz的配置："></a>对于Discuz的配置：</h2><p>在Discuz的config目录中，更改config_global_default.php中：<br><img src="http://139.129.31.35/usr/uploads/2016/07/919599632.png" alt="Discuz_config的配置"></p>
-<h2 id="开启redis服务："><a href="#开启redis服务：" class="headerlink" title="开启redis服务："></a>开启redis服务：</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo service redis-server start</span><br></pre></td></tr></table></figure>
-<h2 id="注意："><a href="#注意：" class="headerlink" title="注意："></a>注意：</h2><p>由于目前Discuz爆出的ssrf拥有较大的局限性，我们不能直接利用这个ssrf来执行我们的命令，为了复现此环境，我们在Discuz根目录下写了一个有ssrf漏洞的ssrf_gopher.php文件，文件内容如下：</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">echo</span> <span class="string">"&lt;h1&gt;welcome to this page &lt;/h1&gt;&lt;br&gt;"</span>;</span><br><span class="line">    <span class="keyword">echo</span> <span class="string">"&lt;h5&gt;it's just used to verify the bug&lt;/h5&gt;"</span>;</span><br><span class="line">$ch = curl_init();</span><br><span class="line">$url = $_REQUEST[<span class="string">'ssrf'</span>];</span><br><span class="line"><span class="keyword">echo</span> $url.<span class="string">"&lt;br&gt;"</span>;</span><br><span class="line"></span><br><span class="line">curl_setopt($ch, CURLOPT_URL, $url);</span><br><span class="line">curl_setopt($ch, CURLOPT_RETURNTRANSFER, <span class="number">1</span>);</span><br><span class="line">curl_setopt($ch, CURLOPT_HEADER, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">$output = curl_exec($ch);</span><br><span class="line">curl_close($ch);</span><br><span class="line">print_r($output);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
-<p>以上就是环境的配置。</p>
-<h1 id="Pocsuite框架使用poc："><a href="#Pocsuite框架使用poc：" class="headerlink" title="Pocsuite框架使用poc："></a>Pocsuite框架使用poc：</h1><p>这里我已经写好了基于pocsuite框架的poc：<br><a href="https://github.com/Lucifaer/pocsuite.git" target="_blank" rel="noopener">poc</a><br>在本机中下载pocsuite，根据使用说明运行即可。</p>
-<h1 id="使用dockerfile一键搭建复现环境："><a href="#使用dockerfile一键搭建复现环境：" class="headerlink" title="使用dockerfile一键搭建复现环境："></a>使用dockerfile一键搭建复现环境：</h1><p>如果你安装有docker，那么复现该环境就很方便了，我已经写好了dockerfile，你可以在你的docker中快速的搭建该环境，并进行测试：<br><a href="https://github.com/Lucifaer/pocsuite.git" target="_blank" rel="noopener">dockerfile</a><br>参照使用说明，执行相应的命令即可。</p>
-
-    </article>
-    <!-- license  -->
+            <main class="main index-page">
     
-        <div class="license-wrapper">
-            <p>原文作者: <a href="https://lucifaer.com">Lucifaer</a>
-            <p>原文链接: <a href="https://lucifaer.com/2016/07/01/Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）/">https://lucifaer.com/2016/07/01/Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）/</a>
-            <p>发表日期: <a href="https://lucifaer.com/2016/07/01/Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）/">July 1st 2016, 11:41:00 pm</a>
-            <p>版权声明: 本文采用<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可</p>
+    
+    
+    
+    
+    
+    <article class="index-post">
+        <a class="abstract-title" href = "/2016/07/01/Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）/" >
+            
+                <span>Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）</span>
+        </a>
+        <div class="abstract-content">
+            <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><hr>
+<p>好久没有更新blog了，一来是考试月的原因，另一来是在尝试通过Discuz 3.2的漏洞利用分析来编写自己的poc(基于pocsuite)——主要目的还是练习自己python的编写能力。<br>不多废话，直接上干货。</p>
         </div>
+        <div class="abstract-post-meta">
+            <!-- date  -->
+            <div class="abstract-date">
+                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2016/07/01</span>
+            </div>
+            <!-- tags  -->
+            
+            <div class= abstract-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "漏洞分析">漏洞分析</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "PHP">PHP</a>
+    
+</div>
+            
+        </div>
+    </article>
     
     <!-- paginator  -->
-    <ul class="post-paginator">
-        <li class="next">
-            
-                <div class="nextSlogan">Next Post</div>
-                <a href= "/2016/08/09/IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）/" title= IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174） >
-                    <div class="nextTitle">IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）</div>
-                </a>
-            
-        </li>
-        <li class="previous">
-            
-        </li>
-    </ul>
-    <!-- 评论插件 -->
-    <!-- 来必力City版安装代码 -->
-
-    <div id="lv-container" data-id="city" data-uid= MTAyMC8zODcyOC8xNTI1Ng==>
-        <script type="text/javascript">
-            (function(d, s) {
-                var j, e = d.getElementsByTagName(s)[0];
-         
-                if (typeof LivereTower === 'function') { return; }
-         
-                j = d.createElement(s);
-                j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
-                j.async = true;
-         
-                e.parentNode.insertBefore(j, e);
-            })(document, 'script');
-             </script>
-         <noscript> 为正常使用来必力评论功能请激活JavaScript</noscript>
-    </div>
-
-<!-- City版安装代码已完成 -->
     
+    <nav class="page-nav">
+        <a class="extend prev" rel="prev" href="/page/2/">&#60; PREV</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span>
+    </nav>
     
-    <!--PC和WAP自适应版-->
-
-    <!--PC版-->
-
-
-    
-    
-
-    <!-- 评论 -->
 </main>
             <!-- profile -->
+            
+            <div class="profile">
+    <img class="profile-avatar" src= /avatar/avater.jpg >
+    <div class="profile-name">Lucifaer</div>
+    <div class="profile-signature">
+            
+                
+                    祝这世界继续热闹
+                    <br />
+                
+            
+                
+                    祝我仍是我
+                    <br />
+                
+            
+    </div>
+    
+    <div class="profile-social">
+        
+    
+        
+            
+                <a href="mailto:l.lucifaer@gmail.com" class="iconfont-archer email" title=email ></a>
+            
+        
+    
+        
+            
+                <a href="//github.com/Lucifaer" class="iconfont-archer github" target="_blank" title=github></a>
+            
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="//weibo.com/5838222069" class="iconfont-archer weibo" target="_blank" title=weibo></a>
+            
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="/atom.xml" class="iconfont-archer rss" target="_blank" title=rss></a>
+            
+        
+    
+
+    </div>
+    
+    
+        <div class="friends">
+            <div>FRIENDS</div>
+            
+                
+                    <span>
+                        <a href= //balis0ng.com/ target="_black">Balis0ng</a>
+                    </span>
+                    <br />
+                
+            
+                
+                    <span>
+                        <a href= //03i0.com target="_black">Sn00py</a>
+                    </span>
+                    <br />
+                
+            
+                
+                    <span>
+                        <a href= //over-rainbow.cn target="_black">S_Dante</a>
+                    </span>
+                    <br />
+                
+            
+                
+                    <span>
+                        <a href= //yan-1-20.github.io target="_black">Yan_1_20</a>
+                    </span>
+                    <br />
+                
+            
+                
+                    <span>
+                        <a href= //www.venenof.com target="_black">Venenof</a>
+                    </span>
+                    <br />
+                
+            
+                
+                    <span>
+                        <a href= //www.cnblogs.com/iamstudy target="_black">L3m0n</a>
+                    </span>
+                    <br />
+                
+            
+        </div>
+    
+    
+        <div class="about-me">
+            <a href = "/about" >ABOUT ME</a>
+        </div>
+    
+</div>
             
         </div>
         <footer class="footer footer-unloaded">
@@ -572,24 +612,6 @@ height:50vh;
 </footer>
     </div>
     <!-- toc -->
-    
-    <div class="toc-wrapper" style=
-    
-
-
-
-
-
-
-
-top:50vh;
-
-    >
-        <div class="toc-catalog">
-            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
-        </div>
-        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#漏洞分析"><span class="toc-number">2.</span> <span class="toc-text">漏洞分析</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#关于环境的配置"><span class="toc-number">3.</span> <span class="toc-text">关于环境的配置</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#phpredis的安装"><span class="toc-number">3.1.</span> <span class="toc-text">phpredis的安装</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#首先安装请求包："><span class="toc-number">3.1.1.</span> <span class="toc-text">首先安装请求包：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#下载phpredis："><span class="toc-number">3.1.2.</span> <span class="toc-text">下载phpredis：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#解压，编译，安装phpredis："><span class="toc-number">3.1.3.</span> <span class="toc-text">解压，编译，安装phpredis：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#在php5中添加phpredis的扩展："><span class="toc-number">3.1.4.</span> <span class="toc-text">在php5中添加phpredis的扩展：</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#安装curl扩展包："><span class="toc-number">3.2.</span> <span class="toc-text">安装curl扩展包：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#对于Discuz的配置："><span class="toc-number">3.3.</span> <span class="toc-text">对于Discuz的配置：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#开启redis服务："><span class="toc-number">3.4.</span> <span class="toc-text">开启redis服务：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#注意："><span class="toc-number">3.5.</span> <span class="toc-text">注意：</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Pocsuite框架使用poc："><span class="toc-number">4.</span> <span class="toc-text">Pocsuite框架使用poc：</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#使用dockerfile一键搭建复现环境："><span class="toc-number">5.</span> <span class="toc-text">使用dockerfile一键搭建复现环境：</span></a></li></ol>
-    </div>
     
     <div class="back-top iconfont-archer">&#xe639;</div>
     <div class="sidebar sidebar-hide">
@@ -1124,8 +1146,6 @@ jsonContent:
     
     </div>
     <!-- async load share.js -->
-    
-        <script src="/scripts/share.js" async></script>    
      
     </body>
 </html>

