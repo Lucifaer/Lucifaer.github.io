@@ -442,7 +442,7 @@ height:50vh;
 <h2 id="服务端部署"><a href="#服务端部署" class="headerlink" title="服务端部署"></a>服务端部署</h2><p>在服务端部署远程仓库，使用的是<code>git init --bare</code>。</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ mkdir D0g3_wiki.git</span><br><span class="line">$ cd D0g3_wiki.git/</span><br><span class="line">$ git init --bare</span><br></pre></td></tr></table></figure>
 <p>效果如图：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-02-28-15197850712206.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15197850712206.jpg" alt=""></p>
 <p>之后需要我们要在<code>/hooks/</code>下创建<code>post-receive</code>，并写一段shell脚本来自定义我们需要<code>post-receive</code>钩子完成的自定义任务：</p>
 <p>post-receive</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">#!/bin/sh</span><br><span class="line">GIT_REPO=/root/D0g3_wiki.git</span><br><span class="line">TMP_GIT_CLONE=/tmp/D0g3_wiki</span><br><span class="line">PUBLIC_WWW=/home/lucifaer</span><br><span class="line"></span><br><span class="line">echo &quot;init receive&quot;</span><br><span class="line">rm -rf $TMP_GIT_CLONE</span><br><span class="line">if [ -d $PUBLIC_WWW ]; then</span><br><span class="line">    mkdir -p $PUBLIC_WWW</span><br><span class="line">fi</span><br><span class="line"></span><br><span class="line">git clone $GIT_REPO $TMP_GIT_CLONE</span><br><span class="line"># sudo rm -rf /srv/http/hack_web/hack_web</span><br><span class="line"># sudo cp -r $TMP_GIT_CLONE/hack_web $PUBLIC_WWW</span><br><span class="line">#if [[ $EUID -eq 0 ]]; then</span><br><span class="line">rsync -av $TMP_GIT_CLONE $PUBLIC_WWW</span><br><span class="line">chown -R lucifaer:lucifaer $PUBLIC_WWW</span><br><span class="line">#fi</span><br><span class="line">rm -rf $TMP_GIT_CLONE</span><br></pre></td></tr></table></figure>
@@ -458,7 +458,7 @@ height:50vh;
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ git remote add nick_name user@ip:/gitrepo_dir</span><br><span class="line">$ git push nick_name master</span><br></pre></td></tr></table></figure>
 <p>这里的<code>nick_name、user、ip</code>设置成自己的名字。</p>
 <p>便同步成功了。</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-02-28-15197866160106.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15197866160106.jpg" alt=""></p>
 
     </article>
     <!-- license  -->
@@ -878,6 +878,64 @@ top:50vh;
     
     
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     <div class="total-and-search">
         <div class="total-archive">
         Total : 21
@@ -897,6 +955,11 @@ top:50vh;
     
     <div class="archive-year"> 2018 </div>
     <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/29</span><a class="archive-post-title" href= "/2018/11/29/JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667）/" >JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667）</a>
+        </li>
     
     
         <li class="archive-post-item">
@@ -1016,19 +1079,10 @@ top:50vh;
             <span class="archive-post-date">08/09</span><a class="archive-post-title" href= "/2016/08/09/IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）/" >IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）</a>
         </li>
     
-    
-        <li class="archive-post-item">
-            <span class="archive-post-date">07/01</span><a class="archive-post-title" href= "/2016/07/01/Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）/" >Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）</a>
-        </li>
-    
     </div>
   </div>
         <div class="sidebar-panel-tags">
     <div class="sidebar-tags-name">
-    
-        <span class="sidebar-tag-name" data-tags="黑产研究"><span class="iconfont-archer">&#xe606;</span>黑产研究</span>
-    
-        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
     
         <span class="sidebar-tag-name" data-tags="漏洞分析"><span class="iconfont-archer">&#xe606;</span>漏洞分析</span>
     
@@ -1038,19 +1092,25 @@ top:50vh;
     
         <span class="sidebar-tag-name" data-tags="环境部署"><span class="iconfont-archer">&#xe606;</span>环境部署</span>
     
-        <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
-    
-        <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
-    
-        <span class="sidebar-tag-name" data-tags="CookBook"><span class="iconfont-archer">&#xe606;</span>CookBook</span>
-    
-        <span class="sidebar-tag-name" data-tags="SQL注入"><span class="iconfont-archer">&#xe606;</span>SQL注入</span>
-    
         <span class="sidebar-tag-name" data-tags="CTF"><span class="iconfont-archer">&#xe606;</span>CTF</span>
     
         <span class="sidebar-tag-name" data-tags="blockchain"><span class="iconfont-archer">&#xe606;</span>blockchain</span>
     
+        <span class="sidebar-tag-name" data-tags="黑产研究"><span class="iconfont-archer">&#xe606;</span>黑产研究</span>
+    
         <span class="sidebar-tag-name" data-tags="薅羊毛"><span class="iconfont-archer">&#xe606;</span>薅羊毛</span>
+    
+        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
+    
+        <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
+    
+        <span class="sidebar-tag-name" data-tags="Java"><span class="iconfont-archer">&#xe606;</span>Java</span>
+    
+        <span class="sidebar-tag-name" data-tags="CookBook"><span class="iconfont-archer">&#xe606;</span>CookBook</span>
+    
+        <span class="sidebar-tag-name" data-tags="SQL注入"><span class="iconfont-archer">&#xe606;</span>SQL注入</span>
     
     </div>
     <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
@@ -1085,19 +1145,19 @@ jsonContent:
         <div class="sidebar-panel-categories">
     <div class="sidebar-categories-name">
     
-        <span class="sidebar-category-name" data-categories="黑产研究"><span class="iconfont-archer">&#xe60a;</span>黑产研究</span>
-    
         <span class="sidebar-category-name" data-categories="漏洞分析"><span class="iconfont-archer">&#xe60a;</span>漏洞分析</span>
     
         <span class="sidebar-category-name" data-categories="环境部署"><span class="iconfont-archer">&#xe60a;</span>环境部署</span>
     
-        <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
-    
-        <span class="sidebar-category-name" data-categories="技术总结"><span class="iconfont-archer">&#xe60a;</span>技术总结</span>
-    
         <span class="sidebar-category-name" data-categories="一些思路"><span class="iconfont-archer">&#xe60a;</span>一些思路</span>
     
         <span class="sidebar-category-name" data-categories="blockchain"><span class="iconfont-archer">&#xe60a;</span>blockchain</span>
+    
+        <span class="sidebar-category-name" data-categories="黑产研究"><span class="iconfont-archer">&#xe60a;</span>黑产研究</span>
+    
+        <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
+    
+        <span class="sidebar-category-name" data-categories="技术总结"><span class="iconfont-archer">&#xe60a;</span>技术总结</span>
     
     </div>
     <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>

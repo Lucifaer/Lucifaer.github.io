@@ -426,7 +426,7 @@ height:50vh;
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 该程序会显示所有设置在position位置上的模块，当然也会根据菜单ID来判断是否加载</span></span><br><span class="line">$modules = &amp;amp; JModuleHelper::getModules(<span class="string">'position'</span>);</span><br><span class="line"><span class="keyword">foreach</span>($modules <span class="keyword">as</span> $module)&#123;</span><br><span class="line">	<span class="keyword">echo</span> JModuleHelper::renderModule($module, <span class="keyword">array</span>(<span class="string">'style'</span> = <span class="string">'well'</span>))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h2 id="3-模板"><a href="#3-模板" class="headerlink" title="3.模板"></a>3.模板</h2><p> 个人理解，模板就相当于输出的一种格式。也就是在后端已经调用了相关的数据，准备在前端以什么样的格式输出。</p>
 <p> 在Joomla中，一个页面只能有一个主要内容（组件：component），其他均属于模块。如图：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045892298827.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15045892298827.jpg" alt=""></p>
 <p>如果从代码来分析的话，打开index.php（组件下的index.php），除了简单的HTML和php外，还可以看到以下几类语句：</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">jdoc:<span class="keyword">include</span> type=<span class="string">"head"</span></span><br><span class="line">jdoc:<span class="keyword">include</span> type=<span class="string">"modules"</span> name=<span class="string">"position-1"</span> style=<span class="string">"none"</span></span><br><span class="line">jdoc:<span class="keyword">include</span> type=<span class="string">"message"</span></span><br><span class="line">jdoc:<span class="keyword">include</span> type=<span class="string">"component"</span></span><br></pre></td></tr></table></figure>
 <p>这些是Joomla引入内容的方式，Joomla模板引擎会解析这些语句，抓取对应的内容渲染到模板中，组成一个页面。type指明要包含的内容的类型：</p>
@@ -436,7 +436,7 @@ height:50vh;
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">option=com_content  # 该页面内要使用的组件，后台对应到Components中，文件使用JOOMLAROOT components中的文件</span><br><span class="line">view=article       # 组件内要使用的view</span><br><span class="line">id=7               # view对应的ID</span><br><span class="line">Itemid=116          # 该页面对应的菜单ID</span><br></pre></td></tr></table></figure>
 <p>所以上面URL的意思就是告诉Joomla：当前页面是要显示一个文章分类页面，分类ID是7，对应的菜单ID是116。</p>
 <p>最后附一张图，帮助理解：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045892469548.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15045892469548.jpg" alt=""></p>
 <h1 id="0x02-整体大致运行流程"><a href="#0x02-整体大致运行流程" class="headerlink" title="0x02 整体大致运行流程"></a>0x02 整体大致运行流程</h1><h2 id="1-框架核心代码的初始化"><a href="#1-框架核心代码的初始化" class="headerlink" title="1. 框架核心代码的初始化"></a>1. 框架核心代码的初始化</h2><ul>
 <li><code>/includes/defines.php</code>定义各个功能模块的目录</li>
 <li><p><code>/includes/framework.php</code>整个框架调度的核心代码与cms运行的核心代码，框架初始化的入口。</p>
@@ -459,10 +459,10 @@ height:50vh;
 </li>
 <li><p>之后设置报错的格式</p>
 <p>  最终的注册队列：</p>
-<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045892657574.png" alt=""></p>
-<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045892765399.png" alt=""></p>
-<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045892951347.png" alt=""></p>
-<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045893053364.png" alt=""></p>
+<p>  <img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15045892657574.png" alt=""></p>
+<p>  <img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15045892765399.png" alt=""></p>
+<p>  <img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15045892951347.png" alt=""></p>
+<p>  <img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15045893053364.png" alt=""></p>
 </li>
 </ul>
 </li>
@@ -500,34 +500,34 @@ height:50vh;
 <p>其实在跟实例化应用的时候，当执行<code>/joomla/libraries/joomla/application/web.php</code>构造函数时，我们就可以看到Joomla对于URI的处理了：</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">$this</span>-&gt;loadSystemUris();</span><br></pre></td></tr></table></figure>
 <p>跟进看一下<code>loadSystemUris</code>方法，不难看到这一句：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045893232898.png" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15045893232898.png" alt=""></p>
 <p>跟进<code>detectRequestUri</code>，发现首先判断了URI是否是http还是https，之后看到这句：</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (!<span class="keyword">empty</span>($_SERVER[<span class="string">'PHP_SELF'</span>]) &amp;&amp; !<span class="keyword">empty</span>($_SERVER[<span class="string">'REQUEST_URI'</span>]))</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="comment">// The URI is built from the HTTP_HOST and REQUEST_URI environment variables in an Apache environment.</span></span><br><span class="line">			$uri = $scheme . $_SERVER[<span class="string">'HTTP_HOST'</span>] . $_SERVER[<span class="string">'REQUEST_URI'</span>];</span><br><span class="line">		&#125;</span><br></pre></td></tr></table></figure>
 <p>就是在这里将<code>$_SERVER[&#39;REQUEST_URI&#39;]</code>中的相对路径与<code>$scheme . $_SERVER[&#39;HTTP_HOST&#39;]</code>拼接成了完整的URI：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045893426980.png" alt=""><br><img src="http://139.129.31.35/usr/uploads/2017/05/475182260.png" alt="ur"></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15045893426980.png" alt=""><br><img src="http://139.129.31.35/usr/uploads/2017/05/475182260.png" alt="ur"></p>
 <p>完成了完整路径获取后，开始修改对象的属性，将新获得的request.uri添加进入配置列表中：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045893504687.png" alt=""><br><img src="http://139.129.31.35/usr/uploads/2017/05/1509964390.png" alt="ur"></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15045893504687.png" alt=""><br><img src="http://139.129.31.35/usr/uploads/2017/05/1509964390.png" alt="ur"></p>
 <p>下一步，就是遍历配置列表，查看是否已经设置了显示URI，在配置列表中键值为<code>site_uri</code>。显然我们现在并没有设置该选项：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045893579514.png" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15045893579514.png" alt=""></p>
 <p>之后完成的操作就是要设置该显示URI。我们继续跟进一下：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045893734916.png" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15045893734916.png" alt=""></p>
 <p>跟进到<code>joomla/libraries/vendor/joomla/uri/src/UriHelper.php</code>的时候，我们稍停一下，看到进入了<code>parse_url</code>方法中。在这个方法中，首先对传入的URL进行了双重过滤，之后利用PHP自带方法<code>parse_url</code>，对URL进行了分割处理并保存到一个数组中，接着返回该数组：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045893830962.png" alt=""></p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045893931299.png" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15045893830962.png" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15045893931299.png" alt=""></p>
 <p>最后的处理结果为：</p>
 <p><code>option=com_content&amp;view=article&amp;id=7:article-en-gb&amp;catid=10&amp;lang=en&amp;Itemid=116</code></p>
 <p>处理完我们的显示URL后，在调用<code>joomla/libraries/cms/application/cms.php</code>中的<code>execute</code>方法时，在调用<code>doExecute</code>方法的时候，会使用<code>joomla/libraries/cms/application/site.php</code>文件中的<code>route</code>方法，这个方法将路由到我们application中。</p>
 <p>在<code>joomla/libraries/cms/application/cms.php</code>中的<code>route</code>方法中，我们首先获取了全部的request URI，之后在<code>getRouter</code>方法中初始化并实例化了<code>joomla/libraries/cms/router/router.php</code>中的<code>JRouter</code>类，该类完成了对我们路由参数的识别与划分：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045894036447.png" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15045894036447.png" alt=""></p>
 <p>最后在<code>joomla/libraries/cms/router/site.php</code>中的<code>parse</code>方法中完成了相关组件的路由：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045894146895.png" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15045894146895.png" alt=""></p>
 <p>可以明显的看到，在</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$component = <span class="keyword">$this</span>-&gt;JComponentHelper::getComponents()</span><br></pre></td></tr></table></figure>
 <p>后，<code>$component</code>的值：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045894256014.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15045894256014.jpg" alt=""></p>
 <p>对比<code>components/</code>目录下的组件，发现已经将所有的组件遍历，并保存在数组中。</p>
 <p>接着遍历该数组，对每个组件设置本地路由，并包含响应的文件，从而完成路由控制。</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15045894330060.png" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15045894330060.png" alt=""></p>
 <h1 id="0x04-总结一下"><a href="#0x04-总结一下" class="headerlink" title="0x04 总结一下"></a>0x04 总结一下</h1><p>Joomla整体的运行思路可以简单的归结为一下几点：</p>
 <ol>
 <li><p>框架核心代码的初始化：</p>
@@ -967,6 +967,64 @@ top:50vh;
     
     
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     <div class="total-and-search">
         <div class="total-archive">
         Total : 21
@@ -986,6 +1044,11 @@ top:50vh;
     
     <div class="archive-year"> 2018 </div>
     <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/29</span><a class="archive-post-title" href= "/2018/11/29/JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667）/" >JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667）</a>
+        </li>
     
     
         <li class="archive-post-item">
@@ -1105,19 +1168,10 @@ top:50vh;
             <span class="archive-post-date">08/09</span><a class="archive-post-title" href= "/2016/08/09/IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）/" >IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）</a>
         </li>
     
-    
-        <li class="archive-post-item">
-            <span class="archive-post-date">07/01</span><a class="archive-post-title" href= "/2016/07/01/Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）/" >Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）</a>
-        </li>
-    
     </div>
   </div>
         <div class="sidebar-panel-tags">
     <div class="sidebar-tags-name">
-    
-        <span class="sidebar-tag-name" data-tags="黑产研究"><span class="iconfont-archer">&#xe606;</span>黑产研究</span>
-    
-        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
     
         <span class="sidebar-tag-name" data-tags="漏洞分析"><span class="iconfont-archer">&#xe606;</span>漏洞分析</span>
     
@@ -1127,19 +1181,25 @@ top:50vh;
     
         <span class="sidebar-tag-name" data-tags="环境部署"><span class="iconfont-archer">&#xe606;</span>环境部署</span>
     
-        <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
-    
-        <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
-    
-        <span class="sidebar-tag-name" data-tags="CookBook"><span class="iconfont-archer">&#xe606;</span>CookBook</span>
-    
-        <span class="sidebar-tag-name" data-tags="SQL注入"><span class="iconfont-archer">&#xe606;</span>SQL注入</span>
-    
         <span class="sidebar-tag-name" data-tags="CTF"><span class="iconfont-archer">&#xe606;</span>CTF</span>
     
         <span class="sidebar-tag-name" data-tags="blockchain"><span class="iconfont-archer">&#xe606;</span>blockchain</span>
     
+        <span class="sidebar-tag-name" data-tags="黑产研究"><span class="iconfont-archer">&#xe606;</span>黑产研究</span>
+    
         <span class="sidebar-tag-name" data-tags="薅羊毛"><span class="iconfont-archer">&#xe606;</span>薅羊毛</span>
+    
+        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
+    
+        <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
+    
+        <span class="sidebar-tag-name" data-tags="Java"><span class="iconfont-archer">&#xe606;</span>Java</span>
+    
+        <span class="sidebar-tag-name" data-tags="CookBook"><span class="iconfont-archer">&#xe606;</span>CookBook</span>
+    
+        <span class="sidebar-tag-name" data-tags="SQL注入"><span class="iconfont-archer">&#xe606;</span>SQL注入</span>
     
     </div>
     <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
@@ -1174,19 +1234,19 @@ jsonContent:
         <div class="sidebar-panel-categories">
     <div class="sidebar-categories-name">
     
-        <span class="sidebar-category-name" data-categories="黑产研究"><span class="iconfont-archer">&#xe60a;</span>黑产研究</span>
-    
         <span class="sidebar-category-name" data-categories="漏洞分析"><span class="iconfont-archer">&#xe60a;</span>漏洞分析</span>
     
         <span class="sidebar-category-name" data-categories="环境部署"><span class="iconfont-archer">&#xe60a;</span>环境部署</span>
     
-        <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
-    
-        <span class="sidebar-category-name" data-categories="技术总结"><span class="iconfont-archer">&#xe60a;</span>技术总结</span>
-    
         <span class="sidebar-category-name" data-categories="一些思路"><span class="iconfont-archer">&#xe60a;</span>一些思路</span>
     
         <span class="sidebar-category-name" data-categories="blockchain"><span class="iconfont-archer">&#xe60a;</span>blockchain</span>
+    
+        <span class="sidebar-category-name" data-categories="黑产研究"><span class="iconfont-archer">&#xe60a;</span>黑产研究</span>
+    
+        <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
+    
+        <span class="sidebar-category-name" data-categories="技术总结"><span class="iconfont-archer">&#xe60a;</span>技术总结</span>
     
     </div>
     <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>

@@ -432,7 +432,7 @@ height:50vh;
 <hr>
 <h2 id="未花费的交易输出——UTXO"><a href="#未花费的交易输出——UTXO" class="headerlink" title="未花费的交易输出——UTXO"></a>未花费的交易输出——UTXO</h2><p>如前文所说，比特币的交易都是基于UTXO的，即交易的输入是之前交易为花费的输出，这笔交易的输出可以被当做下一笔交易的输入。为什么要引入这样的关系呢？因为比特币是基于去中心化的应用，而去中心化的特征致使比特币没有余额的概念，只能将交易账单分散到区块链中的UTXO。UTXO是交易的基本单元，不能分割。</p>
 <p>下面用一张盗来的图来说明比特币从一个地址被移动到另一个地址所形成的一条所有链：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15292892091142.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15292892091142.jpg" alt=""></p>
 <hr>
 <p>了解了UTXO后，我们可以发现每个UTXO都有一个面值和所有者。在交易过程中一个交易包括一个或多个输入和一个或多个输出。每个输入包含一个对现有UTXO的引用和由与所有者地址相对应的私钥创建的密码学签名。每个输出包含一个新的加入到状态中的UTXO。</p>
 <p>那么验证一笔交易的具体流程是什么呢？这需要引入介绍比特币交易的两个脚本：</p>
@@ -447,14 +447,14 @@ height:50vh;
 <p>当解锁脚本与锁定脚本的设定条件相匹配时，执行组合有效脚本时才会显示结果为真。</p>
 </blockquote>
 <p>P2PKH模型如下：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15292909162189.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15292909162189.jpg" alt=""></p>
 <p>这里我们需要记住这几个指令，在交易验证过程中会提及。</p>
 <hr>
 <p>交易脚本验证的过程其实就是基于栈的执行语言，我在学习是看到一个讲的非常清楚的调用栈的图，这边就引用过来了：</p>
 <p>首先是解锁脚本的运行过程，也就是入栈的过程：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15292910897406.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15292910897406.jpg" alt=""></p>
 <p>锁定脚本的运行过程，也就是出栈的过程：；</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15292911586251.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15292911586251.jpg" alt=""></p>
 <p>如果最后结果为真，说明交易有效。</p>
 <h1 id="0x02-区块链如何解决数据量过大的问题"><a href="#0x02-区块链如何解决数据量过大的问题" class="headerlink" title="0x02 区块链如何解决数据量过大的问题"></a>0x02 区块链如何解决数据量过大的问题</h1><p>我们来思考这样一个问题：</p>
 <p>比如A用户在某一时间与B用户产生了比特币的交易，交易记录会被矿工所接受并存储在当时对应的区块中。但是之后很长一段时间，假如未来的1年内，B都没有再次进行交易，那么B如何得知自己的钱包中还有多少比特币呢？</p>
@@ -463,7 +463,7 @@ height:50vh;
 <p>区块链解决这个问题的方法，就是<strong>默克尔树算法（Merkle）</strong>。</p>
 <p>接下来我盗图来说明：</p>
 <p>在区块链系统中，区块的结构如下：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15293049687731.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15293049687731.jpg" alt=""></p>
 <p>区块体包括当前区块经过验证的、 区块创建过程中生成的所有交易记录。这些记录通过Merkle树的哈希过程生成唯一的Merkle根并记入区块头。</p>
 <p>默克尔树是一种二叉树，由一组叶节点、一组中间节点和一个根节点构成。最下面的大量的叶节点包含基础数据，每个中间节点是它的两个子节点的哈希，根节点也是由它的两个子节点的哈希，代表了默克尔树的顶部。默克尔树的目的是允许区块的数据可以零散地传送：节点可以从一个源下载区块头，从另外的源下载与其有关的树的其它部分，而依然能够确认所有的数据都是正确的。之所以如此是因为哈希向上的扩散：如果一个恶意用户尝试在树的下部加入一个伪造的交易，所引起的改动将导致树的上层节点的改动，以及更上层节点的改动，最终导致根节点的改动以及区块哈希的改动，这样协议就会将其记录为一个完全不同的区块（几乎可以肯定是带着不正确的工作量证明的）。</p>
 <p>默克尔树算法并不是直接计算整个字符串的哈希值，而是每个交易都计算一个哈希值，然后两两连接再次计算哈希值，一直到最顶层的Merkle根。</p>
@@ -891,6 +891,64 @@ top:50vh;
     
     
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     <div class="total-and-search">
         <div class="total-archive">
         Total : 21
@@ -910,6 +968,11 @@ top:50vh;
     
     <div class="archive-year"> 2018 </div>
     <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/29</span><a class="archive-post-title" href= "/2018/11/29/JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667）/" >JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667）</a>
+        </li>
     
     
         <li class="archive-post-item">
@@ -1029,19 +1092,10 @@ top:50vh;
             <span class="archive-post-date">08/09</span><a class="archive-post-title" href= "/2016/08/09/IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）/" >IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）</a>
         </li>
     
-    
-        <li class="archive-post-item">
-            <span class="archive-post-date">07/01</span><a class="archive-post-title" href= "/2016/07/01/Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）/" >Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）</a>
-        </li>
-    
     </div>
   </div>
         <div class="sidebar-panel-tags">
     <div class="sidebar-tags-name">
-    
-        <span class="sidebar-tag-name" data-tags="黑产研究"><span class="iconfont-archer">&#xe606;</span>黑产研究</span>
-    
-        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
     
         <span class="sidebar-tag-name" data-tags="漏洞分析"><span class="iconfont-archer">&#xe606;</span>漏洞分析</span>
     
@@ -1051,19 +1105,25 @@ top:50vh;
     
         <span class="sidebar-tag-name" data-tags="环境部署"><span class="iconfont-archer">&#xe606;</span>环境部署</span>
     
-        <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
-    
-        <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
-    
-        <span class="sidebar-tag-name" data-tags="CookBook"><span class="iconfont-archer">&#xe606;</span>CookBook</span>
-    
-        <span class="sidebar-tag-name" data-tags="SQL注入"><span class="iconfont-archer">&#xe606;</span>SQL注入</span>
-    
         <span class="sidebar-tag-name" data-tags="CTF"><span class="iconfont-archer">&#xe606;</span>CTF</span>
     
         <span class="sidebar-tag-name" data-tags="blockchain"><span class="iconfont-archer">&#xe606;</span>blockchain</span>
     
+        <span class="sidebar-tag-name" data-tags="黑产研究"><span class="iconfont-archer">&#xe606;</span>黑产研究</span>
+    
         <span class="sidebar-tag-name" data-tags="薅羊毛"><span class="iconfont-archer">&#xe606;</span>薅羊毛</span>
+    
+        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
+    
+        <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
+    
+        <span class="sidebar-tag-name" data-tags="Java"><span class="iconfont-archer">&#xe606;</span>Java</span>
+    
+        <span class="sidebar-tag-name" data-tags="CookBook"><span class="iconfont-archer">&#xe606;</span>CookBook</span>
+    
+        <span class="sidebar-tag-name" data-tags="SQL注入"><span class="iconfont-archer">&#xe606;</span>SQL注入</span>
     
     </div>
     <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
@@ -1098,19 +1158,19 @@ jsonContent:
         <div class="sidebar-panel-categories">
     <div class="sidebar-categories-name">
     
-        <span class="sidebar-category-name" data-categories="黑产研究"><span class="iconfont-archer">&#xe60a;</span>黑产研究</span>
-    
         <span class="sidebar-category-name" data-categories="漏洞分析"><span class="iconfont-archer">&#xe60a;</span>漏洞分析</span>
     
         <span class="sidebar-category-name" data-categories="环境部署"><span class="iconfont-archer">&#xe60a;</span>环境部署</span>
     
-        <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
-    
-        <span class="sidebar-category-name" data-categories="技术总结"><span class="iconfont-archer">&#xe60a;</span>技术总结</span>
-    
         <span class="sidebar-category-name" data-categories="一些思路"><span class="iconfont-archer">&#xe60a;</span>一些思路</span>
     
         <span class="sidebar-category-name" data-categories="blockchain"><span class="iconfont-archer">&#xe60a;</span>blockchain</span>
+    
+        <span class="sidebar-category-name" data-categories="黑产研究"><span class="iconfont-archer">&#xe60a;</span>黑产研究</span>
+    
+        <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
+    
+        <span class="sidebar-category-name" data-categories="技术总结"><span class="iconfont-archer">&#xe60a;</span>技术总结</span>
     
     </div>
     <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>

