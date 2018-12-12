@@ -15,7 +15,7 @@
     <meta name="description" content="Some Lucifaer's security researchers and security analysis">
     <meta name="Cache-Control" content="no-cache">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
-    <title>比特币简介 · Lucifaer&#39;s Blog</title>
+    <title>Lucifaer&#39;s Blog</title>
     <style type="text/css">
     @font-face {
         font-family: 'Oswald-Regular';
@@ -70,8 +70,6 @@
 
     <link rel="preload" href= /css/style.css?v=20180721 as="style" onload="this.onload=null;this.rel='stylesheet'" />
     <link rel="stylesheet" href= /css/mobile.css?v=20180721 media="(max-width: 980px)">
-    
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
     
     <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
 /* This file is meant as a standalone workflow for
@@ -211,23 +209,12 @@
 </head>
 
     
-        <body class="post-body">
-    
     
 <header class="header">
 
     <div class="read-progress"></div>
     <div class="header-sidebar-menu">&#xe775;</div>
     <!-- post页的toggle banner  -->
-    
-    <div class="banner">
-            <div class="blog-title">
-                <a href="/" >Lucifaer&#39;s Blog.</a>
-            </div>
-            <div class="post-title">
-                <a href="#" class="post-name">比特币简介</a>
-            </div>
-    </div>
     
     <a class="home-link" href=/>Lucifaer's Blog.</a>
 </header>
@@ -241,74 +228,24 @@
 
 
 
-height:50vh;
-
 >
     
     <!-- 主页  -->
-    
-    
-    <!-- 404页  -->
             
     <div class="site-intro-placeholder"></div>
-    <div class="site-intro-img" style="background-image: url(/intro/post-bg.jpg)"></div>
+    <div class="site-intro-img" style="background-image: url(/)"></div>
     <div class="site-intro-meta">
         <!-- 标题  -->
         <h1 class="intro-title">
             <!-- 主页  -->
-            
-            比特币简介
-            <!-- 404 -->
             
         </h1>
         <!-- 副标题 -->
         <p class="intro-subtitle">
             <!-- 主页副标题  -->
             
-            
-            <!-- 404 -->
-            
         </p>
         <!-- 文章页meta -->
-        
-            <div class="post-intros">
-                <!-- 文章页标签  -->
-                
-                    <div class= post-intro-tags >
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "blockchain">blockchain</a>
-    
-</div>
-                
-                
-                    <div class="post-intro-read">
-                        <span>Word count: <span class="post-count">2,445</span> / Reading time: <span class="post-count">8 min</span></span>
-                    </div>
-                
-                <div class="post-intro-meta">
-                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
-                    <span class="post-intro-time">2018/06/18</span>
-                    
-                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
-                        <span class="iconfont-archer">&#xe602;</span>
-                        <span id="busuanzi_value_page_pv"></span>
-                    </span>
-                    
-                    <span class="shareWrapper">
-                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
-                        <span class="shareText">Share</span>
-                        <ul class="shareList">
-                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
-                                <div class="share-qrcode"></div>
-                            </li>
-                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
-                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
-                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
-                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
-                        </ul>
-                    </span>
-                </div>
-            </div>
         
     </div>
 </div>
@@ -409,131 +346,45 @@ height:50vh;
 </script>        
         <img class="loading" src="/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
         <div class="container container-unloaded">
-            <main class="main post-page">
-    <article class="article-entry">
-        <p>本篇重点不放在科普比特币上，重点放在比特币交易的整个生命周期上。</p>
-<p>比特币是基于分布式网络的数字货币，当然也可以说是基于区块链网络的数字货币。比特币的核心是基于<strong>非对称加密</strong>来的，<strong>非对称加密保证了支付的可靠性</strong>。而比特币钱包其实就是你的<strong>公私钥对</strong>，交易时你只需要把钱包地址交给别人即可，别人用你的公钥加密比特币，发送到你的地址就完成了交易，而你的钱包地址是由你自己的私钥证明的，所以你丢了私钥，就丢掉了你的钱包。</p>
-<a id="more"></a>
-<h1 id="0x00-简述比特币的交易过程"><a href="#0x00-简述比特币的交易过程" class="headerlink" title="0x00 简述比特币的交易过程"></a>0x00 简述比特币的交易过程</h1><p>首先在交易发起时，转出比特币的一方提供以下数据：</p>
-<ul>
-<li>上一笔交易的 Hash（你从哪里得到这些比特币）</li>
-<li>本次交易双方的地址</li>
-<li>支付方的公钥</li>
-<li>支付方的私钥生成的数字签名</li>
-</ul>
-<p>验证这笔交易是否属实，只要经过三步检查即可：</p>
-<ul>
-<li>第一步，找到上一笔交易，确认支付方的比特币来源。</li>
-<li>第二步，算出支付方公钥的指纹，确认与支付方的地址一致，从而保证公钥属实。</li>
-<li>第三步，使用公钥去解开数字签名，保证私钥属实。</li>
-</ul>
-<p>确认交易真实性后，将交易数据传送给矿工，矿工将交易数据写入区块链中，就完成了交易。</p>
-<h1 id="0x01-比特币交易细节"><a href="#0x01-比特币交易细节" class="headerlink" title="0x01 比特币交易细节"></a>0x01 比特币交易细节</h1><p>从上面的交易流程中我们可以看到比特币账本可以被认为是一个状态转换系统，这个系统中包含所有现存比特币的所有权状态和“状态转换函数”。状态转换函数以当前状态和交易为输入，输出新的状态。但是这个状态和一般的状态还有所不同，<strong>比特币系统的状态是所有已经被挖出的、没有花费的比特币集合</strong>。要理解这个概念，就不得不说UTXO。</p>
-<hr>
-<h2 id="未花费的交易输出——UTXO"><a href="#未花费的交易输出——UTXO" class="headerlink" title="未花费的交易输出——UTXO"></a>未花费的交易输出——UTXO</h2><p>如前文所说，比特币的交易都是基于UTXO的，即交易的输入是之前交易为花费的输出，这笔交易的输出可以被当做下一笔交易的输入。为什么要引入这样的关系呢？因为比特币是基于去中心化的应用，而去中心化的特征致使比特币没有余额的概念，只能将交易账单分散到区块链中的UTXO。UTXO是交易的基本单元，不能分割。</p>
-<p>下面用一张盗来的图来说明比特币从一个地址被移动到另一个地址所形成的一条所有链：</p>
-<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15292892091142.jpg" alt=""></p>
-<hr>
-<p>了解了UTXO后，我们可以发现每个UTXO都有一个面值和所有者。在交易过程中一个交易包括一个或多个输入和一个或多个输出。每个输入包含一个对现有UTXO的引用和由与所有者地址相对应的私钥创建的密码学签名。每个输出包含一个新的加入到状态中的UTXO。</p>
-<p>那么验证一笔交易的具体流程是什么呢？这需要引入介绍比特币交易的两个脚本：</p>
-<hr>
-<h2 id="验证一笔交易——P2PKH——比特币交易脚本"><a href="#验证一笔交易——P2PKH——比特币交易脚本" class="headerlink" title="验证一笔交易——P2PKH——比特币交易脚本"></a>验证一笔交易——P2PKH——比特币交易脚本</h2><p>P2PKH全名是（Pay-to-Public-Key-Hash）主要是用于完成比特币交易的一个常见的脚本，其主要由两个脚本构成：</p>
-<ul>
-<li>Signature script——解锁UTXO脚本，用于解锁UTXO，同时在交易流程中也称作交易输入。</li>
-<li>PubKey script——锁定脚本，这个脚本是交易输出所指向的一个迪奥本，主要用于验证谁的签名能匹配交易输出地址，比特币就转给谁</li>
-</ul>
-<p>每一个比特币节点会同时执行解锁和锁定脚本（锁定脚本是上一个交易的锁定脚本，这样可以确认输入的来源，即上一笔交易输出作为下一笔交易的输入）来验证一笔交易，如果脚本组合结果为真，则交易有效。</p>
-<blockquote>
-<p>当解锁脚本与锁定脚本的设定条件相匹配时，执行组合有效脚本时才会显示结果为真。</p>
-</blockquote>
-<p>P2PKH模型如下：</p>
-<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15292909162189.jpg" alt=""></p>
-<p>这里我们需要记住这几个指令，在交易验证过程中会提及。</p>
-<hr>
-<p>交易脚本验证的过程其实就是基于栈的执行语言，我在学习是看到一个讲的非常清楚的调用栈的图，这边就引用过来了：</p>
-<p>首先是解锁脚本的运行过程，也就是入栈的过程：</p>
-<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15292910897406.jpg" alt=""></p>
-<p>锁定脚本的运行过程，也就是出栈的过程：；</p>
-<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15292911586251.jpg" alt=""></p>
-<p>如果最后结果为真，说明交易有效。</p>
-<h1 id="0x02-区块链如何解决数据量过大的问题"><a href="#0x02-区块链如何解决数据量过大的问题" class="headerlink" title="0x02 区块链如何解决数据量过大的问题"></a>0x02 区块链如何解决数据量过大的问题</h1><p>我们来思考这样一个问题：</p>
-<p>比如A用户在某一时间与B用户产生了比特币的交易，交易记录会被矿工所接受并存储在当时对应的区块中。但是之后很长一段时间，假如未来的1年内，B都没有再次进行交易，那么B如何得知自己的钱包中还有多少比特币呢？</p>
-<p>我们知道在区块链系统中，尤其是在使用UTXO方式存储交易的区块链系统中，每一个区块保存的都是交易的过程。如果一个账户一直没有交易，它则不会出现在最新的区块中。所以就造成了如上的问题——当前区块没有B一年前的交易信息，那么B如何能得知自己的比特币钱包中的比特币数量呢？</p>
-<p>如果按照传统数据库删除历史数据的方式，只要一个区块中有一个交易一直没有后续交易（即没有人使用这个交易的输出账户），为了维护整个区块链系统的密码学完整性和安全性，这个区块就必须被保留，同时这个区块之后的所有区块也必须被保留。这样数据会不停的增长，当数据量过大时，处理数据就会非常的慢。所以这个问题最后就是<strong>区块链如何解决数据量过大的问题</strong>。</p>
-<p>区块链解决这个问题的方法，就是<strong>默克尔树算法（Merkle）</strong>。</p>
-<p>接下来我盗图来说明：</p>
-<p>在区块链系统中，区块的结构如下：</p>
-<p><img src="http://image-lucifaer.test.upcdn.net/2018/11/29/15293049687731.jpg" alt=""></p>
-<p>区块体包括当前区块经过验证的、 区块创建过程中生成的所有交易记录。这些记录通过Merkle树的哈希过程生成唯一的Merkle根并记入区块头。</p>
-<p>默克尔树是一种二叉树，由一组叶节点、一组中间节点和一个根节点构成。最下面的大量的叶节点包含基础数据，每个中间节点是它的两个子节点的哈希，根节点也是由它的两个子节点的哈希，代表了默克尔树的顶部。默克尔树的目的是允许区块的数据可以零散地传送：节点可以从一个源下载区块头，从另外的源下载与其有关的树的其它部分，而依然能够确认所有的数据都是正确的。之所以如此是因为哈希向上的扩散：如果一个恶意用户尝试在树的下部加入一个伪造的交易，所引起的改动将导致树的上层节点的改动，以及更上层节点的改动，最终导致根节点的改动以及区块哈希的改动，这样协议就会将其记录为一个完全不同的区块（几乎可以肯定是带着不正确的工作量证明的）。</p>
-<p>默克尔树算法并不是直接计算整个字符串的哈希值，而是每个交易都计算一个哈希值，然后两两连接再次计算哈希值，一直到最顶层的Merkle根。</p>
-<p>也就是默克尔树完成了将一个区块转换为一串哈希值的过程。这样每个交易的区块都可以单独删除，只需要保留交易的哈希值就行。</p>
-<p>通过这样的方法就可以完美的解决数据量过大的问题。</p>
-<h1 id="0x03-区块链如何多点进行哈希验证？"><a href="#0x03-区块链如何多点进行哈希验证？" class="headerlink" title="0x03 区块链如何多点进行哈希验证？"></a>0x03 区块链如何多点进行哈希验证？</h1><p>现在复杂度提高一点，在P2P网络中下载时，会把大文件切成小文件，同时从多个机器上下载数据，这个时候怎么验证数据呢？</p>
-<p>以BT下载为例，在下载真正的数据之前，我们会先下载一个哈希列表的（每个下小块计算出一个哈希），如果有一个小块数据在传输过程中损坏了，那我只要重新下载这一个数据块就行了，这时有一个问题就出现了，那么多的哈希，怎么保证它们本身(哈希列表中的哈希值)都是正确地呢？</p>
-<p>答案是把每个小块数据的哈希值拼到一起，然后对这个长字符串在作一次哈希运算，得到哈希列表的根哈希。只要根哈希校对比一样就说明验哈希列表是正确的，再通过哈希列表校验小数据块，如果所有的小数据块验证通过则说明大文件没有被损坏。</p>
-
-    </article>
-    <!-- license  -->
+            <main class="main index-page">
     
-        <div class="license-wrapper">
-            <p>原文作者: <a href="https://lucifaer.com">Lucifaer</a>
-            <p>原文链接: <a href="https://lucifaer.com/2018/06/18/比特币简介/">https://lucifaer.com/2018/06/18/比特币简介/</a>
-            <p>发表日期: <a href="https://lucifaer.com/2018/06/18/比特币简介/">June 18th 2018, 6:57:44 pm</a>
-            <p>版权声明: 本文采用<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可</p>
+    
+    
+    
+    
+    
+    <article class="index-post">
+        <a class="abstract-title" href = "/2016/08/09/IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）/" >
+            
+                <span>IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）</span>
+        </a>
+        <div class="abstract-content">
+            <p>最近刚报的一个IPS的漏洞，个人感觉使用性并不是很强，但是审计过程却是很有趣的，拿来分享一下。</p>
         </div>
+        <div class="abstract-post-meta">
+            <!-- date  -->
+            <div class="abstract-date">
+                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2016/08/09</span>
+            </div>
+            <!-- tags  -->
+            
+            <div class= abstract-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "漏洞分析">漏洞分析</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "PHP">PHP</a>
+    
+</div>
+            
+        </div>
+    </article>
     
     <!-- paginator  -->
-    <ul class="post-paginator">
-        <li class="next">
-            
-                <div class="nextSlogan">Next Post</div>
-                <a href= "/2018/06/18/以太坊简介/" title= 以太坊简介 >
-                    <div class="nextTitle">以太坊简介</div>
-                </a>
-            
-        </li>
-        <li class="previous">
-            
-                <div class="prevSlogan">Previous Post</div>
-                <a href= "/2018/06/18/区块链补充/" title= 区块链补充 >
-                    <div class="prevTitle">区块链补充</div>
-                </a>
-            
-        </li>
-    </ul>
-    <!-- 评论插件 -->
-    <!-- 来必力City版安装代码 -->
-
-    <div id="lv-container" data-id="city" data-uid= MTAyMC8zODcyOC8xNTI1Ng==>
-        <script type="text/javascript">
-            (function(d, s) {
-                var j, e = d.getElementsByTagName(s)[0];
-         
-                if (typeof LivereTower === 'function') { return; }
-         
-                j = d.createElement(s);
-                j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
-                j.async = true;
-         
-                e.parentNode.insertBefore(j, e);
-            })(document, 'script');
-             </script>
-         <noscript> 为正常使用来必力评论功能请激活JavaScript</noscript>
-    </div>
-
-<!-- City版安装代码已完成 -->
     
+    <nav class="page-nav">
+        <a class="extend prev" rel="prev" href="/categories/漏洞分析/">&#60; PREV</a><a class="page-number" href="/categories/漏洞分析/">1</a><span class="page-number current">2</span>
+    </nav>
     
-    <!--PC和WAP自适应版-->
-
-    <!--PC版-->
-
-
-    
-    
-
-    <!-- 评论 -->
 </main>
             <!-- profile -->
             
@@ -615,24 +466,6 @@ height:50vh;
 </footer>
     </div>
     <!-- toc -->
-    
-    <div class="toc-wrapper" style=
-    
-
-
-
-
-
-
-
-top:50vh;
-
-    >
-        <div class="toc-catalog">
-            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
-        </div>
-        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#0x00-简述比特币的交易过程"><span class="toc-number">1.</span> <span class="toc-text">0x00 简述比特币的交易过程</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-比特币交易细节"><span class="toc-number">2.</span> <span class="toc-text">0x01 比特币交易细节</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#未花费的交易输出——UTXO"><span class="toc-number">2.1.</span> <span class="toc-text">未花费的交易输出——UTXO</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#验证一笔交易——P2PKH——比特币交易脚本"><span class="toc-number">2.2.</span> <span class="toc-text">验证一笔交易——P2PKH——比特币交易脚本</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-区块链如何解决数据量过大的问题"><span class="toc-number">3.</span> <span class="toc-text">0x02 区块链如何解决数据量过大的问题</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-区块链如何多点进行哈希验证？"><span class="toc-number">4.</span> <span class="toc-text">0x03 区块链如何多点进行哈希验证？</span></a></li></ol>
-    </div>
     
     <div class="back-top iconfont-archer">&#xe639;</div>
     <div class="sidebar sidebar-hide">
@@ -1241,8 +1074,6 @@ jsonContent:
     
     </div>
     <!-- async load share.js -->
-    
-        <script src="/scripts/share.js" async></script>    
      
     </body>
 </html>
