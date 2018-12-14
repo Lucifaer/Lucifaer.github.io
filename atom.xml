@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://lucifaer.com/"/>
-  <updated>2018-12-12T08:40:19.872Z</updated>
+  <updated>2018-12-14T11:01:43.543Z</updated>
   <id>https://lucifaer.com/</id>
   
   <author>
@@ -15,6 +15,28 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>如何解决Pyppeteer的Target closed错误</title>
+    <link href="https://lucifaer.com/2018/12/14/%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3Pyppeteer%E7%9A%84Target%20closed%E9%94%99%E8%AF%AF/"/>
+    <id>https://lucifaer.com/2018/12/14/如何解决Pyppeteer的Target closed错误/</id>
+    <published>2018-12-14T10:56:00.000Z</published>
+    <updated>2018-12-14T11:01:43.543Z</updated>
+    
+    <content type="html"><![CDATA[<p>最近写自己的Sniper遇到的一个问题，很有意思。</p><a id="more"></a><p>如果你之前用过Chrome Headless的话，你一定知道Chrome亲儿子<code>Puppeteer</code>——Chrome官方提供的Nodejs的API。比较难受的是官方并没有提供Python的API项目来让我等以Python为生的人享受良好的使用体验。所以如果有尝试过利用Python来写Chrome Headless项目的，一定会知道<code>Pyppeteer</code>这个第三方库。这篇文不说这个库怎么用（请看<code>Puppeteer</code>的文档），而是说在使用<code>Pyppeteer</code>进行页面交互时经常会出现的<code>Protocol error Target.activateTarget: Target closed.</code>错误的解决方案。</p><h1 id="什么时候会出现这个错误？"><a href="#什么时候会出现这个错误？" class="headerlink" title="什么时候会出现这个错误？"></a>什么时候会出现这个错误？</h1><p>简单来说，就是在利用<code>Pyppeteer</code>操作Chrome Headless执行js进行页面内容提取或交互时会出现这个错误。具体一点说，就是你在执行类似<code>page.screenshot()</code>、<code>page.evaluate()</code>这类操作的时候可能会出现这个问题，尤其是在你处理的页面过长，比如需要你执行惰性加载的页面过长时就会出现这个错误。</p><h1 id="出现问题的原因？"><a href="#出现问题的原因？" class="headerlink" title="出现问题的原因？"></a>出现问题的原因？</h1><p>无论<code>Pyppeteer</code>还是<code>Puppeteer</code>他们都是通过WebSocket来与Chrome Headless进行通讯的，也就是说整个连接的流程应该是：</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Internals&gt;Headless Blink&gt;Network&gt;WebSockets</span><br></pre></td></tr></table></figure><p>在本地，Chrome Headless相当于一个WebSocket服务器，而<code>Pyppeteer</code>和<code>Puppeteer</code>是用底层的WebSocket客户端与Chrome Headless进行通信，从而执行各种操作的。</p><p>WebSocket检查连接是否超时是通过ping连接是否超时来确定的，首先客户端向服务端发送ping请求，服务端处理请求并给客户端一个pong的响应，如果服务端无法处理ping请求，即不会向客户端发送pong响应，客户端就会断开和服务端的连接，而这就是出现这个问题的关键。</p><p><a href="https://bugs.chromium.org/p/chromium/issues/detail?id=865002" target="_blank" rel="noopener">Chrom Headless在今年报了一个bug</a>，简单来说就是Chrome Headless的WebSocket服务器无法处理ping请求，也就是处理ping时不会返回pong，这就导致客户端一定会在20s左右的时间断开与Chrome Headless的连接，所以会显示连接目标已经关闭的这个错误。</p><h1 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h1><p>目前还没有一个特别好的解决方案，比较好的解决方案是降低WebSocket评定连接断开的优先级，也就是让客户端不发送ping请求，这样至少会把断开的时间从20s延长至15分钟。</p><p><code>Pyppeteer</code>的解决方案，在github已经有人提出，但是patch并未合并到主分支上，所以需要自己本地改一下。<a href="https://github.com/miyakogi/pyppeteer/blob/master/pyppeteer/connection.py#L43" target="_blank" rel="noopener">#159</a></p><p>在<code>pyppeteer/pyppeteer/connection.py</code>的43行：</p><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">self._ws = websockets.client.connect(</span><br><span class="line">            self._url, max_size=<span class="keyword">None</span>, loop=self._loop)</span><br></pre></td></tr></table></figure><h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><ul><li><a href="https://github.com/miyakogi/pyppeteer/pull/160" target="_blank" rel="noopener">https://github.com/miyakogi/pyppeteer/pull/160</a></li><li><a href="https://bugs.chromium.org/p/chromium/issues/detail?id=865002" target="_blank" rel="noopener">https://bugs.chromium.org/p/chromium/issues/detail?id=865002</a></li><li><a href="https://github.com/miyakogi/pyppeteer/issues/175" target="_blank" rel="noopener">https://github.com/miyakogi/pyppeteer/issues/175</a></li></ul>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;最近写自己的Sniper遇到的一个问题，很有意思。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="Python" scheme="https://lucifaer.com/categories/Python/"/>
+    
+    
+      <category term="Python" scheme="https://lucifaer.com/tags/Python/"/>
+    
+  </entry>
   
   <entry>
     <title>S2-045（CVE-2017-5638）分析</title>
