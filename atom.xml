@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://lucifaer.com/"/>
-  <updated>2018-12-14T11:01:43.543Z</updated>
+  <updated>2018-12-17T10:00:20.837Z</updated>
   <id>https://lucifaer.com/</id>
   
   <author>
@@ -15,6 +15,32 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>S2-045（CVE-2017-5638）分析</title>
+    <link href="https://lucifaer.com/2018/12/17/S2-046%EF%BC%88CVE-2017-5638%EF%BC%89%E5%88%86%E6%9E%90/"/>
+    <id>https://lucifaer.com/2018/12/17/S2-046（CVE-2017-5638）分析/</id>
+    <published>2018-12-17T10:00:00.000Z</published>
+    <updated>2018-12-17T10:00:20.837Z</updated>
+    
+    <content type="html"><![CDATA[<p>S2-046，是045的另外两个触发流程，分析起来还是很有趣的。</p><a id="more"></a><h1 id="0x00-漏洞描述"><a href="#0x00-漏洞描述" class="headerlink" title="0x00 漏洞描述"></a>0x00 漏洞描述</h1><blockquote><p>Problem<br>It is possible to perform a RCE attack with a malicious Content-Disposition value or with improper Content-Length header. If the Content-Disposition / Content-Length value is not valid an exception is thrown which is then used to display an error message to a user. This is a different vector for the same vulnerability described in S2-045 (CVE-2017-5638).</p></blockquote><p>可以看到046是和045一样的触发点，只不过是利用方式不同，当构造一个<code>Content-Disposition</code>或一个错误的<code>Content-Length</code>时就有可能造成RCE，而造成ognl表达式执行的点还是在<code>Jakarta Multipart</code>解析器中。</p><p>总体来说046和045如出一辙，重复的<code>FileUploadInterceptor</code>文件上传拦截器就可以不用分析了，直接瞅瞅触发流程就好。</p><h1 id="0x01-整体触发流程"><a href="#0x01-整体触发流程" class="headerlink" title="0x01 整体触发流程"></a>0x01 整体触发流程</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">MultiPartRequestWrapper$MultiPartRequestWrapper:86 # 处理requests请求</span><br><span class="line">  JakartaMultiPartRequest$parse:67 # 处理上传请求，捕捉上传异常</span><br><span class="line">    JakartaMultiPartRequest$processUpload:96 # 解析请求</span><br><span class="line">      JakartaMultiPartRequest$processFileField:105 # 处理上传表单</span><br><span class="line">        DiskFileItem$getName:259 # 获取并检查上传文件名</span><br><span class="line">          Steams$checkFileName:189 # 上传文件名中存在空白字符，抛出异常</span><br></pre></td></tr></table></figure><h1 id="0x02-漏洞分析"><a href="#0x02-漏洞分析" class="headerlink" title="0x02 漏洞分析"></a>0x02 漏洞分析</h1><p>既然我们已经知道046的触发点和045的触发点是相同的，也就是说我们不需要重复去看<code>FileUploadInterceptor</code>执行ognl的过程了，我们只需要关注<code>FileUpload</code>这一部分的处理过程就好。</p><p>通过045我们知道ognl是通过报错信息传递的，而在046中，ongl也是通过这样的方法传递的。文件上传的过程中主要流程是在<code>org.apache.struts2.dispatcher.multipart.JakartaMultiPartRequest</code>的<code>parse</code>方法中进行处理的，我们再来看看除了045的<code>Content-Type</code>外，哪里还能利用。</p><p><img src="http://image-lucifaer.test.upcdn.net/2018/12/17/15450321051901.jpg" alt=""></p><p>注意红框框的这两部分，一部分是处理上传请求参数并创建新的<code>upload item</code>，而另一部分是在经过表单校验后，如果为上传表单时会执行的方法。而前一个是045的利用电，后一个是046的一个利用方式，接下来分别说一下046的两个利用流。</p><h2 id="2-1-JakartaMultiPartRequest上传filename中存在空字符"><a href="#2-1-JakartaMultiPartRequest上传filename中存在空字符" class="headerlink" title="2.1 JakartaMultiPartRequest上传filename中存在空字符"></a>2.1 JakartaMultiPartRequest上传filename中存在空字符</h2><p><img src="http://image-lucifaer.test.upcdn.net/2018/12/17/15450323713374.jpg" alt=""></p><p>可以看到首先会判断文件上传表单中是否没有给定文件名（即没有选择上传文件），跟进看一下<code>getName()</code>方法是如何校验文件名的:</p><p><img src="http://image-lucifaer.test.upcdn.net/2018/12/17/15450325297242.jpg" alt=""></p><p>在继承关系中我们看到<code>getName()</code>在<code>org.apache.commons.fileupload.disk</code>中有具体的实现：</p><p><img src="http://image-lucifaer.test.upcdn.net/2018/12/17/15450326052768.jpg" alt=""></p><p>继续跟进<code>checkFileName()</code>:</p><p><img src="http://image-lucifaer.test.upcdn.net/2018/12/17/15450326547107.jpg" alt=""></p><p>可以看到首先判断文件名是否存在，之后判断文件名中是否存在空字符，而在java中：</p><p><img src="http://image-lucifaer.test.upcdn.net/2018/12/17/15450345931743.jpg" alt=""></p><p>这样是可以通过检测的，所以也就是说我们可以通过构造一个包含ognl表达式的<code>fileName</code>进入if判断中，并且抛出一个<code>InvalidFileNameException</code>的异常，同时经过处理后的<code>fileName</code>拼接进报错信息中。</p><p>回到最开始的<code>parse()</code>方法中：</p><p><img src="http://image-lucifaer.test.upcdn.net/2018/12/17/15450347505252.jpg" alt=""></p><p>可以看到这里的异常处理直接把报错信息传入<code>buildErrorMessage()</code>中，剩下的流程就和045中是一样的，会直接执行报错信息中的ognl表达式。</p><h2 id="2-2-JakartaStreamMultiPartRequest上传长度过长"><a href="#2-2-JakartaStreamMultiPartRequest上传长度过长" class="headerlink" title="2.2 JakartaStreamMultiPartRequest上传长度过长"></a>2.2 JakartaStreamMultiPartRequest上传长度过长</h2><p>这一个利用流程的通用性比之上面的来说，就差很多，首先<code>JakartaStreamMultiPartRequest</code>的处理流默认是不开启的，为了测试漏洞的话，可以在struts.xml中主动配置：</p><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">constant</span> <span class="attr">name</span>=<span class="string">"struts.multipart.parser"</span> <span class="attr">value</span>=<span class="string">"jakarta-stream"</span> /&gt;</span></span><br></pre></td></tr></table></figure><p><code>JakartaStreamMultiPartRequest</code>的对<code>Content-Length</code>的异常处理和<code>JakartaMultiPartRequest</code>不同：</p><p><img src="http://image-lucifaer.test.upcdn.net/2018/12/17/15450377939315.jpg" alt=""></p><p>判断<code>Content-Length</code>是否符合标准的地方是：</p><p><img src="http://image-lucifaer.test.upcdn.net/2018/12/17/15450378659312.jpg" alt=""></p><p><img src="http://image-lucifaer.test.upcdn.net/2018/12/17/15450378857311.jpg" alt=""></p><p>如果超出了<code>maxSize</code>则会进入<code>addFileSkippedError()</code>：</p><p><img src="http://image-lucifaer.test.upcdn.net/2018/12/17/15450381417880.jpg" alt=""></p><p>可以看到会直接把<code>fileName</code>拼接进错误信息中，然后传到<code>buildErrorMessage()</code>中，执行错误信息中的ognl表达式。</p><p><strong>所以总体来说两种利用方式的关键是构造含有ognl表达式的<code>fileName</code></strong>。</p><h1 id="0x03-构造POC"><a href="#0x03-构造POC" class="headerlink" title="0x03 构造POC"></a>0x03 构造POC</h1><p>和045的poc没什么区别，可以参考<a href="https://gist.github.com/frohoff/a3e24764561c0c18b6270805140e7600" target="_blank" rel="noopener">poc</a>，最终的效果为：</p><p><img src="http://image-lucifaer.test.upcdn.net/2018/12/17/15450403368998.jpg" alt=""></p><h1 id="0x04-Reference"><a href="#0x04-Reference" class="headerlink" title="0x04 Reference"></a>0x04 Reference</h1><ul><li><a href="https://cwiki.apache.org/confluence/display/WW/S2-046" target="_blank" rel="noopener">https://cwiki.apache.org/confluence/display/WW/S2-046</a></li><li><a href="https://gist.github.com/frohoff/a3e24764561c0c18b6270805140e7600" target="_blank" rel="noopener">https://gist.github.com/frohoff/a3e24764561c0c18b6270805140e7600</a></li></ul>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;S2-046，是045的另外两个触发流程，分析起来还是很有趣的。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="漏洞分析" scheme="https://lucifaer.com/categories/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/"/>
+    
+    
+      <category term="漏洞分析" scheme="https://lucifaer.com/tags/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/"/>
+    
+      <category term="Java" scheme="https://lucifaer.com/tags/Java/"/>
+    
+      <category term="Struts2" scheme="https://lucifaer.com/tags/Struts2/"/>
+    
+  </entry>
   
   <entry>
     <title>如何解决Pyppeteer的Target closed错误</title>
