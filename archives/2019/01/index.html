@@ -209,10 +209,8 @@
 </head>
 
     
-        <body class="home-body">
     
-    
-<header class="header index-header">
+<header class="header">
 
     <div class="read-progress"></div>
     <div class="header-sidebar-menu">&#xe775;</div>
@@ -230,34 +228,21 @@
 
 
 
-height:50vh;
-
 >
     
     <!-- 主页  -->
-    
-    
-    <!-- 文章页  -->
             
     <div class="site-intro-placeholder"></div>
-    <div class="site-intro-img" style="background-image: url(/intro/index-bg.jpg)"></div>
+    <div class="site-intro-img" style="background-image: url(/)"></div>
     <div class="site-intro-meta">
         <!-- 标题  -->
         <h1 class="intro-title">
             <!-- 主页  -->
             
-            Lucifaer's Blog.
-            <!-- 文章页  -->
-            
         </h1>
         <!-- 副标题 -->
         <p class="intro-subtitle">
             <!-- 主页副标题  -->
-            
-            
-                Security Reseacher
-            
-            <!-- 文章页  -->
             
         </p>
         <!-- 文章页meta -->
@@ -369,217 +354,23 @@ height:50vh;
     
     
     <article class="index-post">
-        <a class="abstract-title" href = "/2017/05/27/Joomla 框架的简单跟进/" >
+        <a class="abstract-title" href = "/2019/01/16/浅析OGNL的攻防史/" >
             
-                <span>Joomla 框架的简单跟进</span>
+                <span>浅析OGNL的攻防史</span>
         </a>
         <div class="abstract-content">
-            <p>最近爆出的Joomla!3.7.0 Core SQL注入漏洞，在分析的时候难免会接触到一些框架本身调用的问题。本着知根知底的想法，我开始了对Joomla框架的简单跟进。</p>
-<p>PS：本人小菜一个，本篇很大程度上是基于本人对代码的跟踪、总结而写的，可能有很多地方不是很准确，希望大牛们勿喷，多给予一些分享。</p>
+            <p>在分析Struts2漏洞的过程中就一直想把OGNL的运行机制以及Struts2对OGNL的防护机制总结一下，但是一直苦于自己对Struts2的理解不是很深刻而迟迟无法动笔，最近看了<a href="https://lgtm.com/blog/apache_struts_CVE-2018-11776-exploit" target="_blank" rel="noopener">lgtm的这篇文章</a>收获良多，就想在这篇文章的基础上总结一下目前自己对于OGNL的一些理解，希望师傅们斧正。</p>
         </div>
         <div class="abstract-post-meta">
             <!-- date  -->
             <div class="abstract-date">
-                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2017/05/27</span>
+                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2019/01/16</span>
             </div>
             <!-- tags  -->
             
             <div class= abstract-tags >
     
         <a class="post-tag" href="javascript:void(0);" data-tags = "安全研究">安全研究</a>
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "Joomla">Joomla</a>
-    
-</div>
-            
-        </div>
-    </article>
-    
-    
-    
-    
-    
-    
-    <article class="index-post">
-        <a class="abstract-title" href = "/2017/05/09/五指CMS任意文件下载漏洞/" >
-            
-                <span>五指CMS任意文件下载漏洞</span>
-        </a>
-        <div class="abstract-content">
-            <p>最近问<a href="http://balis0ng.com/" target="_blank" rel="noopener">balis0ng师傅</a>要了份源码来看一看，发现几个比较简单的漏洞，这边记录一下。</p>
-        </div>
-        <div class="abstract-post-meta">
-            <!-- date  -->
-            <div class="abstract-date">
-                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2017/05/09</span>
-            </div>
-            <!-- tags  -->
-            
-            <div class= abstract-tags >
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "漏洞分析">漏洞分析</a>
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "PHP">PHP</a>
-    
-</div>
-            
-        </div>
-    </article>
-    
-    
-    
-    
-    
-    
-    <article class="index-post">
-        <a class="abstract-title" href = "/2017/04/13/Phpcms V9.6.0任意文件写入getshell/" >
-            
-                <span>Phpcms V9.6.0任意文件写入getshell</span>
-        </a>
-        <div class="abstract-content">
-            <h1 id="0x00-漏洞简述"><a href="#0x00-漏洞简述" class="headerlink" title="0x00 漏洞简述"></a>0x00 漏洞简述</h1><h2 id="1-漏洞简介"><a href="#1-漏洞简介" class="headerlink" title="1. 漏洞简介"></a>1. 漏洞简介</h2><p>上周phpcms v9.6的任意文件上传的漏洞，已经潜伏半年多的一个漏洞。该漏洞可以在用户注册界面以未授权的情况下实现任意文件上传。</p>
-<h2 id="2-漏洞影响版本"><a href="#2-漏洞影响版本" class="headerlink" title="2. 漏洞影响版本"></a>2. 漏洞影响版本</h2><p>phpcms v9.6</p>
-        </div>
-        <div class="abstract-post-meta">
-            <!-- date  -->
-            <div class="abstract-date">
-                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2017/04/13</span>
-            </div>
-            <!-- tags  -->
-            
-            <div class= abstract-tags >
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "漏洞分析">漏洞分析</a>
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "PHP">PHP</a>
-    
-</div>
-            
-        </div>
-    </article>
-    
-    
-    
-    
-    
-    
-    <article class="index-post">
-        <a class="abstract-title" href = "/2017/02/06/WordPress REST API 内容注入/" >
-            
-                <span>WordPress REST API 内容注入</span>
-        </a>
-        <div class="abstract-content">
-            <h1 id="0x00-漏洞简述"><a href="#0x00-漏洞简述" class="headerlink" title="0x00 漏洞简述"></a>0x00 漏洞简述</h1><h2 id="1-漏洞简介"><a href="#1-漏洞简介" class="headerlink" title="1. 漏洞简介"></a>1. 漏洞简介</h2><p>在<code>REST API</code>自动包含在<code>Wordpress4.7</code>以上的版本，<code>WordPress REST API</code>提供了一组易于使用的HTTP端点，可以使用户以简单的JSON格式访问网站的数据，包括用户，帖子，分类等。检索或更新数据与发送HTTP请求一样简单。上周，一个由<code>REST API</code>引起的影响<code>WorePress4.7.0</code>和<code>4.7.1</code>版本的漏洞被披露，该漏洞可以导致WordPress所有文章内容可以未经验证被查看，修改，删除，甚至创建新的文章，危害巨大。</p>
-<h2 id="2-漏洞影响版本"><a href="#2-漏洞影响版本" class="headerlink" title="2. 漏洞影响版本"></a>2. 漏洞影响版本</h2><ul>
-<li>WordPress4.7.0</li>
-<li>WordPress4.7.1</li>
-</ul>
-        </div>
-        <div class="abstract-post-meta">
-            <!-- date  -->
-            <div class="abstract-date">
-                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2017/02/06</span>
-            </div>
-            <!-- tags  -->
-            
-            <div class= abstract-tags >
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "漏洞分析">漏洞分析</a>
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "PHP">PHP</a>
-    
-</div>
-            
-        </div>
-    </article>
-    
-    
-    
-    
-    
-    
-    <article class="index-post">
-        <a class="abstract-title" href = "/2017/01/18/SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析/" >
-            
-                <span>SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析</span>
-        </a>
-        <div class="abstract-content">
-            <p>免费广告…..推荐使用<code>PHPSTORM+Xdebug</code>来分析漏洞，下面的过程都是利用<code>PHPSTORM</code>来分析的。</p>
-        </div>
-        <div class="abstract-post-meta">
-            <!-- date  -->
-            <div class="abstract-date">
-                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2017/01/18</span>
-            </div>
-            <!-- tags  -->
-            
-            <div class= abstract-tags >
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "漏洞分析">漏洞分析</a>
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "PHP">PHP</a>
-    
-</div>
-            
-        </div>
-    </article>
-    
-    
-    
-    
-    
-    
-    <article class="index-post">
-        <a class="abstract-title" href = "/2016/08/11/CVE-2016-6483 vBulletin 5.2.2 SSRF漏洞/" >
-            
-                <span>CVE-2016-6483 vBulletin 5.2.2 SSRF漏洞</span>
-        </a>
-        <div class="abstract-content">
-            <h1 id="0x00-漏洞概述："><a href="#0x00-漏洞概述：" class="headerlink" title="0x00 漏洞概述："></a>0x00 漏洞概述：</h1><h2 id="漏洞信息"><a href="#漏洞信息" class="headerlink" title="漏洞信息"></a>漏洞信息</h2><p>vBulletin是一个商业论坛程序，它封装了自己的curl用于发出请求。近日研究人员发现在某些版本中其getlinkdata这项功能并没有对跳转进行检测和制止，从而导致SSRF漏洞的产生。</p>
-        </div>
-        <div class="abstract-post-meta">
-            <!-- date  -->
-            <div class="abstract-date">
-                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2016/08/11</span>
-            </div>
-            <!-- tags  -->
-            
-            <div class= abstract-tags >
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "漏洞分析">漏洞分析</a>
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "PHP">PHP</a>
-    
-</div>
-            
-        </div>
-    </article>
-    
-    
-    
-    
-    
-    
-    <article class="index-post">
-        <a class="abstract-title" href = "/2016/08/09/IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）/" >
-            
-                <span>IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）</span>
-        </a>
-        <div class="abstract-content">
-            <p>最近刚报的一个IPS的漏洞，个人感觉使用性并不是很强，但是审计过程却是很有趣的，拿来分享一下。</p>
-        </div>
-        <div class="abstract-post-meta">
-            <!-- date  -->
-            <div class="abstract-date">
-                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2016/08/09</span>
-            </div>
-            <!-- tags  -->
-            
-            <div class= abstract-tags >
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "漏洞分析">漏洞分析</a>
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "PHP">PHP</a>
     
 </div>
             
@@ -588,142 +379,8 @@ height:50vh;
     
     <!-- paginator  -->
     
-    <nav class="page-nav">
-        <a class="extend prev" rel="prev" href="/page/2/">&#60; PREV</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span>
-    </nav>
-    
 </main>
             <!-- profile -->
-            
-            <div class="profile">
-    <img class="profile-avatar" src= /avatar/avater.jpg >
-    <div class="profile-name">Lucifaer</div>
-    <div class="profile-signature">
-            
-                
-                    祝这世界继续热闹
-                    <br />
-                
-            
-                
-                    祝我仍是我
-                    <br />
-                
-            
-    </div>
-    
-    <div class="profile-social">
-        
-    
-        
-            
-                <a href="mailto:l.lucifaer@gmail.com" class="iconfont-archer email" title=email ></a>
-            
-        
-    
-        
-            
-                <a href="//github.com/Lucifaer" class="iconfont-archer github" target="_blank" title=github></a>
-            
-        
-    
-        
-    
-        
-    
-        
-            
-                <a href="//weibo.com/5838222069" class="iconfont-archer weibo" target="_blank" title=weibo></a>
-            
-        
-    
-        
-    
-        
-    
-        
-    
-        
-    
-        
-    
-        
-    
-        
-    
-        
-    
-        
-    
-        
-    
-        
-    
-        
-    
-        
-            
-                <a href="/atom.xml" class="iconfont-archer rss" target="_blank" title=rss></a>
-            
-        
-    
-
-    </div>
-    
-    
-        <div class="friends">
-            <div>FRIENDS</div>
-            
-                
-                    <span>
-                        <a href= //balis0ng.com/ target="_black">Balis0ng</a>
-                    </span>
-                    <br />
-                
-            
-                
-                    <span>
-                        <a href= //03i0.com target="_black">Sn00py</a>
-                    </span>
-                    <br />
-                
-            
-                
-                    <span>
-                        <a href= //over-rainbow.cn target="_black">S_Dante</a>
-                    </span>
-                    <br />
-                
-            
-                
-                    <span>
-                        <a href= //yan-1-20.github.io target="_black">Yan_1_20</a>
-                    </span>
-                    <br />
-                
-            
-                
-                    <span>
-                        <a href= //www.venenof.com target="_black">Venenof</a>
-                    </span>
-                    <br />
-                
-            
-                
-                    <span>
-                        <a href= //www.cnblogs.com/iamstudy target="_black">L3m0n</a>
-                    </span>
-                    <br />
-                
-            
-        </div>
-    
-    
-        <div class="about-me">
-            <a href = "/about" >ABOUT ME</a>
-        </div>
-    
-</div>
             
         </div>
         <footer class="footer footer-unloaded">

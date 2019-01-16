@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html>
+    <!-- title -->
+
+
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" >
+    <meta name="author" content="Lucifaer">
+    <meta name="renderer" content="webkit">
+    <meta name="copyright" content="Lucifaer">
+    <meta name="keywords" content="Lucifaer's blog | Lucifaer">
+    <meta name="description" content="Some Lucifaer's security researchers and security analysis">
+    <meta name="Cache-Control" content="no-cache">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <title>浅析OGNL的攻防史 · Lucifaer&#39;s Blog</title>
+    <style type="text/css">
+    @font-face {
+        font-family: 'Oswald-Regular';
+        src: url("/font/Oswald-Regular.ttf");
+    }
+
+    body {
+        margin: 0;
+    }
+
+    header,
+    footer,
+    .back-top,
+    .sidebar,
+    .container,
+    .site-intro-meta,
+    .toc-wrapper {
+        display: none;
+    }
+
+    .site-intro {
+        position: relative;
+        z-index: 3;
+        width: 100%;
+        /* height: 50vh; */
+        overflow: hidden;
+    }
+
+    .site-intro-placeholder {
+        position: absolute;
+        z-index: -2;
+        top: 0;
+        left: 0;
+        width: calc(100% + 300px);
+        height: 100%;
+        background: repeating-linear-gradient(-45deg, #444 0, #444 80px, #333 80px, #333 160px);
+        background-position: center center;
+        transform: translate3d(-226px, 0, 0);
+        animation: gradient-move 2.5s ease-out 0s 1;
+    }
+
+    @keyframes gradient-move {
+        0% {
+            transform: translate3d(-226px, 0, 0);
+        }
+        100% {
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+</style>
+
+    <link rel="preload" href= /css/style.css?v=20180721 as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="stylesheet" href= /css/mobile.css?v=20180721 media="(max-width: 980px)">
+    
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    
+    <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
+/* This file is meant as a standalone workflow for
+- testing support for link[rel=preload]
+- enabling async CSS loading in browsers that do not support rel=preload
+- applying rel preload css once loaded, whether supported or not.
+*/ -->
+<script>
+(function( w ){
+	"use strict";
+	// rel=preload support test
+	if( !w.loadCSS ){
+		w.loadCSS = function(){};
+	}
+	// define on the loadCSS obj
+	var rp = loadCSS.relpreload = {};
+	// rel=preload feature support test
+	// runs once and returns a function for compat purposes
+	rp.support = (function(){
+		var ret;
+		try {
+			ret = w.document.createElement( "link" ).relList.supports( "preload" );
+		} catch (e) {
+			ret = false;
+		}
+		return function(){
+			return ret;
+		};
+	})();
+
+	// if preload isn't supported, get an asynchronous load by using a non-matching media attribute
+	// then change that media back to its intended value on load
+	rp.bindMediaToggle = function( link ){
+		// remember existing media attr for ultimate state, or default to 'all'
+		var finalMedia = link.media || "all";
+
+		function enableStylesheet(){
+			link.media = finalMedia;
+		}
+
+		// bind load handlers to enable media
+		if( link.addEventListener ){
+			link.addEventListener( "load", enableStylesheet );
+		} else if( link.attachEvent ){
+			link.attachEvent( "onload", enableStylesheet );
+		}
+
+		// Set rel and non-applicable media type to start an async request
+		// note: timeout allows this to happen async to let rendering continue in IE
+		setTimeout(function(){
+			link.rel = "stylesheet";
+			link.media = "only x";
+		});
+		// also enable media after 3 seconds,
+		// which will catch very old browsers (android 2.x, old firefox) that don't support onload on link
+		setTimeout( enableStylesheet, 3000 );
+	};
+
+	// loop through link elements in DOM
+	rp.poly = function(){
+		// double check this to prevent external calls from running
+		if( rp.support() ){
+			return;
+		}
+		var links = w.document.getElementsByTagName( "link" );
+		for( var i = 0; i < links.length; i++ ){
+			var link = links[ i ];
+			// qualify links to those with rel=preload and as=style attrs
+			if( link.rel === "preload" && link.getAttribute( "as" ) === "style" && !link.getAttribute( "data-loadcss" ) ){
+				// prevent rerunning on link
+				link.setAttribute( "data-loadcss", true );
+				// bind listeners to toggle media back
+				rp.bindMediaToggle( link );
+			}
+		}
+	};
+
+	// if unsupported, run the polyfill
+	if( !rp.support() ){
+		// run once at least
+		rp.poly();
+
+		// rerun poly on an interval until onload
+		var run = w.setInterval( rp.poly, 500 );
+		if( w.addEventListener ){
+			w.addEventListener( "load", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		} else if( w.attachEvent ){
+			w.attachEvent( "onload", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		}
+	}
+
+
+	// commonjs
+	if( typeof exports !== "undefined" ){
+		exports.loadCSS = loadCSS;
+	}
+	else {
+		w.loadCSS = loadCSS;
+	}
+}( typeof global !== "undefined" ? global : this ) );
+</script>
+
+    <link rel="icon" href= "/assets/favicon.ico" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js" as="script" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" as="script" />
+    <link rel="preload" href="/scripts/main.js" as="script" />
+    <link rel="preload" as="font" href="/font/Oswald-Regular.ttf" crossorigin>
+    <link rel="preload" as="font" href="https://at.alicdn.com/t/font_327081_1dta1rlogw17zaor.woff" crossorigin>
+    
+        <!-- algolia -->
+        <script>
+            
+            var hits = JSON.parse('{"per_page":10}')
+            var labels = JSON.parse('{"input_placeholder":"Search for Posts","hits_empty":"We did not find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}')
+
+            var algolia = {
+                applicationID: 'K0XKT0INON',
+                apiKey: 'cc8e96eb9aa249bbd7662f7f8f7d70ca',
+                indexName: 'blog',
+                hits: hits,
+                labels: labels
+            }
+        </script>
+    
+    <!-- fancybox -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.js" defer></script>
+    <!-- 百度统计  -->
+    
+    <!-- 谷歌统计  -->
+    
+</head>
+
+    
+        <body class="post-body">
+    
+    
+<header class="header">
+
+    <div class="read-progress"></div>
+    <div class="header-sidebar-menu">&#xe775;</div>
+    <!-- post页的toggle banner  -->
+    
+    <div class="banner">
+            <div class="blog-title">
+                <a href="/" >Lucifaer&#39;s Blog.</a>
+            </div>
+            <div class="post-title">
+                <a href="#" class="post-name">浅析OGNL的攻防史</a>
+            </div>
+    </div>
+    
+    <a class="home-link" href=/>Lucifaer's Blog.</a>
+</header>
+    <div class="wrapper">
+        <div class="site-intro" style=
+
+
+
+
+
+
+
+
+height:50vh;
+
+>
+    
+    <!-- 主页  -->
+    
+    
+    <!-- 404页  -->
+            
+    <div class="site-intro-placeholder"></div>
+    <div class="site-intro-img" style="background-image: url(/intro/post-bg.jpg)"></div>
+    <div class="site-intro-meta">
+        <!-- 标题  -->
+        <h1 class="intro-title">
+            <!-- 主页  -->
+            
+            浅析OGNL的攻防史
+            <!-- 404 -->
+            
+        </h1>
+        <!-- 副标题 -->
+        <p class="intro-subtitle">
+            <!-- 主页副标题  -->
+            
+            
+            <!-- 404 -->
+            
+        </p>
+        <!-- 文章页meta -->
+        
+            <div class="post-intros">
+                <!-- 文章页标签  -->
+                
+                    <div class= post-intro-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "安全研究">安全研究</a>
+    
+</div>
+                
+                
+                    <div class="post-intro-read">
+                        <span>Word count: <span class="post-count">4,052</span> / Reading time: <span class="post-count">15 min</span></span>
+                    </div>
+                
+                <div class="post-intro-meta">
+                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
+                    <span class="post-intro-time">2019/01/16</span>
+                    
+                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
+                        <span class="iconfont-archer">&#xe602;</span>
+                        <span id="busuanzi_value_page_pv"></span>
+                    </span>
+                    
+                    <span class="shareWrapper">
+                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
+                        <span class="shareText">Share</span>
+                        <ul class="shareList">
+                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
+                                <div class="share-qrcode"></div>
+                            </li>
+                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
+                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
+                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
+                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
+                        </ul>
+                    </span>
+                </div>
+            </div>
+        
+    </div>
+</div>
+        <script>
+ 
+  // get user agent
+  var browser = {
+    versions: function () {
+      var u = window.navigator.userAgent;
+      return {
+        userAgent: u,
+        trident: u.indexOf('Trident') > -1, //IE内核
+        presto: u.indexOf('Presto') > -1, //opera内核
+        webKit: u.indexOf('AppleWebKit') > -1, //苹果、谷歌内核
+        gecko: u.indexOf('Gecko') > -1 && u.indexOf('KHTML') == -1, //火狐内核
+        mobile: !!u.match(/AppleWebKit.*Mobile.*/), //是否为移动终端
+        ios: !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/), //ios终端
+        android: u.indexOf('Android') > -1 || u.indexOf('Linux') > -1, //android终端或者uc浏览器
+        iPhone: u.indexOf('iPhone') > -1 || u.indexOf('Mac') > -1, //是否为iPhone或者安卓QQ浏览器
+        iPad: u.indexOf('iPad') > -1, //是否为iPad
+        webApp: u.indexOf('Safari') == -1, //是否为web应用程序，没有头部与底部
+        weixin: u.indexOf('MicroMessenger') == -1, //是否为微信浏览器
+        uc: u.indexOf('UCBrowser') > -1 //是否为android下的UC浏览器
+      };
+    }()
+  }
+  console.log("userAgent:" + browser.versions.userAgent);
+
+  // callback
+  function fontLoaded() {
+    console.log('font loaded');
+    if (document.getElementsByClassName('site-intro-meta')) {
+      document.getElementsByClassName('intro-title')[0].classList.add('intro-fade-in');
+      document.getElementsByClassName('intro-subtitle')[0].classList.add('intro-fade-in');
+      var postIntros = document.getElementsByClassName('post-intros')[0]
+      if (postIntros) {
+        postIntros.classList.add('post-fade-in');
+      }
+    }
+  }
+
+  // UC不支持跨域，所以直接显示
+  function asyncCb(){
+    if (browser.versions.uc) {
+      console.log("UCBrowser");
+      fontLoaded();
+    } else {
+      WebFont.load({
+        custom: {
+          families: ['Oswald-Regular']
+        },
+        loading: function () {  //所有字体开始加载
+          // console.log('loading');
+        },
+        active: function () {  //所有字体已渲染
+          fontLoaded();
+        },
+        inactive: function () { //字体预加载失败，无效字体或浏览器不支持加载
+          console.log('inactive: timeout');
+          fontLoaded();
+        },
+        timeout: 5000 // Set the timeout to two seconds
+      });
+    }
+  }
+
+  function asyncErr(){
+    console.warn('script load from CDN failed, will load local script')
+  }
+
+  // load webfont-loader async, and add callback function
+  function async(u, cb, err) {
+    var d = document, t = 'script',
+      o = d.createElement(t),
+      s = d.getElementsByTagName(t)[0];
+    o.src = u;
+    if (cb) { o.addEventListener('load', function (e) { cb(null, e); }, false); }
+    if (err) { o.addEventListener('error', function (e) { err(null, e); }, false); }
+    s.parentNode.insertBefore(o, s);
+  }
+
+  var asyncLoadWithFallBack = function(arr, success, reject) {
+      var currReject = function(){
+        reject()
+        arr.shift()
+        if(arr.length)
+          async(arr[0], success, currReject)
+        }
+
+      async(arr[0], success, currReject)
+  }
+
+  asyncLoadWithFallBack([
+    "https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js", 
+    "https://cdn.bootcss.com/webfont/1.6.28/webfontloader.js",
+    "/lib/webfontloader.min.js"
+  ], asyncCb, asyncErr)
+</script>        
+        <img class="loading" src="/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
+        <div class="container container-unloaded">
+            <main class="main post-page">
+    <article class="article-entry">
+        <p>在分析Struts2漏洞的过程中就一直想把OGNL的运行机制以及Struts2对OGNL的防护机制总结一下，但是一直苦于自己对Struts2的理解不是很深刻而迟迟无法动笔，最近看了<a href="https://lgtm.com/blog/apache_struts_CVE-2018-11776-exploit" target="_blank" rel="noopener">lgtm的这篇文章</a>收获良多，就想在这篇文章的基础上总结一下目前自己对于OGNL的一些理解，希望师傅们斧正。</p>
+<a id="more"></a>
+<h1 id="0x01-OGNL与Struts2"><a href="#0x01-OGNL与Struts2" class="headerlink" title="0x01 OGNL与Struts2"></a>0x01 OGNL与Struts2</h1><h2 id="1-1-root与context"><a href="#1-1-root与context" class="headerlink" title="1.1 root与context"></a>1.1 root与context</h2><p>OGNL中最需要理解清楚的是<code>root</code>（根对象）、<code>context</code>（上下文）。</p>
+<ul>
+<li><code>root</code>：root可以理解为是一个java对象，表达式所规定的所有操作都是通过root来指定其对哪个对象进行操作。</li>
+<li><code>context</code>：context可以理解为对象运行的上下文环境，context以MAP的结构，利用键值对关系来描述对象中的属性以及值。</li>
+</ul>
+<p>Struts2框架使用了标准的命名上下文（naming context，我实在是不知道咋翻译了-. -）来执行OGNL表达式。处理OGNL的最顶层对象是一个Map对象，通常称这个Map对象为<code>context map</code>或者<code>context</code>。而OGNL的<code>root</code>就在这个<code>context map</code>中。<strong>在表达式中可以直接引用<code>root</code>对象的属性，如果需要引用其他的对象，需要使用<code>#</code>标明</strong>。</p>
+<p>框架将OGNL里的<code>context</code>变成了我们的<code>ActionContext</code>，将<code>root</code>变成了<code>valueStack</code>。Struts2将其他对象和<code>valueStack</code>一起放在<code>ActionContext</code>中，这些对象包括<code>application</code>、<code>session</code>、<code>request context</code>的上下文映射。下面是一个图例：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15464230621989.jpg" alt=""></p>
+<h2 id="1-2-ActionContext"><a href="#1-2-ActionContext" class="headerlink" title="1.2 ActionContext"></a>1.2 ActionContext</h2><p><code>ActionContext</code>是action的上下文，其本质是一个MAP，简单来说可以理解为一个action的小型数据库，整个action生命周期（线程）中所使用的数据都在这个<code>ActionContext</code>中。而对于OGNL来说<code>ActionContext</code>就是充当<code>context</code>的，并且在框架中</p>
+<p>这里盗一张图来说明<code>ActionContext</code>中存有哪些东西：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15464139094502.jpg" alt=""></p>
+<p> 可以看到其中有三个常见的作用域<code>request</code>、<code>session</code>、<code>application</code>。</p>
+<ul>
+<li><code>attr</code>作用域则是保存着上面三个作用域的所有属性，如果有重复的则以<code>request</code>域中的属性为基准。</li>
+<li><code>paramters</code>作用域保存的是表单提交的参数。</li>
+<li><code>VALUE_STACK</code>，也就是常说的值栈，保存着<code>valueStack</code>对象，也就是说可以通过<code>ActionContext</code>访问到<code>valueStack</code>中的值。</li>
+</ul>
+<h2 id="1-3-valueStack"><a href="#1-3-valueStack" class="headerlink" title="1.3 valueStack"></a>1.3 valueStack</h2><p>值栈本身是一个ArrayList，充当OGNL的<code>root</code>：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15464146328628.jpg" alt=""></p>
+<p><code>root</code>在源码中称为<code>CompoundRoot</code>，它也是一个栈，每次操作<code>valueStack</code>的出入栈操作其实就是对<code>CompoundRoot</code>进行对应的操作。每当我们访问一个action时，就会将action加入到栈顶，而提交的各种表单参数会在<code>valueStack</code>从顶向下查找对应的属性进行赋值。</p>
+<p>这里的<code>context</code>就是<code>ActionContext</code>的引用，方便在值栈中去查找action的属性。</p>
+<h2 id="1-4-ActionContext和valueStack的关系"><a href="#1-4-ActionContext和valueStack的关系" class="headerlink" title="1.4 ActionContext和valueStack的关系"></a>1.4 ActionContext和valueStack的关系</h2><p>可以看到其实<code>ActionContext</code>和<code>valueStack</code>是“相互包含”的关系，当然准确点来说，<code>valueStack</code>是<code>ActionContext</code>中的一部分，而<code>ActionContext</code>所描述的也不只是一个OGNL<code>context</code>的代替品，毕竟它更多是为action构建一个独立的运行环境（新的线程）。而这样的关系就导致了我们可以通过<code>valueStack</code>访问<code>ActionContext</code>中的属性而反过来亦然。</p>
+<p>其实可以用一种不是很标准的表达方式来描述这样的关系：可以把<code>valueStack</code>想成<code>ActionContext</code>的索引，你可以直接通过索引来找到表中的数据，也可以在表中找到所有数据的索引，无非是书与目录的关系罢了。</p>
+<h1 id="0x02-OGNL的执行"><a href="#0x02-OGNL的执行" class="headerlink" title="0x02 OGNL的执行"></a>0x02 OGNL的执行</h1><h2 id="2-1-初始化ValueStack"><a href="#2-1-初始化ValueStack" class="headerlink" title="2.1 初始化ValueStack"></a>2.1 初始化ValueStack</h2><p>我们从代码的角度来看看OGNL的执行流。从Struts2框架的代码中，我们可以清楚的看到OGNL的包是位于<code>xwork2</code>中的，而连通Struts2与xwork2的桥梁就是<code>ActionProxy</code>，也就是说在<code>ActionProxy</code>接管整个控制权前，<code>FilterDispatcher</code>就已经完成了对<code>ActionContext</code>的建立与初始化。</p>
+<p>而具体的代码是在<code>org.apache.struts2.dispatcher.PrepareOperations</code>中：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15464833904918.jpg" alt=""></p>
+<p>在这里如果没有Context存在的话，则会调用<code>ValueStackFactory</code>这个接口的<code>createValueStack</code>方法，跟进看一下：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15464841735723.jpg" alt=""></p>
+<p>跟进<code>OgnlValueStackFactory</code>：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15464842298773.jpg" alt=""></p>
+<p>这几个参数分别为：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15464842534430.jpg" alt=""></p>
+<p>跟进看一下<code>OgnlValueStack</code>的构造方法：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15464844823917.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15464845456793.jpg" alt=""></p>
+<p>可以看到设置根、设置安全防范措施、以及调用<code>Ognl.createDefaultContext</code>来创建默认的<code>Context</code>映射：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15464848098458.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15464848456067.jpg" alt=""></p>
+<p>这里我们跟到<code>OgnlContext</code>中看一下，有这么几个对象时比较重要的，他们规定了OGNL计算中的计算规则处理类：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15464982871371.jpg" alt=""></p>
+<ul>
+<li><code>_root</code>：在OgnlContext内维护着的Root对象，它是OGNL主要的操作对象</li>
+<li><code>_values</code>：如果希望在OGNL计算时使用传入的Map作为上下文环境，OGNL依旧会创建一个OgnlContext，并将所传入的Map中所有的键值对维护在<code>_values</code>变量中。这个变量就被看作真正的容器，并在OGNL的计算中发挥作用。</li>
+<li><code>ClassResolver</code>：指定处理class loading的处理类。实际上这个处理类是用于指定OGNL在根据Class名称来构建对象时，寻找Class名称与对应的Class类之间对应关系的处理方式。在默认情况下会使用JVM的class.forName机制来处理。</li>
+<li><code>TypeConverter</code>：指定处理类型转化的处理类。这个处理类非常关键，它会指定一个对象属性转化成字符串以及字符串转化成Java对象时的处理方式。</li>
+<li><code>MemberAccess</code>：指定处理属性访问策略的处理方式。</li>
+</ul>
+<p>可以看到这里的<code>ClassResolver</code>是有关类的寻址以及调用的，也就是常说的所谓的执行。</p>
+<h2 id="2-2-将现有的值和字段添加进ValueStack中（构造）"><a href="#2-2-将现有的值和字段添加进ValueStack中（构造）" class="headerlink" title="2.2 将现有的值和字段添加进ValueStack中（构造）"></a>2.2 将现有的值和字段添加进ValueStack中（构造）</h2><p>在初始化了<code>ValueStack</code>后，发现了后面的<code>container.inject(stack);</code>，这里是将依赖项注入现有的字段和方法，而在这个地方会调用<code>com.opensymphony.xwork2.ognl.OgnlValueStack$setOgnlUtil</code>将我们所关心的黑名单给添加进来：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15469425702400.jpg" alt=""></p>
+<p>然而其根本的作用是<strong>创建<code>_memberAccess</code></strong>。<br>这里可以注意到调用栈中首先是初始化了<code>ValueStack</code>之后再通过<code>OgnlUtil</code>这个API将数据和方法注入进<code>ValueStack</code>中，而<code>ValueStack</code>又是利用<code>OgnlContext</code>来创建的，所以会看到<code>OgnlContext</code>中的<strong><code>_memberAccess</code>与<code>securityMemberAccess</code>是同一个<code>SecurityMemberAccess</code>类的实例，而且内容相同，也就是说全局的<code>OgnlUtil</code>实例都共享着相同的设置。如果利用<code>OgnlUtil</code>更改了设置项（<code>excludedClasses</code>、<code>excludedPackageNames</code>、<code>excludedPackageNamePatterns</code>）则同样会更改<code>_memberAccess</code>中的值。</strong></p>
+<p>这里可能不太好理解，可以看下面这几张图：</p>
+<ol>
+<li><p>首先<code>ValueStack</code>本身是个<code>OgnlContext</code></p>
+<p> <img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15470170533527.jpg" alt=""></p>
+</li>
+<li><p>之后调用<code>setOgnlUtil</code>添加黑名单：</p>
+<p> <img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15469425702400.jpg" alt=""></p>
+</li>
+<li><p>然后<code>OgnlUtil</code>中的这些值赋给<code>SecurityMemberAccess</code>：</p>
+<p> <img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15470167097980.jpg" alt=""></p>
+<p> <img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15470168699567.jpg" alt=""></p>
+</li>
+<li><p>也就是与<code>OgnlContext</code>中的<code>_memberAccess</code>建立关系，即创建了<code>_memberAccess</code>：</p>
+<p> <img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15470176048468.jpg" alt=""></p>
+</li>
+</ol>
+<p>而这一点在沙箱绕过时起到了很重要的作用。</p>
+<h2 id="2-3-创建拦截器（Interceptor）"><a href="#2-3-创建拦截器（Interceptor）" class="headerlink" title="2.3 创建拦截器（Interceptor）"></a>2.3 创建拦截器（Interceptor）</h2><p>在之后当控制权转交给<code>ActionProxy</code>时会调用<code>OgnlUtil</code>作为操作OGNL的API，在创建拦截器（<code>Interceptor</code>）时会调用<code>com.opensymphony.xwork2.config.providers.InterceptorBuilder</code>：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15469435251224.jpg" alt=""></p>
+<p>在这里利用工场函数来创建拦截器，跟进看一下：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15469435768671.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15469447377180.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15469449020784.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15469449199402.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15469449399481.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15469449602034.jpg" alt=""></p>
+<p>也就是把设置好的黑名单赋到<code>SecurityMemberAccess</code>中，在当前的上下文中用以检验表达式所调用的方法是否允许被调用。</p>
+<h2 id="2-4-OGNL执行（利用反射调用）"><a href="#2-4-OGNL执行（利用反射调用）" class="headerlink" title="2.4 OGNL执行（利用反射调用）"></a>2.4 OGNL执行（利用反射调用）</h2><p>说完了初始化，再来说一下所谓的OGNL执行，在这里引用一下《Struts2技术内幕》这本书的一个表，这个表主要列举了OGNL计算时所需要遵循的一些重要的计算规则和默认实现类：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15464991029777.jpg" alt="-w768"></p>
+<p>接下来就跟进<code>CompoundRootAccessor</code>看一下：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15464991684892.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15465008912903.jpg" alt=""></p>
+<p>在这里拓展了<code>ognl.DefaultClassResovler</code>，可以支持一些特殊的class名称。</p>
+<h1 id="0x03-OGNL的攻防史"><a href="#0x03-OGNL的攻防史" class="headerlink" title="0x03 OGNL的攻防史"></a>0x03 OGNL的攻防史</h1><p>回看S2系列的漏洞，每当我们找到一个可以执行OGNL表达式的点在尝试构造恶意的OGNL时都会遇到这个防护机制，在我看了<a href="https://lgtm.com/blog/apache_struts_CVE-2018-11776-exploit" target="_blank" rel="noopener">lgtm</a>这篇文章后，我就想把围绕<code>SecurityMemberAccess</code>的攻防历史来全部梳理一遍。</p>
+<p>可以说所有在对于OGNL的攻防全部都是基于如何使用静态方法。<code>Struts2</code>的防护措施从最开始的正则，到之后的黑名单，在保证OGNL强大功能的基础上，将可能执行静态方法的利用链给切断。在分析绕过方法时，需要注意的有这么几点：</p>
+<ul>
+<li><code>struts-defult.xml</code>中的黑名单</li>
+<li><code>com.opensymphony.xwork2.ognl.SecurityMemberAccess</code></li>
+<li><code>Ognl</code>包</li>
+</ul>
+<p>以下图例左边都是较为新的版本，右边为老版本。</p>
+<h2 id="3-1-Struts-2-3-14-1版本前"><a href="#3-1-Struts-2-3-14-1版本前" class="headerlink" title="3.1 Struts 2.3.14.1版本前"></a>3.1 Struts 2.3.14.1版本前</h2><p>S2-012、S2-013、S3-014的出现促使了这次更新，可以说在跟新到2.3.14.1版本前，ognl的利用基本属于不设防状态，我们可以看一下这两个版本的diff，不难发现当时还没有出现黑名单这样的说法，而修复的关键在于<code>SecurityMemberAccess</code>：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15470237734614.jpg" alt=""></p>
+<p>左边是2.3.14.1的版本，右边是2.3.14的版本，不难看出在这之前可以通过ognl直接更改<code>allowStaticMethodAccess=true</code>，就可以执行后面的静态方法了，所以当时非常通用的一种poc是：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(#_memberAccess[&apos;allowStaticMethodAccess&apos;]=true).(@java.lang.Runtime@getRuntime().exec(&apos;calc&apos;))</span><br></pre></td></tr></table></figure>
+<p>而在2.3.14.1版本后将<code>allowStaticMethodAccess</code>设置成final属性后，就不能显式更改了，这样的poc显然也失效了。</p>
+<h2 id="3-2-Struts-2-3-20版本前"><a href="#3-2-Struts-2-3-20版本前" class="headerlink" title="3.2 Struts 2.3.20版本前"></a>3.2 Struts 2.3.20版本前</h2><p>在2.3.14.1后虽然不能更改<code>allowStaticMethodAccess</code>了，但是还是可以通过<code>_memberAccess</code>使用类的构造函数，并且访问公共函数，所以可以看到当时有一种替代的poc：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(#p=new java.lang.ProcessBuilder(&apos;xcalc&apos;)).(#p.start())</span><br></pre></td></tr></table></figure>
+<p>直到2.3.20，这样的poc都可以直接使用。在2.3.20后，Struts2不仅仅引入了黑名单（excludedClasses, excludedPackageNames 和 excludedPackageNamePatterns），更加重要的是阻止了所有构造函数的使用，所以就不能使用<code>ProcessBuilder</code>这个payload了。</p>
+<h2 id="3-3-Struts-2-3-29版本前"><a href="#3-3-Struts-2-3-29版本前" class="headerlink" title="3.3 Struts 2.3.29版本前"></a>3.3 Struts 2.3.29版本前</h2><p>左为2.3.29版本，右边为2.3.28版本</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15470227581652.jpg" alt=""></p>
+<p>从黑名单中可以看到禁止使用了<code>ognl.MemberAccess</code>和<code>ognl.DefaultMemberAccess</code>，而这两个对象其实就是2.3.20-2.3.28版本的通用绕过方法，具体的思路就是利用<code>_memberAccess</code>调用静态对象<code>DefaultMemberAccess</code>，然后用<code>DefaultMemberAccess</code>覆盖<code>_memberAccess</code>。那么为什么说这样就可以使用静态方法了呢？<br>我们先来看一下可以在S2-032、S2-033、S2-037通用的poc：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(#_memberAccess=@ognl.OgnlContext@DEFAULT_MEMBER_ACCESS).(@java.lang.Runtime@getRuntime().exec(&apos;xcalc&apos;))</span><br></pre></td></tr></table></figure>
+<p>我们来看一下<code>ognl.OgnlContext@DEFAULT_MEMBER_ACCESS</code>：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15471036060838.jpg" alt=""></p>
+<p>看过上一节的都知道，在程序运行时在<code>setOgnlUtil</code>方法中将黑名单等数据赋给<code>SecurityMemberAccess</code>，而这就是创建<code>_memberAccess</code>的过程，在动态调试中，我们可以看到这两个对象的id甚至都是一样的，而<code>SecurityAccess</code>这个对象的父类本身就是<code>ognl.DefaultMemberAccess</code>，而其建立关系的过程就相当于继承父类并重写父类的过程，所以这里我们利用其父类<code>DefaultMemberAccess</code>覆盖<code>_memberAccess</code>中的内容，就相当于初始化了<code>_memberAccess</code>，这样就可以绕过其之前所设置的黑名单以及限制条件。</p>
+<h2 id="3-4-Struts-2-3-30-2-5-2"><a href="#3-4-Struts-2-3-30-2-5-2" class="headerlink" title="3.4 Struts 2.3.30+/2.5.2+"></a>3.4 Struts 2.3.30+/2.5.2+</h2><p>到了2.3.30(2.5.2)之后的版本，我们可以使用的<code>_memberAccess</code>和<code>DefaultMemberAccess</code>都进入到黑名单中了，覆盖的方法看似就不行了，而这个时候S2-045的payload提供了一种新的思路：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(#container=#context[&apos;com.opensymphony.xwork2.ActionContext.container&apos;]).(#ognlUtil=#container.getInstance(@com.opensymphony.xwork2.ognl.OgnlUtil@class)).(#ognlUtil.excludedClasses.clear()).(#ognlUtil.excludedPackageNames.clear()).(#context.setMemberAccess(@ognl.OgnlContext@DEFAULT_MEMBER_ACCESS)).(@java.lang.Runtime@getRuntime().exec(&apos;xcalc&apos;))</span><br></pre></td></tr></table></figure>
+<p>可以看到绕过的关键点在于：</p>
+<ul>
+<li>利用Ognl执行流程利用<code>container</code>获取了<code>OgnlUtil</code>实例</li>
+<li>清空了<code>OgnlUtil$excludedClasses</code>黑名单，释放了<code>DefaultMemberAccess</code></li>
+<li>利用<code>setMemberAccess</code>覆盖</li>
+</ul>
+<p>而具体的流程可以参考2.2的内容。</p>
+<h2 id="3-5-Struts-2-5-16"><a href="#3-5-Struts-2-5-16" class="headerlink" title="3.5 Struts 2.5.16"></a>3.5 Struts 2.5.16</h2><p>分析过S2-057后，你会发现ognl注入很容易复现，但是想要调用静态方法造成代码执行变得很难，我们来看一下Struts2又做了哪些改动：</p>
+<ul>
+<li><p>2.5.13版本后禁止访问<code>coontext.map</code></p>
+<p>  准确来说是ognl包版本的区别，在2.5.13中利用的是3.1.15版本，在2.5.12版本中使用的是3.1.12版本：</p>
+<p>  <img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15471155308956.jpg" alt=""></p>
+<p>  而这个改变是在<code>OgnlContext</code>中：</p>
+<p>  <img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15471156088979.jpg" alt=""></p>
+<p>  不只是get方法，put和remove都没有办法访问了，所以说从根本上禁止了对<code>context.map</code>的访问。</p>
+</li>
+<li><p>2.5.20版本后<code>excludedClasses</code>不可变了，具体的代码在<a href="https://github.com/apache/struts/commit/748da3f8ce6b9f3953bc418745c35a534e5b98ca" target="_blank" rel="noopener">这里</a></p>
+</li>
+</ul>
+<p>所以在S2-045时可使用的payload已经没有办法再使用了，需要构造新的利用方式。</p>
+<p>文章提出了这么一种思路:</p>
+<ul>
+<li>没有办法使用<code>context.map</code>，可以调用<code>attr</code>，前文说过<code>attr</code>中保存着整个<code>context</code>的变量与方法，可以通过<code>attr</code>中的方法返回给我们一个<code>context.map</code>。</li>
+<li>没有办法直接调用<code>excludedClasses</code>，也就不能使用<code>clear</code>方法来清空，但是还可以利用<code>setter</code>来把<code>excludedClasses</code>给设置成空</li>
+<li>清空了黑名单，我们就可以利用<code>DefaultMemberAccess</code>来覆盖<code>_memberAccess</code>，来执行静态方法了。</li>
+</ul>
+<p>而这里又会出现一个问题，当我们使用<code>OgnlUtil</code>的<code>setExcludedClasses</code>和<code>setExcludedPackageNames</code>将黑名单置空时并非是对于源（全局的OgnlUtil）进行置空，也就是说<code>_memberAccess</code>是源数据的一个引用，就像前文所说的，在每次<code>createAction</code>时都是通过<code>setOgnlUtil</code>利用全局的源数据创建一个引用，这个引用就是一个<code>MemberAccess</code>对象，也就是<code>_memberAccess</code>。所以这里只会影响这次请求的<code>OgnlUtil</code>而并未重新创建一个新的<code>_memberAccess</code>对象，所以旧的<code>_memberAccess</code>对象仍未改变。</p>
+<p>而突破这种限制的方式就是再次发送一个请求，将上一次请求已经置空的<code>OgnlUitl</code>作为源重新创建一个<code>_memberAccess</code>，这样在第二次请求中<code>_memberAccess</code>就是黑名单被置空的情况，这个时候就释放了<code>DefaultMemberAccess</code>，就可以进行正常的覆盖以及执行静态方法。</p>
+<p>poc为：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(#context=#attr[&apos;struts.valueStack&apos;].context).(#container=#context[&apos;com.opensymphony.xwork2.ActionContext.container&apos;]).(#ognlUtil=#container.getInstance(@com.opensymphony.xwork2.ognl.OgnlUtil@class)).(#ognlUtil.setExcludedClasses(&apos;&apos;)).(#ognlUtil.setExcludedPackageNames(&apos;&apos;))</span><br><span class="line"></span><br><span class="line">(#context=#attr[&apos;struts.valueStack&apos;].context).(#context.setMemberAccess(@ognl.OgnlContext@DEFAULT_MEMBER_ACCESS)).(@java.lang.Runtime@getRuntime().exec(&apos;curl 127.0.0.1:9001&apos;))</span><br></pre></td></tr></table></figure>
+<p>需要发送两次请求：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15471891401187.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15471891816332.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15471891957595.jpg" alt=""></p>
+<h1 id="0x04-现阶段的OGNL"><a href="#0x04-现阶段的OGNL" class="headerlink" title="0x04 现阶段的OGNL"></a>0x04 现阶段的OGNL</h1><p>Struts2在 2.5.16版本后做了很多修改，截止到写文章的时候，已经更新到2.5.20，接下来我将把这几个版本的区别全部都列出来，并且说明现在绕过Ognl沙箱面临着哪些阻碍。同上一节，左边都为较新的版本，右边为较旧的版本。</p>
+<h2 id="4-1-2-5-17的改变（限制命名空间）"><a href="#4-1-2-5-17的改变（限制命名空间）" class="headerlink" title="4.1 2.5.17的改变（限制命名空间）"></a>4.1 2.5.17的改变（限制命名空间）</h2><ol>
+<li><p>黑名单的变动，禁止访问<code>com.opensymphony.xwork2.ognl.</code></p>
+<p> <img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15471971431990.jpg" alt=""></p>
+<p> 讲道理，2.5.17版本的修补真的是很暴力，直接在黑名单中加上了<code>com.opensymphony.xwork2.ognl.</code>也就是说我们根本没办法访问这个Struts2重写的ognl包了。</p>
+</li>
+<li><p>切断了动态引用的方式，需要利用构造函数生成</p>
+<p> <img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15471974788040.jpg" alt=""><br>不谈重写了<code>setExcludedClasses</code>和<code>setExcludedPackageNamePatterns</code>，单单黑名单的改进就极大的限制了利用。</p>
+</li>
+</ol>
+<h2 id="4-2-2-5-19的改进"><a href="#4-2-2-5-19的改进" class="headerlink" title="4.2 2.5.19的改进"></a>4.2 2.5.19的改进</h2><ol>
+<li><p>ognl包的升级，从3.1.15升级到3.1.21</p>
+<p> <img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15471982817893.jpg" alt=""></p>
+</li>
+<li><p>黑名单改进</p>
+<pre><code>![](http://image-lucifaer.test.upcdn.net/2019/01/16/15471983666584.jpg)
+</code></pre></li>
+<li><p>在<code>OgnlUtil</code>中<code>setXWorkConverter</code>、<code>setDevMode</code>、<code>setEnableExpressionCache</code>、<code>setEnableEvalExpression</code>、<code>setExcludedClasses</code>、<code>setExcludedPackageNamePatterns</code>、<code>setExcludedPackageNames</code>、<code>setContainer</code>、<code>setAllowStaticMethodAccess</code>、<code>setDisallowProxyMemberAccess</code>都从public方法变成了protected方法了：</p>
+<p> <img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15471986400847.jpg" alt=""></p>
+<p> <img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15471986545349.jpg" alt=""></p>
+</li>
+</ol>
+<p>也就是说没有办法显式调用<code>setExcludedClasses</code>、<code>setExcludedPackageNamePatterns</code>、<code>setExcludedPackageNames</code>了。</p>
+<h2 id="4-3-master分支的改变"><a href="#4-3-master分支的改变" class="headerlink" title="4.3 master分支的改变"></a>4.3 master分支的改变</h2><ol>
+<li><p>ognl包的升级，从3.1.21升级到3.2.10，直接删除了<code>DefaultMemberAccess.java</code>，同时删除了静态变量<code>DEFAULT_MEMBER_ACCESS</code>，并且<code>_memberAccess</code>变成了final：</p>
+<p> <img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15471994782111.jpg" alt=""></p>
+<p> <img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15471998270846.jpg" alt=""></p>
+</li>
+<li><p><code>SecurityMemberAccess</code>不再继承<code>DefaultMemberAccess</code>而直接转为<code>MemberAccess</code>接口的实现：</p>
+<p> <img src="http://image-lucifaer.test.upcdn.net/2019/01/16/15472003356029.jpg" alt=""></p>
+</li>
+</ol>
+<p>可以看到Struts2.5.*基本上是对Ognl的执行做出了重大的改变，<code>DefaultAccess</code>彻底退出了历史舞台意味着利用父类覆盖<code>_memberAccess</code>的利用方式已经无法使用，而黑名单对于<code>com.opensymphony.xwork2.ognl</code>的限制导致我们基本上没有办法利用<code>Ognl</code>本身的API来更改黑名单，同时<code>_memberAccess</code>变为final属性也使得S2-057的这种利用<code>_memberAccess</code>暂时性的特征而进行“重放攻击”的方式测地化为泡影。</p>
+<h2 id="4-4-总结"><a href="#4-4-总结" class="headerlink" title="4.4 总结"></a>4.4 总结</h2><p>Struts2随着其不断地发展，减少了原来框架的一部分灵活性而大大的增强了其安全性，如果按照master分支的改动趋势上看，以我的理解上来说，可以说现在基本上没得搞…</p>
+<h1 id="0x05-Reference"><a href="#0x05-Reference" class="headerlink" title="0x05 Reference"></a>0x05 Reference</h1><ul>
+<li><a href="https://cloud.tencent.com/developer/article/1024093" target="_blank" rel="noopener">https://cloud.tencent.com/developer/article/1024093</a></li>
+<li><a href="https://lgtm.com/blog/apache_struts_CVE-2018-11776-exploit" target="_blank" rel="noopener">https://lgtm.com/blog/apache_struts_CVE-2018-11776-exploit</a></li>
+<li>《Struts2技术内幕》</li>
+</ul>
+
+    </article>
+    <!-- license  -->
+    
+        <div class="license-wrapper">
+            <p>原文作者: <a href="https://lucifaer.com">Lucifaer</a>
+            <p>原文链接: <a href="https://lucifaer.com/2019/01/16/浅析OGNL的攻防史/">https://lucifaer.com/2019/01/16/浅析OGNL的攻防史/</a>
+            <p>发表日期: <a href="https://lucifaer.com/2019/01/16/浅析OGNL的攻防史/">January 16th 2019, 3:04:00 pm</a>
+            <p>版权声明: 本文采用<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可</p>
+        </div>
+    
+    <!-- paginator  -->
+    <ul class="post-paginator">
+        <li class="next">
+            
+        </li>
+        <li class="previous">
+            
+                <div class="prevSlogan">Previous Post</div>
+                <a href= "/2018/12/25/S2-057（CVE-2018-11776）流程分析/" title= S2-057（CVE-2018-11776）流程分析 >
+                    <div class="prevTitle">S2-057（CVE-2018-11776）流程分析</div>
+                </a>
+            
+        </li>
+    </ul>
+    <!-- 评论插件 -->
+    <!-- 来必力City版安装代码 -->
+
+    <div id="lv-container" data-id="city" data-uid= MTAyMC8zODcyOC8xNTI1Ng==>
+        <script type="text/javascript">
+            (function(d, s) {
+                var j, e = d.getElementsByTagName(s)[0];
+         
+                if (typeof LivereTower === 'function') { return; }
+         
+                j = d.createElement(s);
+                j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+                j.async = true;
+         
+                e.parentNode.insertBefore(j, e);
+            })(document, 'script');
+             </script>
+         <noscript> 为正常使用来必力评论功能请激活JavaScript</noscript>
+    </div>
+
+<!-- City版安装代码已完成 -->
+    
+    
+    <!--PC和WAP自适应版-->
+
+    <!--PC版-->
+
+
+    
+    
+
+    <!-- 评论 -->
+</main>
+            <!-- profile -->
+            
+        </div>
+        <footer class="footer footer-unloaded">
+    <!-- social  -->
+    
+    <div class="social">
+        
+    
+        
+            
+                <a href="mailto:l.lucifaer@gmail.com" class="iconfont-archer email" title=email ></a>
+            
+        
+    
+        
+            
+                <a href="//github.com/Lucifaer" class="iconfont-archer github" target="_blank" title=github></a>
+            
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="//weibo.com/5838222069" class="iconfont-archer weibo" target="_blank" title=weibo></a>
+            
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="/atom.xml" class="iconfont-archer rss" target="_blank" title=rss></a>
+            
+        
+    
+
+    </div>
+    
+    <!-- powered by Hexo  -->
+    <div class="copyright">
+        <span id="hexo-power">Powered by <a href="https://hexo.io/" target="_blank">Hexo</a></span><span class="iconfont-archer power">&#xe635;</span><span id="theme-info">theme <a href="https://github.com/fi3ework/hexo-theme-archer" target="_blank">Archer</a></span>
+    </div>
+    <!-- 不蒜子  -->
+    
+    <div class="busuanzi-container">
+    
+     
+    <span id="busuanzi_container_site_pv">PV: <span id="busuanzi_value_site_pv"></span> :)</span>
+    
+    </div>
+    
+</footer>
+    </div>
+    <!-- toc -->
+    
+    <div class="toc-wrapper" style=
+    
+
+
+
+
+
+
+
+top:50vh;
+
+    >
+        <div class="toc-catalog">
+            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
+        </div>
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-OGNL与Struts2"><span class="toc-number">1.</span> <span class="toc-text">0x01 OGNL与Struts2</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-1-root与context"><span class="toc-number">1.1.</span> <span class="toc-text">1.1 root与context</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1-2-ActionContext"><span class="toc-number">1.2.</span> <span class="toc-text">1.2 ActionContext</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1-3-valueStack"><span class="toc-number">1.3.</span> <span class="toc-text">1.3 valueStack</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1-4-ActionContext和valueStack的关系"><span class="toc-number">1.4.</span> <span class="toc-text">1.4 ActionContext和valueStack的关系</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-OGNL的执行"><span class="toc-number">2.</span> <span class="toc-text">0x02 OGNL的执行</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#2-1-初始化ValueStack"><span class="toc-number">2.1.</span> <span class="toc-text">2.1 初始化ValueStack</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-2-将现有的值和字段添加进ValueStack中（构造）"><span class="toc-number">2.2.</span> <span class="toc-text">2.2 将现有的值和字段添加进ValueStack中（构造）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-3-创建拦截器（Interceptor）"><span class="toc-number">2.3.</span> <span class="toc-text">2.3 创建拦截器（Interceptor）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-4-OGNL执行（利用反射调用）"><span class="toc-number">2.4.</span> <span class="toc-text">2.4 OGNL执行（利用反射调用）</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-OGNL的攻防史"><span class="toc-number">3.</span> <span class="toc-text">0x03 OGNL的攻防史</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#3-1-Struts-2-3-14-1版本前"><span class="toc-number">3.1.</span> <span class="toc-text">3.1 Struts 2.3.14.1版本前</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-2-Struts-2-3-20版本前"><span class="toc-number">3.2.</span> <span class="toc-text">3.2 Struts 2.3.20版本前</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-3-Struts-2-3-29版本前"><span class="toc-number">3.3.</span> <span class="toc-text">3.3 Struts 2.3.29版本前</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-4-Struts-2-3-30-2-5-2"><span class="toc-number">3.4.</span> <span class="toc-text">3.4 Struts 2.3.30+/2.5.2+</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-5-Struts-2-5-16"><span class="toc-number">3.5.</span> <span class="toc-text">3.5 Struts 2.5.16</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x04-现阶段的OGNL"><span class="toc-number">4.</span> <span class="toc-text">0x04 现阶段的OGNL</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#4-1-2-5-17的改变（限制命名空间）"><span class="toc-number">4.1.</span> <span class="toc-text">4.1 2.5.17的改变（限制命名空间）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-2-2-5-19的改进"><span class="toc-number">4.2.</span> <span class="toc-text">4.2 2.5.19的改进</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-3-master分支的改变"><span class="toc-number">4.3.</span> <span class="toc-text">4.3 master分支的改变</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-4-总结"><span class="toc-number">4.4.</span> <span class="toc-text">4.4 总结</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x05-Reference"><span class="toc-number">5.</span> <span class="toc-text">0x05 Reference</span></a></li></ol>
+    </div>
+    
+    <div class="back-top iconfont-archer">&#xe639;</div>
+    <div class="sidebar sidebar-hide">
+    <ul class="sidebar-tabs sidebar-tabs-active-0">
+        <li class="sidebar-tab-archives"><span class="iconfont-archer">&#xe67d;</span><span class="tab-name">Archive</span></li>
+        <li class="sidebar-tab-tags"><span class="iconfont-archer">&#xe61b;</span><span class="tab-name">Tag</span></li>
+        <li class="sidebar-tab-categories"><span class="iconfont-archer">&#xe666;</span><span class="tab-name">Cate</span></li>
+    </ul>
+    <div class="sidebar-content sidebar-content-show-archive">
+          <div class="sidebar-panel-archives">
+    <!-- 在ejs中将archive按照时间排序 -->
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <div class="total-and-search">
+        <div class="total-archive">
+        Total : 27
+        </div>
+        <!-- search  -->
+        
+            <div class="site-search popup-trigger">
+                <span class="iconfont-archer search-icon">&#xe627;</span>
+            </div>
+        
+    </div>
+    
+    <div class="post-archive">
+    
+    
+    
+    
+    <div class="archive-year"> 2019 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/16</span><a class="archive-post-title" href= "/2019/01/16/浅析OGNL的攻防史/" >浅析OGNL的攻防史</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2018 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/25</span><a class="archive-post-title" href= "/2018/12/25/S2-057（CVE-2018-11776）流程分析/" >S2-057（CVE-2018-11776）流程分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/17</span><a class="archive-post-title" href= "/2018/12/17/S2-046（CVE-2017-5638）分析/" >S2-046（CVE-2017-5638）分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/14</span><a class="archive-post-title" href= "/2018/12/14/如何解决Pyppeteer的Target closed错误/" >如何解决Pyppeteer的Target closed错误</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/12</span><a class="archive-post-title" href= "/2018/12/12/S2-045（CVE-2017-5638）分析/" >S2-045（CVE-2017-5638）分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/05</span><a class="archive-post-title" href= "/2018/12/05/RF-14310（CVE-2018-12533）分析/" >RF-14310（CVE-2018-12533）分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/29</span><a class="archive-post-title" href= "/2018/11/29/JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667）/" >JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/30</span><a class="archive-post-title" href= "/2018/08/30/phpMyAdmin <= 4.7.7 CSRF分析/" >phpMyAdmin <= 4.7.7 CSRF分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/29</span><a class="archive-post-title" href= "/2018/08/29/Discuz! 1.5-2.5 命令执行漏洞分析(CVE-2018-14729)/" >Discuz! 1.5-2.5 命令执行漏洞分析(CVE-2018-14729)</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/13</span><a class="archive-post-title" href= "/2018/08/13/MySQLi Cookbook/" >MySQLi Cookbook</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/19</span><a class="archive-post-title" href= "/2018/07/19/薅羊毛产业链分析/" >薅羊毛产业链分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/以太坊简介/" >以太坊简介</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/比特币简介/" >比特币简介</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/区块链补充/" >区块链补充</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/区块链基础概念/" >区块链基础概念</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">03/02</span><a class="archive-post-title" href= "/2018/03/02/部署Django/" >部署Django</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/28</span><a class="archive-post-title" href= "/2018/02/28/Git Hooks实现项目的自动部署/" >Git Hooks实现项目的自动部署</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2017 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/09</span><a class="archive-post-title" href= "/2017/10/09/XDCTF Upload 引发出来的一个新思路/" >XDCTF Upload 引发出来的一个新思路</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/20</span><a class="archive-post-title" href= "/2017/07/20/Blackhat SEO/" >Blackhat SEO</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/19</span><a class="archive-post-title" href= "/2017/07/19/PHP反序列化漏洞/" >PHP反序列化漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/27</span><a class="archive-post-title" href= "/2017/05/27/Joomla 框架的简单跟进/" >Joomla 框架的简单跟进</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/09</span><a class="archive-post-title" href= "/2017/05/09/五指CMS任意文件下载漏洞/" >五指CMS任意文件下载漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">04/13</span><a class="archive-post-title" href= "/2017/04/13/Phpcms V9.6.0任意文件写入getshell/" >Phpcms V9.6.0任意文件写入getshell</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/06</span><a class="archive-post-title" href= "/2017/02/06/WordPress REST API 内容注入/" >WordPress REST API 内容注入</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/18</span><a class="archive-post-title" href= "/2017/01/18/SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析/" >SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2016 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/11</span><a class="archive-post-title" href= "/2016/08/11/CVE-2016-6483 vBulletin 5.2.2 SSRF漏洞/" >CVE-2016-6483 vBulletin 5.2.2 SSRF漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/09</span><a class="archive-post-title" href= "/2016/08/09/IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）/" >IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）</a>
+        </li>
+    
+    </div>
+  </div>
+        <div class="sidebar-panel-tags">
+    <div class="sidebar-tags-name">
+    
+        <span class="sidebar-tag-name" data-tags="漏洞分析"><span class="iconfont-archer">&#xe606;</span>漏洞分析</span>
+    
+        <span class="sidebar-tag-name" data-tags="PHP"><span class="iconfont-archer">&#xe606;</span>PHP</span>
+    
+        <span class="sidebar-tag-name" data-tags="Git"><span class="iconfont-archer">&#xe606;</span>Git</span>
+    
+        <span class="sidebar-tag-name" data-tags="环境部署"><span class="iconfont-archer">&#xe606;</span>环境部署</span>
+    
+        <span class="sidebar-tag-name" data-tags="Java"><span class="iconfont-archer">&#xe606;</span>Java</span>
+    
+        <span class="sidebar-tag-name" data-tags="Struts2"><span class="iconfont-archer">&#xe606;</span>Struts2</span>
+    
+        <span class="sidebar-tag-name" data-tags="RichFaces"><span class="iconfont-archer">&#xe606;</span>RichFaces</span>
+    
+        <span class="sidebar-tag-name" data-tags="CTF"><span class="iconfont-archer">&#xe606;</span>CTF</span>
+    
+        <span class="sidebar-tag-name" data-tags="blockchain"><span class="iconfont-archer">&#xe606;</span>blockchain</span>
+    
+        <span class="sidebar-tag-name" data-tags="Python"><span class="iconfont-archer">&#xe606;</span>Python</span>
+    
+        <span class="sidebar-tag-name" data-tags="黑产研究"><span class="iconfont-archer">&#xe606;</span>黑产研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="薅羊毛"><span class="iconfont-archer">&#xe606;</span>薅羊毛</span>
+    
+        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
+    
+        <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
+    
+        <span class="sidebar-tag-name" data-tags="CookBook"><span class="iconfont-archer">&#xe606;</span>CookBook</span>
+    
+        <span class="sidebar-tag-name" data-tags="SQL注入"><span class="iconfont-archer">&#xe606;</span>SQL注入</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
+    <div class="tag-load-fail" style="display: none; color: #ccc; font-size: 0.6rem;">
+    缺失模块。<br/>
+    1、请确保node版本大于6.2<br/>
+    2、在博客根目录（注意不是archer根目录）执行以下命令：<br/>
+    <span style="color: #f75357; font-size: 1rem; line-height: 2rem;">npm i hexo-generator-json-content --save</span><br/>
+    3、在根目录_config.yml里添加配置：
+    <pre style="color: #787878; font-size: 0.6rem;">
+jsonContent:
+  meta: false
+  pages: false
+  posts:
+    title: true
+    date: true
+    path: true
+    text: false
+    raw: false
+    content: false
+    slug: false
+    updated: false
+    comments: false
+    link: false
+    permalink: false
+    excerpt: false
+    categories: true
+    tags: true</pre>
+    </div> 
+    <div class="sidebar-tags-list"></div>
+</div>
+        <div class="sidebar-panel-categories">
+    <div class="sidebar-categories-name">
+    
+        <span class="sidebar-category-name" data-categories="漏洞分析"><span class="iconfont-archer">&#xe60a;</span>漏洞分析</span>
+    
+        <span class="sidebar-category-name" data-categories="环境部署"><span class="iconfont-archer">&#xe60a;</span>环境部署</span>
+    
+        <span class="sidebar-category-name" data-categories="一些思路"><span class="iconfont-archer">&#xe60a;</span>一些思路</span>
+    
+        <span class="sidebar-category-name" data-categories="blockchain"><span class="iconfont-archer">&#xe60a;</span>blockchain</span>
+    
+        <span class="sidebar-category-name" data-categories="Python"><span class="iconfont-archer">&#xe60a;</span>Python</span>
+    
+        <span class="sidebar-category-name" data-categories="黑产研究"><span class="iconfont-archer">&#xe60a;</span>黑产研究</span>
+    
+        <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
+    
+        <span class="sidebar-category-name" data-categories="技术总结"><span class="iconfont-archer">&#xe60a;</span>技术总结</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>
+    <div class="sidebar-categories-list"></div>
+</div>
+    </div>
+</div> 
+    <script>
+    var siteMeta = {
+        root: "/",
+        author: "Lucifaer"
+    }
+</script>
+    <!-- CDN failover -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+    <script type="text/javascript">
+        if (typeof window.$ === 'undefined')
+        {
+            console.warn('jquery load from jsdelivr failed, will load local script')
+            document.write('<script src="/lib/jquery.min.js">\x3C/script>')
+        }
+    </script>
+    <script src="/scripts/main.js"></script>
+    <!-- algolia -->
+    
+        <div class="site-search">
+  <div class="algolia-popup popup">
+    <div class="algolia-search">
+      <div class="algolia-search-input-icon">
+        <i class="fa fa-search"></i>
+      </div>
+      <div class="algolia-search-input" id="algolia-search-input"></div>
+    </div>
+
+    <div class="algolia-results">
+      <div id="algolia-stats"></div>
+      <div id="algolia-hits"></div>
+      <div id="algolia-pagination" class="algolia-pagination"></div>
+    </div>
+
+    <span class="popup-btn-close">
+      <i class="iconfont-archer">&#xe609;</i>
+    </span>
+  </div>
+</div>
+        <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@2.8.0/dist/instantsearch.min.js" defer></script>
+        <script src="/scripts/search.js" defer></script>
+    
+    <!-- busuanzi  -->
+    
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+    <!-- CNZZ  -->
+    
+    </div>
+    <!-- async load share.js -->
+    
+        <script src="/scripts/share.js" async></script>    
+     
+    </body>
+</html>
+
+
