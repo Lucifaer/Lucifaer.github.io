@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://lucifaer.com/"/>
-  <updated>2019-04-16T11:35:39.180Z</updated>
+  <updated>2019-04-19T10:19:50.752Z</updated>
   <id>https://lucifaer.com/</id>
   
   <author>
@@ -15,6 +15,32 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Confluence 路径穿越漏洞分析（CVE-2019-3398）</title>
+    <link href="https://lucifaer.com/2019/04/19/Confluence%20%E8%B7%AF%E5%BE%84%E7%A9%BF%E8%B6%8A%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90%EF%BC%88CVE-2019-3398%EF%BC%89/"/>
+    <id>https://lucifaer.com/2019/04/19/Confluence 路径穿越漏洞分析（CVE-2019-3398）/</id>
+    <published>2019-04-19T10:16:00.000Z</published>
+    <updated>2019-04-19T10:19:50.752Z</updated>
+    
+    <content type="html"><![CDATA[<p>感觉最近Confluence一下子就火起来了，各种爆洞= =。这个洞是17号爆的，影响没有之前那个RCE的大，需要登录，还需要有修改文章上传附件的权限，个人感觉有点鸡肋。Anyway，分析的过程还是比较简单并有乐趣的。</p><a id="more"></a><h1 id="0x01-漏洞概述"><a href="#0x01-漏洞概述" class="headerlink" title="0x01 漏洞概述"></a>0x01 漏洞概述</h1><blockquote><p>Confluence Server and Data Center had a path traversal vulnerability in the downloadallattachments resource. A remote attacker who has permission to add attachments to pages and / or blogs, or to create a new space or personal space, or who has ‘Admin’ permissions for a space, can exploit this path traversal vulnerability to write files to arbitrary locations which can lead to remote code execution on systems that run a vulnerable version of Confluence Server or Data Center.</p></blockquote><p>根据官方文档的描述，我们大致能知道这是个需要权限的路径穿越的漏洞，并且可以将文件上传到任意路径。造成这个漏洞的关键点在于<code>DownloadAllAttachments</code>这个资源。在经过diff后，可以确定漏洞触发的关键点在于文件名的构造：</p><blockquote><p>修复前</p></blockquote><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556630124609.jpg" alt=""></p><blockquote><p>修复后</p></blockquote><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556629685846.jpg" alt=""></p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556630389868.jpg" alt=""></p><p>可以看到这里是对这里的<code>attachment.getFileName</code>所获取的文件名进行二次文件名获取。</p><h1 id="0x02-漏洞分析"><a href="#0x02-漏洞分析" class="headerlink" title="0x02 漏洞分析"></a>0x02 漏洞分析</h1><p>分析这个漏洞要从两个点入手：</p><ul><li><code>DownloadAllAttachments</code>自身的处理流程</li><li>如何让文件名中包含<code>../</code></li></ul><p>在分析前我们应清楚哪里能调用<code>DownloadAllAttachments</code>，这样才方便调试。根据官方给出的临时修补措施，我们大致可以从附件管理的<code>Download all attachments</code>这个地方入手：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556636645966.jpg" alt="-w635"></p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556640416058.jpg" alt="-w1133"></p><h2 id="2-1-DownloadAllAttachments处理流程"><a href="#2-1-DownloadAllAttachments处理流程" class="headerlink" title="2.1 DownloadAllAttachments处理流程"></a>2.1 DownloadAllAttachments处理流程</h2><p><code>DownloadAllAttachments</code>位于<code>com.atlassian.confluence.pages.actions.DownloadAllAttachmentsOnPageAction</code>，为了便于快速的解释这个漏洞，我用动态调试+静态分析的方法来进行说明。</p><p>我这里选取的是默认生成的<code>Lay out your page (step 6 of 9)</code>这个页面的下载全部附件进行测试的：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556643371813.jpg" alt="-w1132"></p><p>代码非常简单，分两部分来看：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556648729610.jpg" alt=""></p><p>可以看到在这里首先会将附件中的所有文件的基础信息置于一个数组中，然后对数组进行遍历，然后执行以下操作：</p><ol><li>根据文件名创建一个新的<code>File</code>对象(tmpFile)</li><li>将文件内容写入输入流</li><li>将<code>FileOutputStream</code>输出流指向<code>File</code>对象</li><li>将输入流中的内容拷贝到<code>FileOutputStream</code>输出流中</li></ol><p>这样就完成了将文件拷贝到另外一个位置的操作。</p><p>这里的<code>attachment.getFileName()</code>：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556657114892.jpg" alt=""></p><p>而title名就是文件名：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556657884254.jpg" alt=""></p><p><code>getTempDirectoryForZipping()</code>：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556658919734.jpg" alt=""></p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556659124664.jpg" alt=""></p><p>是根据时间和随机数生成的一个目录，格式类似于<code>download2q1gP165938</code>，这里我们通过方法的名字就能看出这里是建立了一个创建一个zip的目录，这个目录在<code>confluence_home/temp/</code></p><p>ok，知道了这些，继续向下看<code>DownloadAllAttachments</code>：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556661700493.jpg" alt=""></p><p>这里是完成将zip目录打包成zip文件的过程。</p><p>在进行文件复制的时候，我们注意到文件的路径是zip目录与文件名直接进行进行拼接生成的：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556665323662.jpg" alt=""></p><p>而这里就是整个目录穿越的关键，也就是说在生成zip文件前，如果附件列表中有文件的文件名是<code>../../xxx</code>的格式的话，就能进行目录穿越，在任意位置创建文件。</p><h2 id="2-2-寻找利用链"><a href="#2-2-寻找利用链" class="headerlink" title="2.2 寻找利用链"></a>2.2 寻找利用链</h2><p>默认情况下，我们是没有办法创建以<code>.</code>开头的文件的，如果想要上传一个文件名类似<code>../../xxx</code>的文件的话，最简单的思路是用burp中间改包，但是在这个例子中是不行的：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556668251787.jpg" alt="-w1241"></p><p>应该是进行了自动的过滤，这个方法行不通。我又注意到了在属性中好像能修改文件名：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556668967289.jpg" alt="-w1132"></p><p>但是也是不成功的：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556669182290.jpg" alt="-w700"></p><p>就在我想要放弃的时候我尝试了一下编辑页面中的上传附件功能，竟然成功了：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556670429318.jpg" alt="-w1036"></p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556672925783.jpg" alt="-w1245"></p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556673194395.jpg" alt="-w1122"></p><p>在这里我点击<code>下载全部</code>，即可完成目录穿越：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556673630695.jpg" alt="-w559"></p><p>我们来对比一下两种上传方式有什么不同。</p><h3 id="直接上传-FileStorer"><a href="#直接上传-FileStorer" class="headerlink" title="直接上传(FileStorer)"></a>直接上传(FileStorer)</h3><p>直接上传这里是调用的<code>com.atlassian.confluence.pages.actions.beans.FileStorer</code>，关键点在：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556678949378.jpg" alt=""></p><p>在获取文件名时会对请求中的文件名进行处理：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556679723274.jpg" alt=""></p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556680604026.jpg" alt=""></p><p>会将文件名提取出来。</p><h3 id="利用插件上传"><a href="#利用插件上传" class="headerlink" title="利用插件上传"></a>利用插件上传</h3><p>在利用插件上传时用的是<code>drag-and-drop</code>这个插件在<code>com.atlasian.confluence.plugins.dragdrop.UploadAction</code>。</p><p>在处理请求时并未对请求中的文件名进行处理：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556682894757.jpg" alt=""></p><p>所以会保存我们恶意修改的文件名</p><p>至此该漏洞分析完毕。</p><h1 id="0x03-构造POC"><a href="#0x03-构造POC" class="headerlink" title="0x03 构造POC"></a>0x03 构造POC</h1><p>首先登陆后编辑附件数大于2个的页面，在页面中加入附件：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556670429318.jpg" alt="-w1036"></p><p>burp抓包修改上传文件的文件名：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556672925783.jpg" alt="-w1245"></p><p>在附件管理页面下载全部附件：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556673194395.jpg" alt="-w1122"></p><p>文件会生成到<code>/confluence_home/temp/zip文件名../../</code>目录中：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/04/19/15556686614397.jpg" alt="-w646"></p><h1 id="0x04-Reference"><a href="#0x04-Reference" class="headerlink" title="0x04 Reference"></a>0x04 Reference</h1><ul><li><a href="https://confluence.atlassian.com/doc/confluence-security-advisory-2019-04-17-968660855.html" target="_blank" rel="noopener">https://confluence.atlassian.com/doc/confluence-security-advisory-2019-04-17-968660855.html</a></li></ul>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;感觉最近Confluence一下子就火起来了，各种爆洞= =。这个洞是17号爆的，影响没有之前那个RCE的大，需要登录，还需要有修改文章上传附件的权限，个人感觉有点鸡肋。Anyway，分析的过程还是比较简单并有乐趣的。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="漏洞分析" scheme="https://lucifaer.com/categories/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/"/>
+    
+    
+      <category term="漏洞分析" scheme="https://lucifaer.com/tags/%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/"/>
+    
+      <category term="Java" scheme="https://lucifaer.com/tags/Java/"/>
+    
+      <category term="Confluence" scheme="https://lucifaer.com/tags/Confluence/"/>
+    
+  </entry>
   
   <entry>
     <title>Confluence 未授权RCE分析（CVE-2019-3396）</title>
