@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html>
+    <!-- title -->
+
+
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" >
+    <meta name="author" content="Lucifaer">
+    <meta name="renderer" content="webkit">
+    <meta name="copyright" content="Lucifaer">
+    <meta name="keywords" content="Lucifaer's blog | Lucifaer">
+    <meta name="description" content="Some Lucifaer's security researchers and security analysis">
+    <meta name="Cache-Control" content="no-cache">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <title>Fastjson 流程分析及RCE分析 · Lucifaer&#39;s Blog</title>
+    <style type="text/css">
+    @font-face {
+        font-family: 'Oswald-Regular';
+        src: url("/font/Oswald-Regular.ttf");
+    }
+
+    body {
+        margin: 0;
+    }
+
+    header,
+    footer,
+    .back-top,
+    .sidebar,
+    .container,
+    .site-intro-meta,
+    .toc-wrapper {
+        display: none;
+    }
+
+    .site-intro {
+        position: relative;
+        z-index: 3;
+        width: 100%;
+        /* height: 50vh; */
+        overflow: hidden;
+    }
+
+    .site-intro-placeholder {
+        position: absolute;
+        z-index: -2;
+        top: 0;
+        left: 0;
+        width: calc(100% + 300px);
+        height: 100%;
+        background: repeating-linear-gradient(-45deg, #444 0, #444 80px, #333 80px, #333 160px);
+        background-position: center center;
+        transform: translate3d(-226px, 0, 0);
+        animation: gradient-move 2.5s ease-out 0s 1;
+    }
+
+    @keyframes gradient-move {
+        0% {
+            transform: translate3d(-226px, 0, 0);
+        }
+        100% {
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+</style>
+
+    <link rel="preload" href= /css/style.css?v=20180721 as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="stylesheet" href= /css/mobile.css?v=20180721 media="(max-width: 980px)">
+    
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    
+    <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
+/* This file is meant as a standalone workflow for
+- testing support for link[rel=preload]
+- enabling async CSS loading in browsers that do not support rel=preload
+- applying rel preload css once loaded, whether supported or not.
+*/ -->
+<script>
+(function( w ){
+	"use strict";
+	// rel=preload support test
+	if( !w.loadCSS ){
+		w.loadCSS = function(){};
+	}
+	// define on the loadCSS obj
+	var rp = loadCSS.relpreload = {};
+	// rel=preload feature support test
+	// runs once and returns a function for compat purposes
+	rp.support = (function(){
+		var ret;
+		try {
+			ret = w.document.createElement( "link" ).relList.supports( "preload" );
+		} catch (e) {
+			ret = false;
+		}
+		return function(){
+			return ret;
+		};
+	})();
+
+	// if preload isn't supported, get an asynchronous load by using a non-matching media attribute
+	// then change that media back to its intended value on load
+	rp.bindMediaToggle = function( link ){
+		// remember existing media attr for ultimate state, or default to 'all'
+		var finalMedia = link.media || "all";
+
+		function enableStylesheet(){
+			link.media = finalMedia;
+		}
+
+		// bind load handlers to enable media
+		if( link.addEventListener ){
+			link.addEventListener( "load", enableStylesheet );
+		} else if( link.attachEvent ){
+			link.attachEvent( "onload", enableStylesheet );
+		}
+
+		// Set rel and non-applicable media type to start an async request
+		// note: timeout allows this to happen async to let rendering continue in IE
+		setTimeout(function(){
+			link.rel = "stylesheet";
+			link.media = "only x";
+		});
+		// also enable media after 3 seconds,
+		// which will catch very old browsers (android 2.x, old firefox) that don't support onload on link
+		setTimeout( enableStylesheet, 3000 );
+	};
+
+	// loop through link elements in DOM
+	rp.poly = function(){
+		// double check this to prevent external calls from running
+		if( rp.support() ){
+			return;
+		}
+		var links = w.document.getElementsByTagName( "link" );
+		for( var i = 0; i < links.length; i++ ){
+			var link = links[ i ];
+			// qualify links to those with rel=preload and as=style attrs
+			if( link.rel === "preload" && link.getAttribute( "as" ) === "style" && !link.getAttribute( "data-loadcss" ) ){
+				// prevent rerunning on link
+				link.setAttribute( "data-loadcss", true );
+				// bind listeners to toggle media back
+				rp.bindMediaToggle( link );
+			}
+		}
+	};
+
+	// if unsupported, run the polyfill
+	if( !rp.support() ){
+		// run once at least
+		rp.poly();
+
+		// rerun poly on an interval until onload
+		var run = w.setInterval( rp.poly, 500 );
+		if( w.addEventListener ){
+			w.addEventListener( "load", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		} else if( w.attachEvent ){
+			w.attachEvent( "onload", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		}
+	}
+
+
+	// commonjs
+	if( typeof exports !== "undefined" ){
+		exports.loadCSS = loadCSS;
+	}
+	else {
+		w.loadCSS = loadCSS;
+	}
+}( typeof global !== "undefined" ? global : this ) );
+</script>
+
+    <link rel="icon" href= "/assets/favicon.ico" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js" as="script" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" as="script" />
+    <link rel="preload" href="/scripts/main.js" as="script" />
+    <link rel="preload" as="font" href="/font/Oswald-Regular.ttf" crossorigin>
+    <link rel="preload" as="font" href="https://at.alicdn.com/t/font_327081_1dta1rlogw17zaor.woff" crossorigin>
+    
+        <!-- algolia -->
+        <script>
+            
+            var hits = JSON.parse('{"per_page":10}')
+            var labels = JSON.parse('{"input_placeholder":"Search for Posts","hits_empty":"We did not find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}')
+
+            var algolia = {
+                applicationID: 'K0XKT0INON',
+                apiKey: 'cc8e96eb9aa249bbd7662f7f8f7d70ca',
+                indexName: 'blog',
+                hits: hits,
+                labels: labels
+            }
+        </script>
+    
+    <!-- fancybox -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.js" defer></script>
+    <!-- 百度统计  -->
+    
+    <!-- 谷歌统计  -->
+    
+</head>
+
+    
+        <body class="post-body">
+    
+    
+<header class="header">
+
+    <div class="read-progress"></div>
+    <div class="header-sidebar-menu">&#xe775;</div>
+    <!-- post页的toggle banner  -->
+    
+    <div class="banner">
+            <div class="blog-title">
+                <a href="/" >Lucifaer&#39;s Blog.</a>
+            </div>
+            <div class="post-title">
+                <a href="#" class="post-name">Fastjson 流程分析及RCE分析</a>
+            </div>
+    </div>
+    
+    <a class="home-link" href=/>Lucifaer's Blog.</a>
+</header>
+    <div class="wrapper">
+        <div class="site-intro" style=
+
+
+
+
+
+
+
+
+height:50vh;
+
+>
+    
+    <!-- 主页  -->
+    
+    
+    <!-- 404页  -->
+            
+    <div class="site-intro-placeholder"></div>
+    <div class="site-intro-img" style="background-image: url(/intro/post-bg.jpg)"></div>
+    <div class="site-intro-meta">
+        <!-- 标题  -->
+        <h1 class="intro-title">
+            <!-- 主页  -->
+            
+            Fastjson 流程分析及RCE分析
+            <!-- 404 -->
+            
+        </h1>
+        <!-- 副标题 -->
+        <p class="intro-subtitle">
+            <!-- 主页副标题  -->
+            
+            
+            <!-- 404 -->
+            
+        </p>
+        <!-- 文章页meta -->
+        
+            <div class="post-intros">
+                <!-- 文章页标签  -->
+                
+                    <div class= post-intro-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "漏洞分析">漏洞分析</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "Java">Java</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "FastJson">FastJson</a>
+    
+</div>
+                
+                
+                    <div class="post-intro-read">
+                        <span>Word count: <span class="post-count">3,434</span> / Reading time: <span class="post-count">12 min</span></span>
+                    </div>
+                
+                <div class="post-intro-meta">
+                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
+                    <span class="post-intro-time">2019/07/24</span>
+                    
+                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
+                        <span class="iconfont-archer">&#xe602;</span>
+                        <span id="busuanzi_value_page_pv"></span>
+                    </span>
+                    
+                    <span class="shareWrapper">
+                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
+                        <span class="shareText">Share</span>
+                        <ul class="shareList">
+                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
+                                <div class="share-qrcode"></div>
+                            </li>
+                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
+                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
+                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
+                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
+                        </ul>
+                    </span>
+                </div>
+            </div>
+        
+    </div>
+</div>
+        <script>
+ 
+  // get user agent
+  var browser = {
+    versions: function () {
+      var u = window.navigator.userAgent;
+      return {
+        userAgent: u,
+        trident: u.indexOf('Trident') > -1, //IE内核
+        presto: u.indexOf('Presto') > -1, //opera内核
+        webKit: u.indexOf('AppleWebKit') > -1, //苹果、谷歌内核
+        gecko: u.indexOf('Gecko') > -1 && u.indexOf('KHTML') == -1, //火狐内核
+        mobile: !!u.match(/AppleWebKit.*Mobile.*/), //是否为移动终端
+        ios: !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/), //ios终端
+        android: u.indexOf('Android') > -1 || u.indexOf('Linux') > -1, //android终端或者uc浏览器
+        iPhone: u.indexOf('iPhone') > -1 || u.indexOf('Mac') > -1, //是否为iPhone或者安卓QQ浏览器
+        iPad: u.indexOf('iPad') > -1, //是否为iPad
+        webApp: u.indexOf('Safari') == -1, //是否为web应用程序，没有头部与底部
+        weixin: u.indexOf('MicroMessenger') == -1, //是否为微信浏览器
+        uc: u.indexOf('UCBrowser') > -1 //是否为android下的UC浏览器
+      };
+    }()
+  }
+  console.log("userAgent:" + browser.versions.userAgent);
+
+  // callback
+  function fontLoaded() {
+    console.log('font loaded');
+    if (document.getElementsByClassName('site-intro-meta')) {
+      document.getElementsByClassName('intro-title')[0].classList.add('intro-fade-in');
+      document.getElementsByClassName('intro-subtitle')[0].classList.add('intro-fade-in');
+      var postIntros = document.getElementsByClassName('post-intros')[0]
+      if (postIntros) {
+        postIntros.classList.add('post-fade-in');
+      }
+    }
+  }
+
+  // UC不支持跨域，所以直接显示
+  function asyncCb(){
+    if (browser.versions.uc) {
+      console.log("UCBrowser");
+      fontLoaded();
+    } else {
+      WebFont.load({
+        custom: {
+          families: ['Oswald-Regular']
+        },
+        loading: function () {  //所有字体开始加载
+          // console.log('loading');
+        },
+        active: function () {  //所有字体已渲染
+          fontLoaded();
+        },
+        inactive: function () { //字体预加载失败，无效字体或浏览器不支持加载
+          console.log('inactive: timeout');
+          fontLoaded();
+        },
+        timeout: 5000 // Set the timeout to two seconds
+      });
+    }
+  }
+
+  function asyncErr(){
+    console.warn('script load from CDN failed, will load local script')
+  }
+
+  // load webfont-loader async, and add callback function
+  function async(u, cb, err) {
+    var d = document, t = 'script',
+      o = d.createElement(t),
+      s = d.getElementsByTagName(t)[0];
+    o.src = u;
+    if (cb) { o.addEventListener('load', function (e) { cb(null, e); }, false); }
+    if (err) { o.addEventListener('error', function (e) { err(null, e); }, false); }
+    s.parentNode.insertBefore(o, s);
+  }
+
+  var asyncLoadWithFallBack = function(arr, success, reject) {
+      var currReject = function(){
+        reject()
+        arr.shift()
+        if(arr.length)
+          async(arr[0], success, currReject)
+        }
+
+      async(arr[0], success, currReject)
+  }
+
+  asyncLoadWithFallBack([
+    "https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js", 
+    "https://cdn.bootcss.com/webfont/1.6.28/webfontloader.js",
+    "/lib/webfontloader.min.js"
+  ], asyncCb, asyncErr)
+</script>        
+        <img class="loading" src="/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
+        <div class="container container-unloaded">
+            <main class="main post-page">
+    <article class="article-entry">
+        <p>其实最近爆出的这个rce在去年的时候就有更新，poc在github的<a href="https://github.com/alibaba/fastjson/commit/be41b36a8d748067ba4debf12bf236388e500c66" target="_blank" rel="noopener">commit记录</a>中也有所体现，之前已经有很多非常好的分析文章对整个漏洞进行了详尽的分析，我这里只记录一下自己的跟踪过程，以及在跟踪时所思考的一些问题。</p>
+<a id="more"></a>
+<h1 id="0x01-Fastjson化流程简述"><a href="#0x01-Fastjson化流程简述" class="headerlink" title="0x01 Fastjson化流程简述"></a>0x01 Fastjson化流程简述</h1><p>在<a href="http://xxlegend.com/2017/12/06/%E5%9F%BA%E4%BA%8EJdbcRowSetImpl%E7%9A%84Fastjson%20RCE%20PoC%E6%9E%84%E9%80%A0%E4%B8%8E%E5%88%86%E6%9E%90/" target="_blank" rel="noopener">廖大2017年的一篇博文中</a>就对Fastjson的反序列化流程进行了总结：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15632616584384.jpg" alt=""></p>
+<p>在具体的跟进中也可以很清晰的看到如图所示的架构。</p>
+<p>对于编程人员来说，只需要考虑Fastjson所提供的几个静态方法即可，如：</p>
+<ul>
+<li>JSON.toJSONString()</li>
+<li>JSON.parse()</li>
+<li>JSON.parseObject()</li>
+</ul>
+<p>并不需要关注json序列化及反序列化的过程。深入Fastjson框架，可以看到其主要的功能都是在<code>DefaultJSONParser</code>类中实现的，在这个类中会应用其他的一些外部类来完成后续操作。<code>ParserConfig</code>主要是进行配置信息的初始化，<code>JSONLexer</code>主要是对json字符串进行处理并分析，反序列化在<code>JavaBeanDeserializer</code>中处理。</p>
+<p>在真实的调试过程中会遇到一些非常好玩的问题，而在其它文章中并没有对这些进行完整的叙述，我这里结合自己的理解来说一说。以下的调试的例子的demo为：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15634434027169.jpg" alt=""></p>
+<p>jsonString即为poc的内容：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&quot;name&quot;:&#123;&quot;@type&quot;:&quot;java.lang.Class&quot;,&quot;val&quot;:&quot;com.sun.rowset.JdbcRowSetImpl&quot;&#125;,&quot;f&quot;:&#123;&quot;@type&quot;:&quot;com.sun.rowset.JdbcRowSetImpl&quot;,&quot;dataSourceName&quot;:&quot;rmi://asdfasfd/&quot;,&quot;autoCommit&quot;:true&#125;&#125;,age:11&#125;</span><br></pre></td></tr></table></figure>
+<p>poc（或者不如说是对于传入的json字符串）的处理过程简单来说分为这几部分:</p>
+<ol>
+<li><code>DefaultJSONParser</code>的初始化</li>
+<li>这一步看是<code>parseObject()</code>是否指定了第二个参数，也就是是否指定了<code>clazz</code>字段：<ul>
+<li>如果指定了<code>clazz</code>字段，则首先根据<code>clazz</code>类型来获取相应<code>deserializer</code>，如果不是<code>initDeserializers</code>中的类的话，则会调用<code>JavaBeanDeserializer#deserialze</code>转交<code>FastjsonASMDeserializer</code>利用Fastjson自己实现的ASM流程生成处理类，调用相应的类并将处理流程转交到相应的处理类处理json字符串内容。（这里的描述有一些些问题，后面会尽量相近的描述一下）</li>
+<li>如果未指定，则直接交给<code>StringCodec</code>类来处理json字符串。</li>
+</ul>
+</li>
+<li>最终都转交由<code>DefaultJSONParser#parse</code>中根据<code>lexer.token</code>来选择处理方式，这里的例子中都为12也就是<code>{</code>（因为要处理json字符串需要一个起始标志位，所以判断当前json字符串的token是很重要的），接下来就是对json字符串进行处理（这里是一个循环处理，摘取类似<code>&quot;name&quot;:&quot;123&quot;</code>这样的关系）。</li>
+<li>判断解析的json字符串中是否存在<code>symbolTable</code>中的字段（如<code>@type</code>，<code>$ref</code>这样的字段），如果出现了<code>@type</code>则交由<code>public final Object parseObject(final Map object, Object fieldName)</code>来处理，然后重复步骤2的过程知道执行成功或报错。</li>
+</ol>
+<h2 id="1-1-DefaultJSONParser的初始化过程"><a href="#1-1-DefaultJSONParser的初始化过程" class="headerlink" title="1.1 DefaultJSONParser的初始化过程"></a>1.1 DefaultJSONParser的初始化过程</h2><p>初始化过程非常的简单，分两部分，一部分为<code>ParserConfig</code>的初始化，另外一部分为<code>DefaultJSONParser</code>的初始化。</p>
+<p><code>ParserConfig</code>的初始化是在<code>com.alibaba.fastjson.JSON</code>中调用的：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15634458216861.jpg" alt=""></p>
+<p>一路跟到<code>ParserConfig#ParserConfig</code>方法中：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15634459216772.jpg" alt=""></p>
+<p>前面指定了asm的工厂类，并进行了实例化，后面是初始化<code>deserializers</code>，将用户自定义黑白名单加入到原有的黑白名单中。</p>
+<p><code>DefaultJSONParser</code>的初始化是在<code>com.alibaba.fastjson.JSON#parseObject</code>中调用并完成的：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15635037373216.jpg" alt=""></p>
+<p>这里初始化了<code>DefaultJSONParser</code>之后调用了其<code>parseObject</code>方法进行后续的操作。</p>
+<p>跟进<code>DefaultJSONParser</code>可以看到<code>JSONScanner</code>的实例化以及<code>lexer.token</code>的初始化设置：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15635040214840.jpg" alt=""></p>
+<h2 id="1-2-获取对应的derializer"><a href="#1-2-获取对应的derializer" class="headerlink" title="1.2 获取对应的derializer"></a>1.2 获取对应的derializer</h2><p>进入到这里步就稍微有点复杂了，需要仔细跟进一下。根据上一节我们可以看到完成初始化操作后主要的处理流程集中于<code>T value = (T) parser.parseObject(clazz, null);</code>这一步的操作中，跟进看一下具体流程：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15635048199979.jpg" alt=""></p>
+<p>简单来说就是一个根据type获取对应的<code>derializer</code>并且调用<code>derializer.deserialze</code>进行处理的过程，这里的config是之前初始化的<code>ParserConfig</code>。这里要注意的是<code>type</code>这个参数，跟踪了整个流程后会发现，如果在写代码时指定了第二个参数如<code>Group group = JSON.parseObject(jsonString, Group.class);</code>则第二个参数也就是<code>Group.class</code>即为<code>type</code>如果未指定第二个参数的话将会获取第一个参数的类型作为<code>type</code>，当未指定第二个参数的时候将会调用与第一个参数类型相符的方法来处理：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15635051429391.jpg" alt=""></p>
+<p>了解了这些后，就可以跟进看一下<code>getDeserializer</code>的实现了：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15635054724803.jpg" alt=""></p>
+<p>首先会尝试在<code>deserializers</code>中匹配<code>type</code>的类型，如果匹配到了就返回匹配的<code>derializer</code>，否则就判断是否是Class泛型的接口，如果是则调用<code>getDeserializer((Class&lt;?&gt;) type, type)</code>继续处理，这一部分代码很长，我只截最关键的一个地方：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15635059273625.jpg" alt=""></p>
+<p>当类不显式匹配上面的情况时，就会调用<code>createJavaBeanDeserializer</code>来创建一个新的<code>derializer</code>，并将其加入到<code>deserializers</code>这个map中。接下来跟进<code>createJavaBeanDeserializer</code>的处理流程，我截取了关键的一部分：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15635087510896.jpg" alt=""></p>
+<p>在这里首先会根据类名和propertyNamingStrategy生成beanInfo，之后利用asm工厂类的<code>createJavaBeanDeserializer</code>生成处理类：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15635176083297.jpg" alt=""></p>
+<p>写过asm的应该可以一眼看出这里是用asm来生成处理类，分别生成构造函数，<code>deserialze</code>方法和<code>deserialzeArrayMapping</code>方法。我们来看一下asm生成的类是什么样的。这里由于代码很多我只截取一些关键的地方：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15635245722181.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15635246119833.jpg" alt=""></p>
+<p>至此便完成了利用asm生成处理类的过程了。</p>
+<h2 id="1-3-处理类的处理流程"><a href="#1-3-处理类的处理流程" class="headerlink" title="1.3 处理类的处理流程"></a>1.3 处理类的处理流程</h2><p>上一节中我们已经动态生成了<code>FastjsonASMDeserializer_1_Group</code>这个处理类，那么现在可以继续向下跟进，看看后续的处理流程是怎么样的。</p>
+<p>首先，跟进一下构造函数：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15637791190484.jpg" alt=""></p>
+<p>这里利用<code>createFieldDeserializer</code>将<code>type</code>类中的变量等信息转换为<code>FieldDeserializer</code>类型，并存储到<code>sortedFieldDeserializers</code>这个数组中，这里可以记一下这个数组的名字，后面会用到：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15637794784848.jpg" alt=""></p>
+<p>在完成构造函数后，根据上文的跟踪，就会调用asm生成的处理类中的<code>deserialze</code>方法，由于我这里是把生成的bytecode抓下来写成文件来看的，所以很多东西看的不是很清晰，但是整段处理的关键点在于最后的return：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15637804297401.jpg" alt=""></p>
+<p>其中的各个参数为：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15637805043654.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15637805171733.jpg" alt=""></p>
+<p>跟进<code>parseRest</code>来看一下：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15637805586077.jpg" alt=""></p>
+<p>这里直接调用了<code>JavaBeanDeserializer#deserialze</code>。这里我截取几处比较关键的代码：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15637623603918.jpg" alt=""></p>
+<p>这里需要注意的有两个变量：<code>beanInfo</code>和<code>sortedFieldDeserializers</code>，这两个变量的生成过程上文都有提及，根据这两个变量的值，我们能很好的理解<code>JavaBeanDeserializer#deserialze</code>这部分的代码，这里会遍历整个<code>sortedFieldDeserializers</code>中所有的key，并尝试根据类型来提取jsonstring中相应的信息，如果成功则转交给asm生成的处理类的createInstance实例化对象，如果不成功则扫描jsonstring中是否具有特殊的指令集，如果有，则尝试解析指令集否则就报错。下面具体看一下处理的流程：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15637646961397.jpg" alt=""></p>
+<p>如果失败则尝试解析指令集：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15637647820704.jpg" alt=""></p>
+<p>可以看到这里会尝试解析<code>$ref</code>和<code>@type</code>，如果匹配到了<code>@type</code>且其内容为string，则尝试利用<code>lexer.stringVal()</code>通过字符串截取来获取其内容：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15637677118755.jpg" alt=""></p>
+<p>但是由于我们发送的jsonstring中是没有与<code>sortedFieldDeserializers</code>所对应的键名的，所以这里仍无法匹配到。因为没有办法找到与设定的type相符的键，这个时候获取到的内容为空，fastjson会将当前这个字段判断为一个键值，根据当前符号的下一个符号来判断这个键所对应的值是什么类型，如果是<code>{</code>则这个键所对应的值也是一个key-value的格式，如果是<code>&quot;</code>则为具体的值。在当前例子中，我们知道下一个字段应为<code>{</code>，fastjson在处理时会再次调用<code>parseObject</code>来处理这个新的键值对格式，下面便是如何将处理流程转交<code>parserObject</code>进行二次处理的过程。这里需要用到<code>FieldDeserializers</code>来进行解析了：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15637845085529.jpg" alt=""></p>
+<p>跟进<code>parseField</code>中，关键的处理流程为：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15637846769606.jpg" alt=""></p>
+<p>继续跟进：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15637864059970.jpg" alt=""></p>
+<p>这里首先通过<code>fieldInfo.fieldClass</code>和<code>fieldInfo.fieldType</code>来获取<code>fieldValueDeserilizer</code>由于这里对应的jsonstring是string类型，则这里最后获取到的<code>fieldValueDeserilizer</code>是<code>StringCodec</code>。所以接下来就是跟进<code>StringCodec#deserialze</code>中：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15637866580518.jpg" alt=""></p>
+<p>传入的clazz应为String类型，而非StringBuffer或StringBuilder，所以继续跟进<code>deserialze</code>：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15637867685448.jpg" alt=""></p>
+<p>最终调用<code>DefaultJSONParser#parse</code>解析jsonstring：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15637869899788.jpg" alt=""></p>
+<p>现在解析的位置应为<code>{</code>所对应的的token，所以应为12，也就是LBRACE，这里将调用<code>parseObject</code>来对jsonstring进行解析，我这里截取关键部分：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15637874209660.jpg" alt=""></p>
+<p>在这段代码的前面都是lexer对jsonstring的截取和处理操作，当检测到jsonstring中含有以<code>@type</code>为键名的字段后，获取其值，将值传入<code>checkAutoType</code>中做长度检测以及黑白名单的检测:</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15637894807845.jpg" alt=""></p>
+<p>如果通过的话，则调用<code>config.getDeserializer</code>获取clazz的类：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15638726459493.jpg" alt=""></p>
+<p>根据jsonstring中的<code>val</code>字段来获取obj的值：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15638759463114.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15638760602976.jpg" alt=""></p>
+<p>这里将<code>objVal</code>的名称以字符串的形式赋值给<code>strVal</code>。后面会根据<code>clazz</code>的类型将处理流程转交给不同的流程这里由于指定了<code>java.lang.class</code>所以是转交到<code>TypeUtils.loadClass</code>来处理的：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15638761943245.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15638765180910.jpg" alt=""></p>
+<p>前面将对传入的<code>className</code>进行解析，如果符合相应格式就会进行相应的解析（这里也是之前漏洞所在地），而后面的则会判断<code>cache</code>是否为<code>true</code>，如果为真则将实例化后的类加入到mappings中（这也是这次漏洞的核心），最终都将把实例化后的类进行返回。</p>
+<h1 id="0x02-Fastjson-gadget流程"><a href="#0x02-Fastjson-gadget流程" class="headerlink" title="0x02 Fastjson gadget流程"></a>0x02 Fastjson gadget流程</h1><p>其实在前文都有涉及，在这里将化繁为简，总结一下关键点在哪几个地方。</p>
+<h2 id="2-1-jsonstring解析简述"><a href="#2-1-jsonstring解析简述" class="headerlink" title="2.1 jsonstring解析简述"></a>2.1 jsonstring解析简述</h2><p>纵观整个Fastjson的处理流程，可以注意到对jsonstring的核心处理流程是在<code>DefaultJSONParser#parse(Object fieldName)</code>中根据jsonstring的标志位来进行分发的，常见有两种情况：</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># 正常的kv结构</span><br><span class="line">&#123;<span class="attr">"k"</span>:<span class="string">"v"</span>&#125;</span><br><span class="line"></span><br><span class="line"># 嵌套结构</span><br><span class="line">&#123;"k":&#123;"kk":"vv","kk":"vv"&#125;,"k":&#123;"k":"kk","kk":"vv","kk":"vv"&#125;&#125;,k:v&#125;</span><br></pre></td></tr></table></figure>
+<p>而Fastjson的解析方式会首先判断当前标志位是什么，这里拿完整的解析过程来举个例子：</p>
+<p>最开始解析的标志位为<code>{</code></p>
+<ol>
+<li>判断下一个标志位是否为<code>&quot;</code>，如果是<code>&quot;</code>则提取key值，这时的标志位为<code>&quot;</code>。</li>
+<li>判断下一个标志位是否为<code>:</code>：   <ul>
+<li>如果为<code>:</code>则判断下一个标志位是否为<code>&quot;</code>，如果是，则获取value值，这时的标志位为<code>&quot;</code>。</li>
+<li>如果为<code>{</code>则重复1、2的过程。</li>
+</ul>
+</li>
+<li>判断下一个标志位是否为<code>}</code>：<ul>
+<li>如果为<code>}</code>则表示这一个单元的解析结束</li>
+<li>如果为<code>,</code>则表示要解析下一个kv的数据，重复1、2、3</li>
+</ul>
+</li>
+</ol>
+<p>根据不同的标志位进行不同的解析。当解析的过程中碰到了<code>@type</code>或<code>$ref</code>时，将当做特殊的标志做相应的处理。</p>
+<h2 id="2-2-checkAutoType黑名单检测"><a href="#2-2-checkAutoType黑名单检测" class="headerlink" title="2.2 checkAutoType黑名单检测"></a>2.2 checkAutoType黑名单检测</h2><p>当解析过程中找到了<code>@type</code>这个关键的标志时，将提取其所对应的值，并检测这个值是否在黑名单中：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15639372531112.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15639373476871.jpg" alt=""></p>
+<p>先过黑名单再过白名单，这样保证了<code>@type</code>所引用的类是较为安全的。</p>
+<h2 id="2-3-deserialze流程"><a href="#2-3-deserialze流程" class="headerlink" title="2.3 deserialze流程"></a>2.3 deserialze流程</h2><p>jsonstring经过解析且经过安全性验证后，最终都要变成相应的对象，而变成对象的过程就是利用反射完成的，这个过程就是反序列化的过程。而该过程主要在<code>DefaultJSONParser#parseObject</code>中调用<code>deserializer.deserialze()</code>完成：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15639376459381.jpg" alt=""></p>
+<p>这里会根据<code>@type</code>所指定的类来获取或生成反序列化类，完成反序列化过程，这里如果是在预定数组中的类的话就可以直接调用相关类的<code>deserialze</code>方法完成反序列化操作：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15639378099065.jpg" alt=""></p>
+<p>如果没有则会进入asm创建处理类的流程。</p>
+<h2 id="2-4-gadget执行的关键——反射调用"><a href="#2-4-gadget执行的关键——反射调用" class="headerlink" title="2.4 gadget执行的关键——反射调用"></a>2.4 gadget执行的关键——反射调用</h2><p>在具体进行反射前还有一个操作，将会解析看jsonstring中是否存在<code>val</code>字段，如果有，则将其提取出来赋给<code>objVal</code>，并将<code>objVal</code>的类名赋值给<code>strVal</code>：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15639380276367.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15639381411285.jpg" alt=""></p>
+<p>之后根据<code>clazz</code>类型交由不同的流程来处理：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15639380718416.jpg" alt=""></p>
+<p>当<code>clazz</code>是一个class类型时，就会进入<code>TypeUtils.loadClass</code>中根据<code>strVal</code>进行类调用:</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15639387445134.jpg" alt=""></p>
+<p>这里有两个点需要注意，而这两个点就是造成Fastjson两个rce的关键点。</p>
+<ul>
+<li>第一个点会对传入的<code>@type</code>的值进行解析，如果符合相应的格式则直接进行类加载。</li>
+<li><p>第二个点首先会反射调用<code>@type</code>的值所设置的类，然后将其加入到mappings中，当后面再次经过<code>checkAutoType</code>时，将会调用：</p>
+<p>  <img src="http://image-lucifaer.test.upcdn.net/2019/07/24/15639392180790.jpg" alt=""></p>
+</li>
+</ul>
+<p>将首先从mappings中获取和<code>typeName</code>相同的类，也就是说这里在进行黑名单检测前就已经返回了类，从而绕过了黑名单。</p>
+<h1 id="0x03-总结"><a href="#0x03-总结" class="headerlink" title="0x03 总结"></a>0x03 总结</h1><p>就目前来说，针对Fastjson的攻防集中于对于<code>@type</code>的检测的利用以及黑名单的绕过这两部分。而从整体的运行逻辑上来看，由于Fastjson很多地方写的比较死，很难出现重新调用构造方法覆盖黑名单或者覆盖mapping的操作，所以就现在最新版的Fastjson而言是比较难以绕过防护措施的。</p>
+<p>未来可以参考struts2 ognl的攻防手法，看是否能从置空黑名单或者操作mappings来尝试绕过防护。</p>
+<h1 id="0x04-Reference"><a href="#0x04-Reference" class="headerlink" title="0x04 Reference"></a>0x04 Reference</h1><ul>
+<li><a href="https://github.com/alibaba/fastjson/commit/be41b36a8d748067ba4debf12bf236388e500c66" target="_blank" rel="noopener">https://github.com/alibaba/fastjson/commit/be41b36a8d748067ba4debf12bf236388e500c66</a></li>
+<li><a href="http://xxlegend.com/2017/12/06/%E5%9F%BA%E4%BA%8EJdbcRowSetImpl%E7%9A%84Fastjson%20RCE%20PoC%E6%9E%84%E9%80%A0%E4%B8%8E%E5%88%86%E6%9E%90/" target="_blank" rel="noopener">http://xxlegend.com/2017/12/06/%E5%9F%BA%E4%BA%8EJdbcRowSetImpl%E7%9A%84Fastjson%20RCE%20PoC%E6%9E%84%E9%80%A0%E4%B8%8E%E5%88%86%E6%9E%90/</a></li>
+</ul>
+
+    </article>
+    <!-- license  -->
+    
+        <div class="license-wrapper">
+            <p>原文作者: <a href="https://lucifaer.com">Lucifaer</a>
+            <p>原文链接: <a href="https://lucifaer.com/2019/07/24/Fastjson 流程分析及RCE分析/">https://lucifaer.com/2019/07/24/Fastjson 流程分析及RCE分析/</a>
+            <p>发表日期: <a href="https://lucifaer.com/2019/07/24/Fastjson 流程分析及RCE分析/">July 24th 2019, 11:46:00 am</a>
+            <p>版权声明: 本文采用<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可</p>
+        </div>
+    
+    <!-- paginator  -->
+    <ul class="post-paginator">
+        <li class="next">
+            
+        </li>
+        <li class="previous">
+            
+                <div class="prevSlogan">Previous Post</div>
+                <a href= "/2019/05/10/WebLogic wls9-async组件RCE分析（CVE-2019-2725）/" title= WebLogic wls9-async组件RCE分析（CVE-2019-2725） >
+                    <div class="prevTitle">WebLogic wls9-async组件RCE分析（CVE-2019-2725）</div>
+                </a>
+            
+        </li>
+    </ul>
+    <!-- 评论插件 -->
+    <!-- 来必力City版安装代码 -->
+
+    <div id="lv-container" data-id="city" data-uid= MTAyMC8zODcyOC8xNTI1Ng==>
+        <script type="text/javascript">
+            (function(d, s) {
+                var j, e = d.getElementsByTagName(s)[0];
+         
+                if (typeof LivereTower === 'function') { return; }
+         
+                j = d.createElement(s);
+                j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+                j.async = true;
+         
+                e.parentNode.insertBefore(j, e);
+            })(document, 'script');
+             </script>
+         <noscript> 为正常使用来必力评论功能请激活JavaScript</noscript>
+    </div>
+
+<!-- City版安装代码已完成 -->
+    
+    
+    <!--PC和WAP自适应版-->
+
+    <!--PC版-->
+
+
+    
+    
+
+    <!-- 评论 -->
+</main>
+            <!-- profile -->
+            
+        </div>
+        <footer class="footer footer-unloaded">
+    <!-- social  -->
+    
+    <div class="social">
+        
+    
+        
+            
+                <a href="mailto:l.lucifaer@gmail.com" class="iconfont-archer email" title=email ></a>
+            
+        
+    
+        
+            
+                <a href="//github.com/Lucifaer" class="iconfont-archer github" target="_blank" title=github></a>
+            
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="//weibo.com/5838222069" class="iconfont-archer weibo" target="_blank" title=weibo></a>
+            
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="/atom.xml" class="iconfont-archer rss" target="_blank" title=rss></a>
+            
+        
+    
+
+    </div>
+    
+    <!-- powered by Hexo  -->
+    <div class="copyright">
+        <span id="hexo-power">Powered by <a href="https://hexo.io/" target="_blank">Hexo</a></span><span class="iconfont-archer power">&#xe635;</span><span id="theme-info">theme <a href="https://github.com/fi3ework/hexo-theme-archer" target="_blank">Archer</a></span>
+    </div>
+    <!-- 不蒜子  -->
+    
+    <div class="busuanzi-container">
+    
+     
+    <span id="busuanzi_container_site_pv">PV: <span id="busuanzi_value_site_pv"></span> :)</span>
+    
+    </div>
+    
+</footer>
+    </div>
+    <!-- toc -->
+    
+    <div class="toc-wrapper" style=
+    
+
+
+
+
+
+
+
+top:50vh;
+
+    >
+        <div class="toc-catalog">
+            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
+        </div>
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-Fastjson化流程简述"><span class="toc-number">1.</span> <span class="toc-text">0x01 Fastjson化流程简述</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-1-DefaultJSONParser的初始化过程"><span class="toc-number">1.1.</span> <span class="toc-text">1.1 DefaultJSONParser的初始化过程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1-2-获取对应的derializer"><span class="toc-number">1.2.</span> <span class="toc-text">1.2 获取对应的derializer</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1-3-处理类的处理流程"><span class="toc-number">1.3.</span> <span class="toc-text">1.3 处理类的处理流程</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-Fastjson-gadget流程"><span class="toc-number">2.</span> <span class="toc-text">0x02 Fastjson gadget流程</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#2-1-jsonstring解析简述"><span class="toc-number">2.1.</span> <span class="toc-text">2.1 jsonstring解析简述</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-2-checkAutoType黑名单检测"><span class="toc-number">2.2.</span> <span class="toc-text">2.2 checkAutoType黑名单检测</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-3-deserialze流程"><span class="toc-number">2.3.</span> <span class="toc-text">2.3 deserialze流程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-4-gadget执行的关键——反射调用"><span class="toc-number">2.4.</span> <span class="toc-text">2.4 gadget执行的关键——反射调用</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-总结"><span class="toc-number">3.</span> <span class="toc-text">0x03 总结</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x04-Reference"><span class="toc-number">4.</span> <span class="toc-text">0x04 Reference</span></a></li></ol>
+    </div>
+    
+    <div class="back-top iconfont-archer">&#xe639;</div>
+    <div class="sidebar sidebar-hide">
+    <ul class="sidebar-tabs sidebar-tabs-active-0">
+        <li class="sidebar-tab-archives"><span class="iconfont-archer">&#xe67d;</span><span class="tab-name">Archive</span></li>
+        <li class="sidebar-tab-tags"><span class="iconfont-archer">&#xe61b;</span><span class="tab-name">Tag</span></li>
+        <li class="sidebar-tab-categories"><span class="iconfont-archer">&#xe666;</span><span class="tab-name">Cate</span></li>
+    </ul>
+    <div class="sidebar-content sidebar-content-show-archive">
+          <div class="sidebar-panel-archives">
+    <!-- 在ejs中将archive按照时间排序 -->
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <div class="total-and-search">
+        <div class="total-archive">
+        Total : 35
+        </div>
+        <!-- search  -->
+        
+            <div class="site-search popup-trigger">
+                <span class="iconfont-archer search-icon">&#xe627;</span>
+            </div>
+        
+    </div>
+    
+    <div class="post-archive">
+    
+    
+    
+    
+    <div class="archive-year"> 2019 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/24</span><a class="archive-post-title" href= "/2019/07/24/Fastjson 流程分析及RCE分析/" >Fastjson 流程分析及RCE分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/10</span><a class="archive-post-title" href= "/2019/05/10/WebLogic wls9-async组件RCE分析（CVE-2019-2725）/" >WebLogic wls9-async组件RCE分析（CVE-2019-2725）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">04/19</span><a class="archive-post-title" href= "/2019/04/19/Confluence 路径穿越漏洞分析（CVE-2019-3398）/" >Confluence 路径穿越漏洞分析（CVE-2019-3398）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">04/16</span><a class="archive-post-title" href= "/2019/04/16/Confluence 未授权RCE分析（CVE-2019-3396）/" >Confluence 未授权RCE分析（CVE-2019-3396）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">03/13</span><a class="archive-post-title" href= "/2019/03/13/Attack Spring Boot Actuator via jolokia Part 2/" >Attack Spring Boot Actuator via jolokia Part 2</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">03/11</span><a class="archive-post-title" href= "/2019/03/11/Attack Spring Boot Actuator via jolokia Part 1/" >Attack Spring Boot Actuator via jolokia Part 1</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">03/04</span><a class="archive-post-title" href= "/2019/03/04/Jenkins RCE分析（CVE-2018-1000861分析）/" >Jenkins RCE分析（CVE-2018-1000861分析）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/19</span><a class="archive-post-title" href= "/2019/02/19/Nexus Repository Manager 3 远程代码执行漏洞分析（CVE-2019-7238）/" >Nexus Repository Manager 3 远程代码执行漏洞分析（CVE-2019-7238）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/16</span><a class="archive-post-title" href= "/2019/01/16/浅析OGNL的攻防史/" >浅析OGNL的攻防史</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2018 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/25</span><a class="archive-post-title" href= "/2018/12/25/S2-057（CVE-2018-11776）流程分析/" >S2-057（CVE-2018-11776）流程分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/17</span><a class="archive-post-title" href= "/2018/12/17/S2-046（CVE-2017-5638）分析/" >S2-046（CVE-2017-5638）分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/14</span><a class="archive-post-title" href= "/2018/12/14/如何解决Pyppeteer的Target closed错误/" >如何解决Pyppeteer的Target closed错误</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/12</span><a class="archive-post-title" href= "/2018/12/12/S2-045（CVE-2017-5638）分析/" >S2-045（CVE-2017-5638）分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/05</span><a class="archive-post-title" href= "/2018/12/05/RF-14310（CVE-2018-12533）分析/" >RF-14310（CVE-2018-12533）分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/29</span><a class="archive-post-title" href= "/2018/11/29/JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667）/" >JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/30</span><a class="archive-post-title" href= "/2018/08/30/phpMyAdmin <= 4.7.7 CSRF分析/" >phpMyAdmin <= 4.7.7 CSRF分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/29</span><a class="archive-post-title" href= "/2018/08/29/Discuz! 1.5-2.5 命令执行漏洞分析(CVE-2018-14729)/" >Discuz! 1.5-2.5 命令执行漏洞分析(CVE-2018-14729)</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/13</span><a class="archive-post-title" href= "/2018/08/13/MySQLi Cookbook/" >MySQLi Cookbook</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/19</span><a class="archive-post-title" href= "/2018/07/19/薅羊毛产业链分析/" >薅羊毛产业链分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/以太坊简介/" >以太坊简介</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/比特币简介/" >比特币简介</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/区块链补充/" >区块链补充</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/区块链基础概念/" >区块链基础概念</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">03/02</span><a class="archive-post-title" href= "/2018/03/02/部署Django/" >部署Django</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/28</span><a class="archive-post-title" href= "/2018/02/28/Git Hooks实现项目的自动部署/" >Git Hooks实现项目的自动部署</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2017 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/09</span><a class="archive-post-title" href= "/2017/10/09/XDCTF Upload 引发出来的一个新思路/" >XDCTF Upload 引发出来的一个新思路</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/20</span><a class="archive-post-title" href= "/2017/07/20/Blackhat SEO/" >Blackhat SEO</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/19</span><a class="archive-post-title" href= "/2017/07/19/PHP反序列化漏洞/" >PHP反序列化漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/27</span><a class="archive-post-title" href= "/2017/05/27/Joomla 框架的简单跟进/" >Joomla 框架的简单跟进</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/09</span><a class="archive-post-title" href= "/2017/05/09/五指CMS任意文件下载漏洞/" >五指CMS任意文件下载漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">04/13</span><a class="archive-post-title" href= "/2017/04/13/Phpcms V9.6.0任意文件写入getshell/" >Phpcms V9.6.0任意文件写入getshell</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/06</span><a class="archive-post-title" href= "/2017/02/06/WordPress REST API 内容注入/" >WordPress REST API 内容注入</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/18</span><a class="archive-post-title" href= "/2017/01/18/SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析/" >SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2016 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/11</span><a class="archive-post-title" href= "/2016/08/11/CVE-2016-6483 vBulletin 5.2.2 SSRF漏洞/" >CVE-2016-6483 vBulletin 5.2.2 SSRF漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/09</span><a class="archive-post-title" href= "/2016/08/09/IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）/" >IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）</a>
+        </li>
+    
+    </div>
+  </div>
+        <div class="sidebar-panel-tags">
+    <div class="sidebar-tags-name">
+    
+        <span class="sidebar-tag-name" data-tags="漏洞分析"><span class="iconfont-archer">&#xe606;</span>漏洞分析</span>
+    
+        <span class="sidebar-tag-name" data-tags="Java"><span class="iconfont-archer">&#xe606;</span>Java</span>
+    
+        <span class="sidebar-tag-name" data-tags="Spring"><span class="iconfont-archer">&#xe606;</span>Spring</span>
+    
+        <span class="sidebar-tag-name" data-tags="jolokia"><span class="iconfont-archer">&#xe606;</span>jolokia</span>
+    
+        <span class="sidebar-tag-name" data-tags="PHP"><span class="iconfont-archer">&#xe606;</span>PHP</span>
+    
+        <span class="sidebar-tag-name" data-tags="Confluence"><span class="iconfont-archer">&#xe606;</span>Confluence</span>
+    
+        <span class="sidebar-tag-name" data-tags="Git"><span class="iconfont-archer">&#xe606;</span>Git</span>
+    
+        <span class="sidebar-tag-name" data-tags="环境部署"><span class="iconfont-archer">&#xe606;</span>环境部署</span>
+    
+        <span class="sidebar-tag-name" data-tags="Nexuss"><span class="iconfont-archer">&#xe606;</span>Nexuss</span>
+    
+        <span class="sidebar-tag-name" data-tags="CTF"><span class="iconfont-archer">&#xe606;</span>CTF</span>
+    
+        <span class="sidebar-tag-name" data-tags="Struts2"><span class="iconfont-archer">&#xe606;</span>Struts2</span>
+    
+        <span class="sidebar-tag-name" data-tags="blockchain"><span class="iconfont-archer">&#xe606;</span>blockchain</span>
+    
+        <span class="sidebar-tag-name" data-tags="Python"><span class="iconfont-archer">&#xe606;</span>Python</span>
+    
+        <span class="sidebar-tag-name" data-tags="黑产研究"><span class="iconfont-archer">&#xe606;</span>黑产研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="薅羊毛"><span class="iconfont-archer">&#xe606;</span>薅羊毛</span>
+    
+        <span class="sidebar-tag-name" data-tags="RichFaces"><span class="iconfont-archer">&#xe606;</span>RichFaces</span>
+    
+        <span class="sidebar-tag-name" data-tags="Weblogic"><span class="iconfont-archer">&#xe606;</span>Weblogic</span>
+    
+        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
+    
+        <span class="sidebar-tag-name" data-tags="FastJson"><span class="iconfont-archer">&#xe606;</span>FastJson</span>
+    
+        <span class="sidebar-tag-name" data-tags="Jenkins"><span class="iconfont-archer">&#xe606;</span>Jenkins</span>
+    
+        <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
+    
+        <span class="sidebar-tag-name" data-tags="CookBook"><span class="iconfont-archer">&#xe606;</span>CookBook</span>
+    
+        <span class="sidebar-tag-name" data-tags="SQL注入"><span class="iconfont-archer">&#xe606;</span>SQL注入</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
+    <div class="tag-load-fail" style="display: none; color: #ccc; font-size: 0.6rem;">
+    缺失模块。<br/>
+    1、请确保node版本大于6.2<br/>
+    2、在博客根目录（注意不是archer根目录）执行以下命令：<br/>
+    <span style="color: #f75357; font-size: 1rem; line-height: 2rem;">npm i hexo-generator-json-content --save</span><br/>
+    3、在根目录_config.yml里添加配置：
+    <pre style="color: #787878; font-size: 0.6rem;">
+jsonContent:
+  meta: false
+  pages: false
+  posts:
+    title: true
+    date: true
+    path: true
+    text: false
+    raw: false
+    content: false
+    slug: false
+    updated: false
+    comments: false
+    link: false
+    permalink: false
+    excerpt: false
+    categories: true
+    tags: true</pre>
+    </div> 
+    <div class="sidebar-tags-list"></div>
+</div>
+        <div class="sidebar-panel-categories">
+    <div class="sidebar-categories-name">
+    
+        <span class="sidebar-category-name" data-categories="漏洞分析"><span class="iconfont-archer">&#xe60a;</span>漏洞分析</span>
+    
+        <span class="sidebar-category-name" data-categories="环境部署"><span class="iconfont-archer">&#xe60a;</span>环境部署</span>
+    
+        <span class="sidebar-category-name" data-categories="一些思路"><span class="iconfont-archer">&#xe60a;</span>一些思路</span>
+    
+        <span class="sidebar-category-name" data-categories="blockchain"><span class="iconfont-archer">&#xe60a;</span>blockchain</span>
+    
+        <span class="sidebar-category-name" data-categories="Python"><span class="iconfont-archer">&#xe60a;</span>Python</span>
+    
+        <span class="sidebar-category-name" data-categories="黑产研究"><span class="iconfont-archer">&#xe60a;</span>黑产研究</span>
+    
+        <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
+    
+        <span class="sidebar-category-name" data-categories="技术总结"><span class="iconfont-archer">&#xe60a;</span>技术总结</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>
+    <div class="sidebar-categories-list"></div>
+</div>
+    </div>
+</div> 
+    <script>
+    var siteMeta = {
+        root: "/",
+        author: "Lucifaer"
+    }
+</script>
+    <!-- CDN failover -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+    <script type="text/javascript">
+        if (typeof window.$ === 'undefined')
+        {
+            console.warn('jquery load from jsdelivr failed, will load local script')
+            document.write('<script src="/lib/jquery.min.js">\x3C/script>')
+        }
+    </script>
+    <script src="/scripts/main.js"></script>
+    <!-- algolia -->
+    
+        <div class="site-search">
+  <div class="algolia-popup popup">
+    <div class="algolia-search">
+      <div class="algolia-search-input-icon">
+        <i class="fa fa-search"></i>
+      </div>
+      <div class="algolia-search-input" id="algolia-search-input"></div>
+    </div>
+
+    <div class="algolia-results">
+      <div id="algolia-stats"></div>
+      <div id="algolia-hits"></div>
+      <div id="algolia-pagination" class="algolia-pagination"></div>
+    </div>
+
+    <span class="popup-btn-close">
+      <i class="iconfont-archer">&#xe609;</i>
+    </span>
+  </div>
+</div>
+        <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@2.8.0/dist/instantsearch.min.js" defer></script>
+        <script src="/scripts/search.js" defer></script>
+    
+    <!-- busuanzi  -->
+    
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+    <!-- CNZZ  -->
+    
+    </div>
+    <!-- async load share.js -->
+    
+        <script src="/scripts/share.js" async></script>    
+     
+    </body>
+</html>
+
+
