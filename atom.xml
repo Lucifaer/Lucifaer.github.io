@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://lucifaer.com/"/>
-  <updated>2019-09-25T08:32:58.223Z</updated>
+  <updated>2019-11-08T09:51:23.047Z</updated>
   <id>https://lucifaer.com/</id>
   
   <author>
@@ -15,6 +15,36 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>SpringMVC源码分析1：概述</title>
+    <link href="https://lucifaer.com/2019/11/08/SpringMVC%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%901%EF%BC%9A%E6%A6%82%E8%BF%B0/"/>
+    <id>https://lucifaer.com/2019/11/08/SpringMVC源码分析1：概述/</id>
+    <published>2019-11-08T09:09:15.000Z</published>
+    <updated>2019-11-08T09:51:23.047Z</updated>
+    
+    <content type="html"><![CDATA[<p>之前一段时间和各位师傅（py3rd师傅、iswin师傅、orich1师傅、廖大）聊了一下，感觉目前市场上对Spring Web这方面的安全非常看重。前段时间校招，不少学弟也给我说现在面试官起手就是问Spring安全方面的一些东西，感觉现在各家都比较需要这方面的人。我听了之后还蛮尴尬的，我作为一个面试官扪心自问，是对Spring安全这方面是没有什么理解的。本着菜就要学的原则，准备自己挖个坑把Spring MVC好好看看，加深一下自己对Spring Web这方面的理解。</p><p>对于Spring Web框架的安全，我目前的理解还停留在SPEL表达式注入、jolokia利用、spring-oxm XStream反序列化这个层面上，因为Spring Web很多功能是交由组件来实现的，比如spring-oxm XStream反序列化的利用，其根本原因还是XStream反序列化的应用，和Spring MVC的关系真的不大。如果说学弟面对的这个Spring Web安全是利用Spring Web框架写的web应用的安全性的话，那其实就是另外一个话题了，就属于常规的业务代码审计了，很多时候和Spring Web框架的关系就不大了。</p><p>所以还是比较想了解一下这些面试官是否对这个名词有什么新的理解，还只是单纯的走个流程问一下。xD</p><a id="more"></a><p>以上为个人的自问，与要干的事没什么关系。其实一直都想好好的看一遍SpringMVC，感受一下设计理念被各个语言都抄了一遍的Web框架到底有什么样的魅力（Django是参考SpringMvc设计的，Laravel是参考Django实现的）。之前在研究OGNL的时候大致跟了一遍Strut2，以xwork2为核心的框架设计模式在前端控制器与后端的通信上谈不上优雅，大量繁琐的逻辑在看的时候都会很苦恼，那么SpringMVC的设计模式是什么样的呢？</p><p>在对SpringMVC进行深入研究前，首先来看一下SpringMVC的基础构成，这里用一张最基础的图来进行说明：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/11/08/SpringMVC%E5%9F%BA%E7%A1%80%E6%9E%84%E6%88%90.png" alt="SpringMVC基础构成"></p><p>SpringMVC和其他的Java Web框架类似，所有的请求都会通过一个前端控制器（<code>front controller</code>）Servlet，<strong>其本身不承担功能处理，它的作用是将请求委托给应用程序的其他组件来执行</strong>，简单来说可以将前端控制器Servlet理解为一个调度器进行全局流程控制。</p><p>在SpringMVC中承担前端控制器功能的，就是<code>DispatcherServlet</code>。所以想要完全的理解SpringMVC的工作流程，就要从<code>DispatcherServlet</code>这个核心点入手。</p><p>在对整个流程有了个大致概念后，不妨更细致的看看SpringMVC的构成：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/11/08/15731978116720.jpg" alt=""></p><p>以<code>DispatcherServlet</code>为核心调度器，当一个新的请求进入时将会触发以下流程：</p><ol><li><code>DispatcherServlet</code>构建Spring应用上下文，加载并配置bean完成初始化过程。</li><li>SpringMVC利用<code>HandlerAdapter</code>将<code>Handler</code>（处理器）和<code>HandlerInterceptor</code>（处理器拦截器）包装成<code>HandlerAdapter</code>这个适配器类型。这里利用了适配器设计模式，方便支持多种类型的处理器。</li><li><code>DispatcherServlet</code>通过<code>HandlerMapping</code>将请求映射为<code>HandlerExecutionChain</code>对象，该对象包括<code>Handler</code>及相应的<code>HandlerInterceptor</code>。对应简略图中的1。</li><li><code>DispatcherServlet</code>利用<code>HandlerAdapter</code>匹配符合要求的适配结果。之后将根据适配结果调用真正的<code>Controller</code>进行逻辑处理并完成相应功能。最后将返回一个<code>ModelAndView</code>对象，该对象包含数据（<code>Model</code>的数据）以及逻辑视图名（<code>View</code>的名称）。对应简略图中的2、3。</li><li>通过在<code>DispatcherServlet</code>初始化中所设定的<code>ViewResolver</code>（视图解析器）把逻辑视图名解析为具体的<code>View</code>对象。对应简略图中的4。</li><li><code>View</code>对象会根据传入的<code>Model</code>数据进行渲染。对应简略图中的5。</li><li>将返回控制权交给<code>DispatcherServlet</code>，由其控制返回渲染后的<code>View</code>返回给用户。</li></ol><p>这里对于<code>HandlerExecutionChain</code>这个执行链多说两句。<code>HandlerExecutionChain</code>其实就是通过<code>HandlerMapping</code>将<code>Handler</code>和<code>HandlerInterceptor</code>进行了组装，关键的流程还是由<code>HandlerInterceptor</code>来管控的。</p><p><code>HandlerInterceptor</code>允许自定义处理程序的执行链。其类似于Servlet的过滤器，但是与后者比它仅允许：</p><ul><li>自定义预处理</li><li>禁止执行处理程序本身的选项</li><li>自定义处理后的逻辑</li></ul><p>从其方法列表中我们也能看出其主要的功能：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/11/08/15732034536729.jpg" alt=""></p><p>所以整理一下<code>HandlerExecutionChain</code>的处理逻辑，就如下图所示：</p><p><img src="http://image-lucifaer.test.upcdn.net/2019/11/08/15732035083596.jpg" alt=""></p><p>根据上面对SpringMVC整个流程的总结，可以看到SpringMVC是以<code>DispatcherServlet</code>为核心，将整个框架组装调度了起来，所以后面几篇研究SpringMVC的文章都是以<code>DispatcherServlet</code>入手进行跟踪的。</p>]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;之前一段时间和各位师傅（py3rd师傅、iswin师傅、orich1师傅、廖大）聊了一下，感觉目前市场上对Spring Web这方面的安全非常看重。前段时间校招，不少学弟也给我说现在面试官起手就是问Spring安全方面的一些东西，感觉现在各家都比较需要这方面的人。我听了之后还蛮尴尬的，我作为一个面试官扪心自问，是对Spring安全这方面是没有什么理解的。本着菜就要学的原则，准备自己挖个坑把Spring MVC好好看看，加深一下自己对Spring Web这方面的理解。&lt;/p&gt;
+&lt;p&gt;对于Spring Web框架的安全，我目前的理解还停留在SPEL表达式注入、jolokia利用、spring-oxm XStream反序列化这个层面上，因为Spring Web很多功能是交由组件来实现的，比如spring-oxm XStream反序列化的利用，其根本原因还是XStream反序列化的应用，和Spring MVC的关系真的不大。如果说学弟面对的这个Spring Web安全是利用Spring Web框架写的web应用的安全性的话，那其实就是另外一个话题了，就属于常规的业务代码审计了，很多时候和Spring Web框架的关系就不大了。&lt;/p&gt;
+&lt;p&gt;所以还是比较想了解一下这些面试官是否对这个名词有什么新的理解，还只是单纯的走个流程问一下。xD&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="代码研究" scheme="https://lucifaer.com/categories/%E4%BB%A3%E7%A0%81%E7%A0%94%E7%A9%B6/"/>
+    
+    
+      <category term="Java" scheme="https://lucifaer.com/tags/Java/"/>
+    
+      <category term="Spring" scheme="https://lucifaer.com/tags/Spring/"/>
+    
+      <category term="SpringMVC" scheme="https://lucifaer.com/tags/SpringMVC/"/>
+    
+      <category term="代码研究" scheme="https://lucifaer.com/tags/%E4%BB%A3%E7%A0%81%E7%A0%94%E7%A9%B6/"/>
+    
+  </entry>
   
   <entry>
     <title>浅谈RASP</title>
