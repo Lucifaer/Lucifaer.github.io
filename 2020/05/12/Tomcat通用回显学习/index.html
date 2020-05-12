@@ -430,12 +430,11 @@ height:50vh;
 <li>原生支持性好，不会出现连接中断的现象</li>
 </ul>
 <p>综上，可以看到我们需要一种在Tomcat Filter处理逻辑之前就将执行结果写入返回包的回显方式。</p>
-<p>简单的写一个<code>servlet</code>，看一下Tomcat的调用栈。这里我调试的Tomcat版本为<code>8.5.47</code>，不同的Tomcat版本处理逻辑相同，但是其中的部分数据结构有所改变。</p>
-<p><img src="media/15888311838755/15888314666313.jpg" alt=""></p>
+<p>简单的写一个<code>servlet</code>，看一下Tomcat的调用栈。这里我调试的Tomcat版本为<code>8.5.47</code>，不同的Tomcat版本处理逻辑相同，但是其中的部分数据结构有所改变。<br><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15892757077506.jpg" alt=""></p>
 <p>为了保证类似<code>Shiro</code>这里<code>Filter</code>应用也可以完成回显，就需要在Tomcat执行该<code>Filter</code>之前将执行结果写入<code>response</code>中。所以核心的切入点就是跟踪<code>Http11Processor</code>的前后处理逻辑，尝试获取本次请求，并将结果写入返回包中。</p>
 <h1 id="0x02-寻找利用链"><a href="#0x02-寻找利用链" class="headerlink" title="0x02 寻找利用链"></a>0x02 寻找利用链</h1><p>寻找利用链主要分为两步，获取本次请求、获取返回包。</p>
 <h2 id="2-1-获取返回包"><a href="#2-1-获取返回包" class="headerlink" title="2.1 获取返回包"></a>2.1 获取返回包</h2><p>首先查看<code>Http11Processor</code>处的逻辑：</p>
-<p><img src="media/15888311838755/15888316362579.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15892757326923.jpg" alt=""></p>
 <p>主要是调用对应的适配器，并将<code>request</code>和<code>response</code>作为参数传入<code>service()</code>方法中。通过这一部分代码可以得出两点结论：</p>
 <ul>
 <li><code>request</code>和<code>response</code>对象是在此之前就完成初始化的。</li>
@@ -696,12 +695,6 @@ top:50vh;
     <div class="sidebar-content sidebar-content-show-archive">
           <div class="sidebar-panel-archives">
     <!-- 在ejs中将archive按照时间排序 -->
-    
-    
-    
-    
-    
-    
     
     
     
@@ -1497,25 +1490,21 @@ top:50vh;
     
         <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
     
+        <span class="sidebar-tag-name" data-tags="PHP"><span class="iconfont-archer">&#xe606;</span>PHP</span>
+    
         <span class="sidebar-tag-name" data-tags="Confluence"><span class="iconfont-archer">&#xe606;</span>Confluence</span>
     
-        <span class="sidebar-tag-name" data-tags="PHP"><span class="iconfont-archer">&#xe606;</span>PHP</span>
+        <span class="sidebar-tag-name" data-tags="FastJson"><span class="iconfont-archer">&#xe606;</span>FastJson</span>
     
         <span class="sidebar-tag-name" data-tags="Git"><span class="iconfont-archer">&#xe606;</span>Git</span>
     
         <span class="sidebar-tag-name" data-tags="环境部署"><span class="iconfont-archer">&#xe606;</span>环境部署</span>
     
-        <span class="sidebar-tag-name" data-tags="FastJson"><span class="iconfont-archer">&#xe606;</span>FastJson</span>
-    
         <span class="sidebar-tag-name" data-tags="RichFaces"><span class="iconfont-archer">&#xe606;</span>RichFaces</span>
     
-        <span class="sidebar-tag-name" data-tags="Jenkins"><span class="iconfont-archer">&#xe606;</span>Jenkins</span>
-    
-        <span class="sidebar-tag-name" data-tags="CookBook"><span class="iconfont-archer">&#xe606;</span>CookBook</span>
-    
-        <span class="sidebar-tag-name" data-tags="SQL注入"><span class="iconfont-archer">&#xe606;</span>SQL注入</span>
-    
         <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="Jenkins"><span class="iconfont-archer">&#xe606;</span>Jenkins</span>
     
         <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
     
@@ -1523,11 +1512,15 @@ top:50vh;
     
         <span class="sidebar-tag-name" data-tags="Weblogic"><span class="iconfont-archer">&#xe606;</span>Weblogic</span>
     
+        <span class="sidebar-tag-name" data-tags="CookBook"><span class="iconfont-archer">&#xe606;</span>CookBook</span>
+    
+        <span class="sidebar-tag-name" data-tags="SQL注入"><span class="iconfont-archer">&#xe606;</span>SQL注入</span>
+    
+        <span class="sidebar-tag-name" data-tags="Struts2"><span class="iconfont-archer">&#xe606;</span>Struts2</span>
+    
         <span class="sidebar-tag-name" data-tags="Tomcat"><span class="iconfont-archer">&#xe606;</span>Tomcat</span>
     
         <span class="sidebar-tag-name" data-tags="回显方案"><span class="iconfont-archer">&#xe606;</span>回显方案</span>
-    
-        <span class="sidebar-tag-name" data-tags="Struts2"><span class="iconfont-archer">&#xe606;</span>Struts2</span>
     
         <span class="sidebar-tag-name" data-tags="CTF"><span class="iconfont-archer">&#xe606;</span>CTF</span>
     
@@ -1576,9 +1569,9 @@ jsonContent:
     
         <span class="sidebar-category-name" data-categories="环境部署"><span class="iconfont-archer">&#xe60a;</span>环境部署</span>
     
-        <span class="sidebar-category-name" data-categories="技术总结"><span class="iconfont-archer">&#xe60a;</span>技术总结</span>
-    
         <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
+    
+        <span class="sidebar-category-name" data-categories="技术总结"><span class="iconfont-archer">&#xe60a;</span>技术总结</span>
     
         <span class="sidebar-category-name" data-categories="一些思路"><span class="iconfont-archer">&#xe60a;</span>一些思路</span>
     
